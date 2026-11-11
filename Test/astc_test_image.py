@@ -165,6 +165,7 @@ def format_solo_result(image: TestImage, result: Record) -> str:
 
     name = f'{result.block_size:>5} {result.name}'
     psnr = f'{result.psnr:2.3f} dB'
+    ssim = f'{result.ssim:.3f}'
     total_time = f'{result.total_time:.3f} s'
     coding_time = f'{result.coding_time:.3f} s'
     coding_rate = f'{result.coding_rate:.3f} MT/s'
@@ -172,6 +173,7 @@ def format_solo_result(image: TestImage, result: Record) -> str:
     fields = (
         f'{name:<32}',
         f'{psnr:>11}',
+        f'{ssim:>5}',
         f'{total_time:>9}',
         f'{coding_time:>9}',
         f'{coding_rate:>11}',
@@ -194,6 +196,7 @@ def format_compare_result(image: TestImage, reference: Record,
         The metrics report.
     '''
     psnr_diff = result.psnr - reference.psnr
+    ssim_diff = result.ssim - reference.ssim
 
     try:
         total_time_rel = reference.total_time / result.total_time
@@ -207,6 +210,7 @@ def format_compare_result(image: TestImage, reference: Record,
 
     name = f'{result.block_size:>5} {result.name}'
     psnr = f'{result.psnr:2.3f} dB ({psnr_diff:1.3f} dB)'
+    ssim = f'{result.ssim:.3f} ({ssim_diff:+.3f})'
     total_time = f'{result.total_time:.3f} s ({total_time_rel:1.2f}x)'
     coding_time = f'{result.coding_time:.3f} s ({coding_time_rel:1.2f}x)'
     coding_rate = f'{result.coding_rate:.3f} MT/s'
@@ -215,6 +219,7 @@ def format_compare_result(image: TestImage, reference: Record,
     fields = (
         f'{name:<32}',
         f'{psnr:>22}',
+        f'{ssim:>14}',
         f'{total_time:>15}',
         f'{coding_time:>15}',
         f'{coding_rate:>11}',

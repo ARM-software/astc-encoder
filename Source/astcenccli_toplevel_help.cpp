@@ -304,10 +304,10 @@ ADVANCED COMPRESSION
 
     -mpsnr <low> <high>
         Set this option for an HDR texture to set the low and high f-stop
-        values for the mPSNR error metric.
+        values for the mPSNR and mSSIM error metrics.
 
         This option does not impact the compressed image quality, but
-        changes how the mPSNR error metric is computed in test mode.
+        changes how these error metrics are computed in test mode.
 
     Performance-quality tradeoff options
     ------------------------------------

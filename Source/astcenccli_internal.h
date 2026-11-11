@@ -362,17 +362,17 @@ void astcenc_print_longhelp();
 /**
  * @brief Compute error metrics comparing two images.
  *
- * @param compute_hdr_metrics      True if HDR metrics should be computed.
- * @param compute_normal_metrics   True if normal map metrics should be computed.
- * @param input_components         The number of input color components.
- * @param img1                     The original image.
- * @param img2                     The compressed image.
- * @param fstop_lo                 The low exposure fstop (HDR only).
- * @param fstop_hi                 The high exposure fstop (HDR only).
+ * @param is_hdr             True if HDR metrics should be computed.
+ * @param is_normal_map      True if normal map metrics should be computed.
+ * @param input_components   The number of input color components.
+ * @param img1               The original image.
+ * @param img2               The compressed image.
+ * @param fstop_lo           The low exposure fstop (HDR only).
+ * @param fstop_hi           The high exposure fstop (HDR only).
  */
 void compute_error_metrics(
-	bool compute_hdr_metrics,
-	bool compute_normal_metrics,
+	bool is_hdr,
+	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,
 	const astcenc_image* img2,

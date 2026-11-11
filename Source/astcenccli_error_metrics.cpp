@@ -19,6 +19,7 @@
  * @brief Functions for computing image error metrics.
  */
 
+#include <array>
 #include <cassert>
 #include <cstdio>
 
@@ -35,6 +36,18 @@ public:
 	double sum_g { 0.0 };
 	double sum_b { 0.0 };
 	double sum_a { 0.0 };
+};
+
+/**
+ * @brief SSIM statistics for display in the CLI.
+ */
+struct ssim_stats
+{
+	/** @brief Mean RGB SSIM, averaged over exposures for HDR images. */
+	double rgb { 0.0 };
+
+	/** @brief Mean SSIM of the selected LDR components, including alpha. */
+	double rgba { 0.0 };
 };
 
 /**
@@ -106,10 +119,383 @@ static float mpsnr_sumdiff(
 	return summa;
 }
 
+/**
+ * @brief Load and pad one row of a single color channel for the SSIM filter.
+ *
+ * Samples are shifted by -0.5 before filtering to reduce cancellation in variance calculations.
+ *
+ * @param      img         The source image.
+ * @param      component   The color component index, in RGBA order.
+ * @param      z           The depth slice index.
+ * @param      y           The row index.
+ * @param      width       The comparison width.
+ * @param      radius      The filter radius.
+ * @param      is_hdr      True to apply the mPSNR tone map.
+ * @param      fstop       The exposure fstop for HDR tone mapping.
+ * @param[out] row         The padded output row, centered around zero.
+ */
+static void load_ssim_row(
+	const astcenc_image* img,
+	unsigned int component,
+	size_t z,
+	size_t y,
+	size_t width,
+	size_t radius,
+	bool is_hdr,
+	int fstop,
+	std::vector<float>& row
+) {
+	// Select the source type and exposure mode outside the pixel loops
+	if (img->data_type == ASTCENC_TYPE_U8)
+	{
+		size_t stride = img->row_stride;
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		// Normalize UNORM samples before optional display tone mapping
+		const uint8_t* data = static_cast<const uint8_t*>(img->data[z]) + y * stride + component;
+		if (is_hdr)
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				float value = data[4 * x] / 255.0f;
+				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+			}
+		}
+		else
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				row[x + radius] = data[4 * x] / 255.0f - 0.5f;
+			}
+		}
+	}
+	else if (img->data_type == ASTCENC_TYPE_F16)
+	{
+		size_t stride = img->row_stride / sizeof(uint16_t);
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		// Convert FP16 samples and clamp unconstrained inputs before optional tone mapping
+		const uint16_t* data = static_cast<const uint16_t*>(img->data[z]) + y * stride + component;
+		if (is_hdr)
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				vint4 valuei(data[4 * x]);
+				float value = float16_to_float(valuei).lane<0>();
+				value = astc::clamp(value, 0.0f, 65504.0f);
+				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+			}
+		}
+		else
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				vint4 valuei(data[4 * x]);
+				float value = float16_to_float(valuei).lane<0>();
+				row[x + radius] = astc::clamp(value, 0.0f, 65504.0f) - 0.5f;
+			}
+		}
+	}
+	else
+	{
+		assert(img->data_type == ASTCENC_TYPE_F32);
+		size_t stride = img->row_stride / sizeof(float);
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		// Clamp unconstrained FP32 samples before optional display tone mapping
+		const float* data = static_cast<const float*>(img->data[z]) + y * stride + component;
+		if (is_hdr)
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				float value = astc::clamp(data[4 * x], 0.0f, 65504.0f);
+				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+			}
+		}
+		else
+		{
+			for (size_t x = 0; x < width; x++)
+			{
+				row[x + radius] = astc::clamp(data[4 * x], 0.0f, 65504.0f) - 0.5f;
+			}
+		}
+	}
+
+	// Replicate edge values for the filter window and padded SIMD lanes
+	for (size_t x = 0; x < radius; x++)
+	{
+		row[x] = row[radius];
+	}
+
+	for (size_t x = width + radius; x < row.size(); x++)
+	{
+		row[x] = row[width + radius - 1];
+	}
+}
+
+/**
+ * @brief Compute single-channel SSIM using an 11x11 Gaussian window with sigma 1.5.
+ *
+ * Uses population covariance, K1 = 0.01, K2 = 0.03, and a unit data range. Image edges are extended
+ * by replication, including for images smaller than the window. All pixels in the image
+ * intersection contribute equally, with each depth slice filtered independently.
+ *
+ * @param img1        The original image.
+ * @param img2        The compressed image.
+ * @param component   The color component index, in RGBA order.
+ * @param is_hdr      True to apply the mPSNR tone map before computing SSIM.
+ * @param fstop       The exposure fstop for HDR tone mapping, in range [-125, 125].
+ *
+ * @return The mean SSIM, where 1 indicates identical images.
+ */
+static float compute_ssim(
+	const astcenc_image* img1,
+	const astcenc_image* img2,
+	unsigned int component,
+	bool is_hdr,
+	int fstop
+) {
+	// Compare the image intersection, filtering each depth slice independently
+	assert(component < 4);
+	size_t width = astc::min(img1->dim_x, img2->dim_x);
+	size_t height = astc::min(img1->dim_y, img2->dim_y);
+	size_t depth = astc::min(img1->dim_z, img2->dim_z);
+	assert((width > 0) && (height > 0) && (depth > 0));
+
+	// Pad rows so each vector lane filters one pixel, including the partial final vector
+	constexpr size_t radius { 5 };
+	constexpr size_t window { 2 * radius + 1 };
+	size_t padded_width = round_up_to_simd_multiple_vla(width);
+
+	// Build a normalized Gaussian kernel for both passes of the separable filter
+	std::array<float, window> weights;
+
+	float weight_sum = 0.0f;
+	for (size_t k = 0; k < window; k++)
+	{
+		float offset = static_cast<float>(k) - static_cast<float>(radius);
+		weights[k] = std::exp(-(offset * offset) / (2.0f * 1.5f * 1.5f));
+		weight_sum += weights[k];
+	}
+
+	for (float& weight : weights)
+	{
+		weight /= weight_sum;
+	}
+
+	// Cache horizontally filtered means, sum of second moments, and squared differences
+	// A ring of window rows keeps storage under control
+	std::array<std::vector<float>, 4> rows;
+	for (auto& row : rows)
+	{
+		row.resize(padded_width * window);
+	}
+
+	// Reuse padded source rows and pixel losses across output rows and depth slices
+	std::vector<float> row1(padded_width + 2 * radius);
+	std::vector<float> row2(row1.size());
+	std::vector<float> row_loss(padded_width);
+	vfloat4 loss_sum = vfloat4::zero();
+	for (size_t z = 0; z < depth; z++)
+	{
+		size_t next_y = 0;
+		size_t next_row = 0;
+		for (size_t y = 0; y < height; y++)
+		{
+			// Cache horizontally filtered rows until the vertical window is available
+			size_t last_y = astc::min(y + radius, height - 1);
+			for (; next_y <= last_y; next_y++)
+			{
+				load_ssim_row(img1, component, z, next_y, width, radius, is_hdr, fstop, row1);
+				load_ssim_row(img2, component, z, next_y, width, radius, is_hdr, fstop, row2);
+
+				// Filter the four moments horizontally, with one texel per SIMD lane
+				size_t row_offset = next_row * padded_width;
+				for (size_t x = 0; x < padded_width; x += ASTCENC_SIMD_WIDTH)
+				{
+					vfloat mean1 = vfloat::zero();
+					vfloat mean2 = vfloat::zero();
+					vfloat squares = vfloat::zero();
+					vfloat differences = vfloat::zero();
+					for (size_t k = 0; k < window; k++)
+					{
+						vfloat a(row1.data() + x + k);
+						vfloat b(row2.data() + x + k);
+						vfloat weight(weights[k]);
+						vfloat diff = a - b;
+						mean1 += weight * a;
+						mean2 += weight * b;
+						squares += weight * (a * a + b * b);
+						differences += weight * (diff * diff);
+					}
+
+					store(mean1, rows[0].data() + row_offset + x);
+					store(mean2, rows[1].data() + row_offset + x);
+					store(squares, rows[2].data() + row_offset + x);
+					store(differences, rows[3].data() + row_offset + x);
+				}
+
+				next_row++;
+				if (next_row == window)
+				{
+					next_row = 0;
+				}
+			}
+
+			// Resolve the ring slots once per row, including replicated top and bottom edges
+			std::array<size_t, window> row_offsets;
+			for (size_t k = 0; k < window; k++)
+			{
+				size_t sy = astc::min(y + k, height - 1 + radius);
+				sy = astc::max(sy, radius) - radius;
+				size_t slot = next_row + window - 1 - (last_y - sy);
+				if (slot >= window)
+				{
+					slot -= window;
+				}
+
+				row_offsets[k] = slot * padded_width;
+			}
+
+			// Apply the vertical Gaussian pass to recover local moments for each pixel
+			for (size_t x = 0; x < padded_width; x += ASTCENC_SIMD_WIDTH)
+			{
+				vfloat mean1 = vfloat::zero();
+				vfloat mean2 = vfloat::zero();
+				vfloat squares = vfloat::zero();
+				vfloat differences = vfloat::zero();
+
+				for (size_t k = 0; k < window; k++)
+				{
+					size_t row_offset = row_offsets[k] + x;
+					vfloat weight(weights[k]);
+					mean1 += weight * vfloat(rows[0].data() + row_offset);
+					mean2 += weight * vfloat(rows[1].data() + row_offset);
+					squares += weight * vfloat(rows[2].data() + row_offset);
+					differences += weight * vfloat(rows[3].data() + row_offset);
+				}
+
+				// Express SSIM as a loss to avoid cancellation for nearly identical images
+				vfloat diff = mean1 - mean2;
+				vfloat mean_diff_sq = diff * diff;
+				vfloat variance = max(squares - (mean1 * mean1 + mean2 * mean2), vfloat::zero());
+				vfloat diff_variance = max(differences - mean_diff_sq, vfloat::zero());
+
+				// Restore uncentered means for luminance; variances are unchanged by centering
+				mean1 += vfloat(0.5f);
+				mean2 += vfloat(0.5f);
+				vfloat luminance_loss = mean_diff_sq / (mean1 * mean1 + mean2 * mean2 + vfloat(0.0001f));
+				vfloat structure_loss = diff_variance / (variance + vfloat(0.0009f));
+				vfloat loss = luminance_loss + structure_loss - luminance_loss * structure_loss;
+				store(loss, row_loss.data() + x);
+			}
+
+			// Reduce rows in fixed-width groups to limit drift and preserve invariance
+			for (size_t x = width; x < padded_width; x++)
+			{
+				row_loss[x] = 0.0f;
+			}
+
+			vfloat4 row_sum = vfloat4::zero();
+			for (size_t x = 0; x < width; x += 4)
+			{
+				row_sum += vfloat4(row_loss.data() + x);
+			}
+
+			loss_sum += row_sum;
+		}
+	}
+
+	// Convert mean loss over all compared texels back to an SSIM score
+	return 1.0f - hadd_s(loss_sum) / static_cast<float>(width * height * depth);
+}
+
+/**
+ * @brief Compute SSIM statistics for reporting.
+ *
+ * @param img1             The original image.
+ * @param img2             The compressed image.
+ * @param component_mask   The mask of input color components.
+ * @param is_hdr           True to average tone-mapped RGB scores over HDR exposures.
+ * @param fstop_lo         The low exposure fstop (HDR only).
+ * @param fstop_hi         The high exposure fstop (HDR only).
+ *
+ * @return The aggregated RGB and LDR RGBA SSIM statistics.
+ */
+static ssim_stats compute_ssim_stats(
+	const astcenc_image* img1,
+	const astcenc_image* img2,
+	int component_mask,
+	bool is_hdr,
+	int fstop_lo,
+	int fstop_hi
+) {
+	// HDR SSIM averages the same display exposures as mPSNR; alpha is only scored for LDR
+	int ssim_lo = 0;
+	int ssim_hi = 0;
+	unsigned int component_count = 3;
+
+	if (is_hdr)
+	{
+		// TODO: Existing fstop default values are silly - add an auto-exposure and support
+		// +-2 stops either side - but still let users override on command line
+		ssim_lo = fstop_lo;
+		ssim_hi = fstop_hi;
+	}
+	else if (component_mask & 8)
+	{
+		component_count = 4;
+	}
+
+	// Average each channel over exposures; LDR uses a single pass without tone mapping
+	double channel_ssim[4] {};
+	for (unsigned int c = 0; c < component_count; c++)
+	{
+		for (int fstop = ssim_lo; fstop <= ssim_hi; fstop++)
+		{
+			channel_ssim[c] += static_cast<double>(compute_ssim(img1, img2, c, is_hdr, fstop));
+		}
+
+		channel_ssim[c] /= static_cast<double>(ssim_hi - ssim_lo + 1);
+	}
+
+	// Match PSNR's component mask, including luminance-alpha inputs
+	double rgba_ssim = 0.0;
+	if ((!is_hdr) && (component_mask & 8))
+	{
+		unsigned int count = 0;
+		for (unsigned int c = 0; c < 4; c++)
+		{
+			if (component_mask & (1 << c))
+			{
+				rgba_ssim += channel_ssim[c];
+				count++;
+			}
+		}
+
+		rgba_ssim /= count;
+	}
+
+	// RGB always averages three channels, including replicated luminance for greyscale inputs
+	return ssim_stats {
+		.rgb = (channel_ssim[0] + channel_ssim[1] + channel_ssim[2]) / 3.0,
+		.rgba = rgba_ssim
+	};
+}
+
 /* See header for documentation */
 void compute_error_metrics(
-	bool compute_hdr_metrics,
-	bool compute_normal_metrics,
+	bool is_hdr,
+	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,
 	const astcenc_image* img2,
@@ -117,7 +503,7 @@ void compute_error_metrics(
 	int fstop_hi
 ) {
 	static const int componentmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
-	int componentmask = componentmasks[input_components];
+	int component_mask = componentmasks[input_components];
 
 	error_accum4 errorsum;
 	error_accum4 alpha_scaled_errorsum;
@@ -267,7 +653,7 @@ void compute_error_metrics(
 				vfloat4 alpha_scaled_diffcolor_sq = alpha_scaled_diffcolor * alpha_scaled_diffcolor;
 				alpha_scaled_errorsum += alpha_scaled_diffcolor_sq;
 
-				if (compute_hdr_metrics)
+				if (is_hdr)
 				{
 					vfloat4 log_input_color1 = log2(color1);
 					vfloat4 log_input_color2 = log2(color2);
@@ -285,7 +671,7 @@ void compute_error_metrics(
 					mpsnr_errorsum += mpsnr_error;
 				}
 
-				if (compute_normal_metrics)
+				if (is_normal_map)
 				{
 					// Decode the normal vector
 					vfloat4 normal1 = (color1 - 0.5f) * 2.0f;
@@ -314,7 +700,7 @@ void compute_error_metrics(
 	double log_num = 0.0;
 	double mpsnr_num = 0.0;
 
-	if (componentmask & 1)
+	if (component_mask & 1)
 	{
 		num += errorsum.sum_r;
 		alpha_num += alpha_scaled_errorsum.sum_r;
@@ -323,7 +709,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (componentmask & 2)
+	if (component_mask & 2)
 	{
 		num += errorsum.sum_g;
 		alpha_num += alpha_scaled_errorsum.sum_g;
@@ -332,7 +718,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (componentmask & 4)
+	if (component_mask & 4)
 	{
 		num += errorsum.sum_b;
 		alpha_num += alpha_scaled_errorsum.sum_b;
@@ -341,7 +727,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (componentmask & 8)
+	if (component_mask & 8)
 	{
 		num += errorsum.sum_a;
 		alpha_num += alpha_scaled_errorsum.sum_a;
@@ -363,11 +749,12 @@ void compute_error_metrics(
 	}
 
 	double rgb_psnr = psnr;
+	ssim_stats ssim = compute_ssim_stats(img1, img2, component_mask, is_hdr, fstop_lo, fstop_hi);
 
 	printf("Quality metrics\n");
 	printf("===============\n\n");
 
-	if (componentmask & 8)
+	if (component_mask & 8)
 	{
 		printf("    PSNR (LDR-RGBA):          %9.4f dB\n", psnr);
 
@@ -398,7 +785,7 @@ void compute_error_metrics(
 		printf("    PSNR (LDR-RGB):           %9.4f dB\n", psnr);
 	}
 
-	if (compute_hdr_metrics)
+	if (is_hdr)
 	{
 		printf("    PSNR (RGB norm to peak):  %9.4f dB (peak %f)\n",
 		       rgb_psnr + 20.0 * log10(rgb_peak), rgb_peak);
@@ -420,7 +807,22 @@ void compute_error_metrics(
 		printf("    LogRMSE (RGB):            %9.4f\n", logrmse);
 	}
 
-	if (compute_normal_metrics)
+	if (is_hdr)
+	{
+		printf("    mSSIM (RGB):              %9.4f (fstops %+d to %+d)\n",
+		       ssim.rgb, fstop_lo, fstop_hi);
+	}
+	else
+	{
+		if (component_mask & 8)
+		{
+			printf("    SSIM (LDR-RGBA):          %9.4f\n", ssim.rgba);
+		}
+
+		printf("    SSIM (LDR-RGB):           %9.4f\n", ssim.rgb);
+	}
+
+	if (is_normal_map)
 	{
 		printf("    Mean Angular Error:       %9.4f degrees\n", mean_angular_errorsum);
 		printf("    Worst Angular Error:      %9.4f degrees\n", worst_angular_errorsum);

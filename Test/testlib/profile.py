@@ -35,6 +35,9 @@ QUALITY_METRICS = {
     'PSNR (LDR-RGBA)': ('dB', 'higher'),
     'Alpha-weighted PSNR': ('dB', 'higher'),
     'mPSNR (RGB)': ('dB', 'higher'),
+    'SSIM (LDR-RGB)': ('', 'higher'),
+    'SSIM (LDR-RGBA)': ('', 'higher'),
+    'mSSIM (RGB)': ('', 'higher'),
     'Mean Angular Error': ('degrees', 'lower'),
     'Worst Angular Error': ('degrees', 'lower')
 }
