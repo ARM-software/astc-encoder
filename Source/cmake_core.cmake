@@ -103,6 +103,10 @@ if(${ASTCENC_CLI})
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
+    set_property(TARGET ${ASTCENC_TARGET}
+        PROPERTY
+            OUTPUT_NAME "${ASTCENC_TARGET}${ASTCENC_CLI_POSTFIX}")
+
     target_link_libraries(${ASTCENC_TARGET}
         PRIVATE
             ${ASTCENC_TARGET}-veneer1

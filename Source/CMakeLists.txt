@@ -69,7 +69,7 @@ if(${ASTCENC_CLI} AND ${ASTCENC_UNIVERSAL_BUILD})
         astc${ASTCENC_CODEC}
             ALL
             COMMAND
-                lipo -create -output $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC} -arch x86_64 $<TARGET_FILE:astc${ASTCENC_CODEC}-sse4.1> -arch x86_64h $<TARGET_FILE:astc${ASTCENC_CODEC}-avx2> -arch arm64 $<TARGET_FILE:astc${ASTCENC_CODEC}-neon>
+                lipo -create -output "$<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC}${ASTCENC_CLI_POSTFIX}" -arch x86_64 $<TARGET_FILE:astc${ASTCENC_CODEC}-sse4.1> -arch x86_64h $<TARGET_FILE:astc${ASTCENC_CODEC}-avx2> -arch arm64 $<TARGET_FILE:astc${ASTCENC_CODEC}-neon>
             VERBATIM)
 
     add_dependencies(
@@ -78,7 +78,7 @@ if(${ASTCENC_CLI} AND ${ASTCENC_UNIVERSAL_BUILD})
             astc${ASTCENC_CODEC}-avx2
             astc${ASTCENC_CODEC}-neon)
 
-    install(PROGRAMS $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC}
+    install(PROGRAMS "$<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC}${ASTCENC_CLI_POSTFIX}"
             DESTINATION bin)
 endif()
 

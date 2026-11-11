@@ -58,6 +58,8 @@ option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 option(ASTCENC_X86_GATHERS "Enable use of native x86 gathers" ON)
 option(ASTCENC_WERROR "Force builds to treat warnings as errors" ON)
 
+set(ASTCENC_CLI_POSTFIX "" CACHE STRING "Custom postfix for command line tool binary names")
+
 if(ASTCENC_ASAN AND ASTCENC_TSAN)
     message(FATAL_ERROR "ASTCENC_ASAN and ASTCENC_TSAN cannot be enabled together.")
 endif()
