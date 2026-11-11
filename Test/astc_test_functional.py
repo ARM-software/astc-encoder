@@ -636,6 +636,46 @@ class CLIPTest(CLITestBase):
                                          r'\(fstops -2 to \+2\)')
                 self.assertNotIn('SSIM (LDR-', stdout)
 
+    def test_hdr_auto_exposure(self) -> None:
+        '''
+        Test reference-derived geometric mean exposures and explicit overrides.
+        '''
+        black = bytes((0, 0, 0, 0))
+        grey = bytes((128, 128, 128, 129))  # Linear RGB = 1
+        bright = bytes((128, 128, 128, 133))  # Linear RGB = 16
+        cases = (
+            ('grey', grey + grey, -4, 0),
+            ('scaled', bright + bright, -8, -4),
+            ('geometric', grey + bright, -6, -2),
+            ('sparse', black + grey, -4, 0),
+            ('black', black + black, -2, 2)
+        )
+
+        for name, pixels, low, high in cases:
+            with self.subTest(case=name):
+                image_in = self.get_tmp_image_path('EXP', '.hdr')
+                image_in.write_bytes(
+                    b'#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X 2\n'
+                    + pixels)
+                image_out = self.get_tmp_image_path('EXP', '.ktx')
+                cmd = [self.binary, '-th', image_in, image_out,
+                       '4x4', '-fastest', '-j', '1']
+                stdout = self.exec(cmd)
+                ranges = re.findall(
+                    r'm(?:PSNR|SSIM) \(RGB\):.*'
+                    r'\(fstops ([+-]\d+) to ([+-]\d+)\)', stdout)
+                expected = (f'{low:+d}', f'{high:+d}')
+                self.assertEqual(ranges, [expected, expected])
+                decoded = image_out.read_bytes()
+
+                # An explicit historical range must bypass automatic selection
+                stdout = self.exec(cmd + ['-mpsnr', '-10', '10'])
+                ranges = re.findall(
+                    r'm(?:PSNR|SSIM) \(RGB\):.*'
+                    r'\(fstops ([+-]\d+) to ([+-]\d+)\)', stdout)
+                self.assertEqual(ranges, [('-10', '+10'), ('-10', '+10')])
+                self.assertEqual(image_out.read_bytes(), decoded)
+
     def test_valid_2d_block_sizes(self) -> None:
         '''
         Test all valid block sizes are accepted (2D images).

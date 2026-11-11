@@ -306,6 +306,11 @@ ADVANCED COMPRESSION
         Set this option for an HDR texture to set the low and high f-stop
         values for the mPSNR and mSSIM error metrics.
 
+        By default, both metrics average five exposures centered on the
+        nearest whole f-stop mapping the original image's geometric mean
+        positive Rec. 709 luminance to 18% grey, covering +/-2 stops.
+        This option overrides the automatic range.
+
         This option does not impact the compressed image quality, but
         changes how these error metrics are computed in test mode.
 

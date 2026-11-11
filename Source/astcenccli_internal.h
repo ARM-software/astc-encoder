@@ -86,6 +86,9 @@ struct cli_config_options
 	bool diagnostic_images;
 #endif
 
+	/** @brief @c true if HDR exposures are selected from the original image. */
+	bool is_hdr_fstop_auto;
+
 	/** @brief The low exposure fstop for error computation. */
 	int low_fstop;
 
@@ -362,16 +365,18 @@ void astcenc_print_longhelp();
 /**
  * @brief Compute error metrics comparing two images.
  *
- * @param is_hdr             True if HDR metrics should be computed.
- * @param is_normal_map      True if normal map metrics should be computed.
- * @param input_components   The number of input color components.
- * @param img1               The original image.
- * @param img2               The compressed image.
- * @param fstop_lo           The low exposure fstop (HDR only).
- * @param fstop_hi           The high exposure fstop (HDR only).
+ * @param is_hdr              @c true if HDR metrics should be computed.
+ * @param is_hdr_fstop_auto   @c true to auto-select HDR exposures from the original image.
+ * @param is_normal_map       @c true if normal map metrics should be computed.
+ * @param input_components    The number of input color components.
+ * @param img1                The original image.
+ * @param img2                The compressed image.
+ * @param fstop_lo            The low exposure fstop (HDR only).
+ * @param fstop_hi            The high exposure fstop (HDR only).
  */
 void compute_error_metrics(
 	bool is_hdr,
+	bool is_hdr_fstop_auto,
 	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,

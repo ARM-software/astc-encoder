@@ -21,6 +21,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 
 #include "astcenccli_internal.h"
@@ -49,6 +50,123 @@ struct ssim_stats
 	/** @brief Mean SSIM of the selected LDR components, including alpha. */
 	double rgba { 0.0 };
 };
+
+/**
+ * @brief Accumulate positive log luminance for an HDR exposure estimate.
+ *
+ * @param         color               The linear RGBA color.
+ * @param[in,out] log_luminance_sum   The accumulated log2 luminance.
+ * @param[in,out] luminance_count     The number of positive luminance samples.
+ */
+static void accumulate_hdr_luminance(
+	vfloat4 color,
+	double& log_luminance_sum,
+	size_t& luminance_count
+) {
+	// Ignore alpha and black texels when accumulating the geometric mean
+	vfloat4 luminance_weights(0.2126f, 0.7152f, 0.0722f, 0.0f);
+	float luminance = dot3_s(color, luminance_weights);
+	if (luminance > 0.0f)
+	{
+		log_luminance_sum += std::log2(static_cast<double>(luminance));
+		luminance_count++;
+	}
+}
+
+/**
+ * @brief Select an HDR metric exposure using the original image's geometric mean luminance.
+ *
+ * @param img   The original image, including any crop view.
+ *
+ * @return The nearest whole fstop mapping the geometric mean to 18% grey, clamped to [-123, 123],
+ *         or zero for black images.
+ */
+static int compute_hdr_exposure(
+	const astcenc_image* img
+) {
+	// Average log luminance in a fixed order; exclude black texels and alpha
+	double log_luminance_sum = 0.0;
+	size_t luminance_count = 0;
+
+	// Select the source format outside the loops and respect cropped row strides
+	if (img->data_type == ASTCENC_TYPE_U8)
+	{
+		size_t stride = img->row_stride;
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		for (size_t z = 0; z < img->dim_z; z++)
+		{
+			const uint8_t* data = static_cast<const uint8_t*>(img->data[z]);
+			for (size_t y = 0; y < img->dim_y; y++)
+			{
+				for (size_t x = 0; x < img->dim_x; x++)
+				{
+					const uint8_t* texel = data + y * stride + 4 * x;
+					vfloat4 color = vfloat4(texel[0], texel[1], texel[2], texel[3]) / 255.0f;
+					accumulate_hdr_luminance(color, log_luminance_sum, luminance_count);
+				}
+			}
+		}
+	}
+	else if (img->data_type == ASTCENC_TYPE_F16)
+	{
+		size_t stride = img->row_stride / sizeof(uint16_t);
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		for (size_t z = 0; z < img->dim_z; z++)
+		{
+			const uint16_t* data = static_cast<const uint16_t*>(img->data[z]);
+			for (size_t y = 0; y < img->dim_y; y++)
+			{
+				for (size_t x = 0; x < img->dim_x; x++)
+				{
+					const uint16_t* texel = data + y * stride + 4 * x;
+					vfloat4 color = float16_to_float(vint4(texel[0], texel[1], texel[2], texel[3]));
+					color = clamp(0.0f, 65504.0f, color);
+					accumulate_hdr_luminance(color, log_luminance_sum, luminance_count);
+				}
+			}
+		}
+	}
+	else
+	{
+		assert(img->data_type == ASTCENC_TYPE_F32);
+		size_t stride = img->row_stride / sizeof(float);
+		if (stride == 0)
+		{
+			stride = img->dim_x * 4;
+		}
+
+		for (size_t z = 0; z < img->dim_z; z++)
+		{
+			const float* data = static_cast<const float*>(img->data[z]);
+			for (size_t y = 0; y < img->dim_y; y++)
+			{
+				for (size_t x = 0; x < img->dim_x; x++)
+				{
+					const float* texel = data + y * stride + 4 * x;
+					vfloat4 color = clamp(0.0f, 65504.0f, vfloat4(texel));
+					accumulate_hdr_luminance(color, log_luminance_sum, luminance_count);
+				}
+			}
+		}
+	}
+
+	// Keep a neutral exposure for black images and room for the surrounding two stops
+	if (luminance_count == 0)
+	{
+		return 0;
+	}
+
+	double fstop = std::round(std::log2(0.18) - log_luminance_sum / luminance_count);
+	return static_cast<int>(astc::clamp(fstop, -123.0, 123.0));
+}
 
 /**
  * @brief Incremental addition operator for error accumulators.
@@ -446,8 +564,6 @@ static ssim_stats compute_ssim_stats(
 
 	if (is_hdr)
 	{
-		// TODO: Existing fstop default values are silly - add an auto-exposure and support
-		// +-2 stops either side - but still let users override on command line
 		ssim_lo = fstop_lo;
 		ssim_hi = fstop_hi;
 	}
@@ -495,6 +611,7 @@ static ssim_stats compute_ssim_stats(
 /* See header for documentation */
 void compute_error_metrics(
 	bool is_hdr,
+	bool is_hdr_fstop_auto,
 	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,
@@ -502,6 +619,14 @@ void compute_error_metrics(
 	int fstop_lo,
 	int fstop_hi
 ) {
+	// Use one reference-derived exposure range for both metrics and both images
+	if (is_hdr && is_hdr_fstop_auto)
+	{
+		int fstop = compute_hdr_exposure(img1);
+		fstop_lo = fstop - 2;
+		fstop_hi = fstop + 2;
+	}
+
 	static const int componentmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
 	int component_mask = componentmasks[input_components];
 
