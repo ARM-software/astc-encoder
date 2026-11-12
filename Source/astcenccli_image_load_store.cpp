@@ -1846,8 +1846,8 @@ static astcenc_image* load_dds_uncompressed_image(
 		#define DXGI_FORMAT_R16_FLOAT       54
 		#define DXGI_FORMAT_R16_UNORM       56
 		#define DXGI_FORMAT_R8_UNORM        61
-		#define DXGI_FORMAT_B8G8R8A8_UNORM  86
-		#define DXGI_FORMAT_B8G8R8X8_UNORM  87
+		#define DXGI_FORMAT_B8G8R8A8_UNORM  87
+		#define DXGI_FORMAT_B8G8R8X8_UNORM  88
 
 		struct dxgi_params
 		{
