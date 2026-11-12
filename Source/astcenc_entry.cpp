@@ -1174,6 +1174,12 @@ astcenc_error astcenc_compress_image(
 	size_t block_y = ctx->config.block_y;
 	size_t block_z = ctx->config.block_z;
 
+	// Volumetric images require a three-dimensional block size
+	if ((dim_z > 1) && (block_z == 1))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
 	size_t blocks_x = astc::get_block_count_safe(dim_x, block_x);
 	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
 	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
@@ -1321,6 +1327,12 @@ astcenc_error astcenc_decompress_image(
 	size_t block_x = ctx->config.block_x;
 	size_t block_y = ctx->config.block_y;
 	size_t block_z = ctx->config.block_z;
+
+	// Volumetric images require a three-dimensional block size
+	if ((dim_z > 1) && (block_z == 1))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
 
 	size_t blocks_x = astc::get_block_count_safe(dim_x, block_x);
 	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
