@@ -1573,9 +1573,7 @@ void compute_error_squared_rgb(
 /**
  * @brief Estimate partition errors while retaining candidate data in wide vectors.
  *
- * All candidates have the same partition count. Packed block texels are shared
- * by all partition searches for the block. Error accumulation retains four
- * ordered texel lanes per candidate.
+ * All candidates have the same partition count.
  *
  * @param      candidates           The ASTCENC_SIMD_WIDTH / 4 partition candidates.
  * @param      blk                  The source image block.
@@ -1584,6 +1582,25 @@ void compute_error_squared_rgb(
  * @param[out] samec_errors         The same-chroma-line errors for each candidate.
  */
 void compute_partition_errors_rgb_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors);
+
+/**
+ * @brief Estimate partition errors for grayscale RGB with alpha in candidate quads.
+ *
+ * All candidates have the same partition count. RGB components must be identical;
+ * channel weights may differ.
+ *
+ * @param      candidates           The ASTCENC_SIMD_WIDTH / 4 partition candidates.
+ * @param      blk                  The source grayscale RGB image block with alpha.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+void compute_partition_errors_rgba_grayscale_batch(
 	const partition_info* const* candidates,
 	const image_block& blk,
 	float weight_imprecision,

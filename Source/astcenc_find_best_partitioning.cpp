@@ -623,6 +623,47 @@ unsigned int find_best_partition_candidates(
 		samec_best_errors[i] = ERROR_CALC_DEFAULT;
 	}
 
+#if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+
+	if (blk.grayscale && uses_alpha)
+	{
+		constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
+
+		unsigned int padded_limit = (partition_search_limit + batch_size - 1) & ~(batch_size - 1);
+		for (unsigned int i = partition_search_limit; i < padded_limit; i++)
+		{
+			partition_sequence[i] = partition_sequence[partition_search_limit - 1];
+		}
+
+		for (unsigned int i = 0; i < partition_search_limit; i += batch_size)
+		{
+			const partition_info* candidates[batch_size];
+			for (unsigned int c = 0; c < batch_size; c++)
+			{
+				candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
+			}
+
+			float uncor_errors[batch_size];
+			float samec_errors[batch_size];
+			compute_partition_errors_rgba_grayscale_batch(candidates, blk, weight_imprecision_estim,
+			                                              uncor_errors, samec_errors);
+
+			// Keep candidate insertion order and exclude padded results from the rankings
+			unsigned int active_count = astc::min(batch_size, partition_search_limit - i);
+			for (unsigned int c = 0; c < active_count; c++)
+			{
+				unsigned int partition = partition_sequence[i + c];
+				insert_result(requested_candidates, uncor_errors[c], partition,
+				              uncor_best_errors, uncor_best_partitions);
+				insert_result(requested_candidates, samec_errors[c], partition,
+				              samec_best_errors, samec_best_partitions);
+			}
+		}
+	}
+	else
+
+#endif
+
 	if (uses_alpha)
 	{
 		for (unsigned int i = 0; i < partition_search_limit; i++)
