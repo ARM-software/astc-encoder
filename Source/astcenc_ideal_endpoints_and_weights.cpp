@@ -1391,10 +1391,8 @@ void recompute_ideal_colors_1plane(
 
 		vfloat4 color_vec_y = vfloat4::zero();
 
-		vfloat4 scale_vec = vfloat4::zero();
-
 		vfloat4 color_weight = blk.channel_weight;
-		float ls_weight = hadd_rgb_s(color_weight);
+		float ls_weight = dot3_s(scale_dir * scale_dir, color_weight);
 
 		for (unsigned int j = 0; j < texel_count; j++)
 		{
@@ -1403,7 +1401,6 @@ void recompute_ideal_colors_1plane(
 
 			float idx0 = undec_weight_ref[tix];
 
-			float om_idx0 = 1.0f - idx0;
 			wmin1 = astc::min(idx0, wmin1);
 			wmax1 = astc::max(idx0, wmax1);
 
@@ -1421,9 +1418,6 @@ void recompute_ideal_colors_1plane(
 			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y += cwiprod;
-
-			// Accumulate the right-hand side of the RGB-scale normal equations
-			scale_vec += vfloat2(om_idx0, idx0) * (scale * ls_weight);
 		}
 
 		// For c = (1-w)*ep0 + w*ep1, form the normal-equation matrix terms
@@ -1440,6 +1434,9 @@ void recompute_ideal_colors_1plane(
 		// The color right-hand sides are sum(w*c) and sum((1-w)*c)
 		color_vec_y = color_vec_y * color_weight;
 		vfloat4 color_vec_x = rgba_sum - color_vec_y;
+
+		// Fit shared RGB magnitudes using the channel-weighted color sums
+		vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
 
 		// Initialize RGB-scale endpoints from the observed projected RGB range
 		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
@@ -1655,13 +1652,10 @@ void recompute_ideal_colors_2planes(
 	vfloat4 color_vec_x = vfloat4::zero();
 	vfloat4 color_vec_y = vfloat4::zero();
 
-	vfloat4 scale_vec = vfloat4::zero();
-
 	vfloat4 weight_weight_sum = vfloat4(1e-17f);
 
 	vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 	vfloat4 color_weight = blk.channel_weight;
-	float ls_weight = hadd_rgb_s(color_weight);
 
 	for (unsigned int j = 0; j < texel_count; j++)
 	{
@@ -1699,14 +1693,12 @@ void recompute_ideal_colors_2planes(
 		color_vec_y += cwiprod;
 		color_vec_x += cwprod - cwiprod;
 
-		scale_vec += vfloat2(om_idx0, idx0) * (ls_weight * scale);
 		weight_weight_sum += color_idx;
 	}
 
 	vfloat4 left1_sum   = vfloat4(left1_sum_s) * color_weight;
 	vfloat4 middle1_sum = vfloat4(middle1_sum_s) * color_weight;
 	vfloat4 right1_sum  = vfloat4(right1_sum_s) * color_weight;
-	vfloat4 lmrs_sum    = vfloat3(left1_sum_s, middle1_sum_s, right1_sum_s) * ls_weight;
 
 	vfloat4 left2_sum   = vfloat4(left2_sum_s) * color_weight;
 	vfloat4 middle2_sum = vfloat4(middle2_sum_s) * color_weight;
@@ -1714,6 +1706,16 @@ void recompute_ideal_colors_2planes(
 
 	color_vec_x = color_vec_x * color_weight;
 	color_vec_y = color_vec_y * color_weight;
+
+	// Fit shared RGB magnitudes using each channel's weight plane and error weight
+	vfloat4 dir_squared = scale_dir * scale_dir;
+	vfloat4 left_sum = select(left1_sum, left2_sum, p2_mask);
+	vfloat4 middle_sum = select(middle1_sum, middle2_sum, p2_mask);
+	vfloat4 right_sum = select(right1_sum, right2_sum, p2_mask);
+	vfloat4 lmrs_sum = vfloat3(dot3_s(dir_squared, left_sum),
+	                           dot3_s(dir_squared, middle_sum),
+	                           dot3_s(dir_squared, right_sum));
+	vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
 
 	// Initialize the luminance and scale vectors with a reasonable default
 	float scalediv = scale_min / astc::max(scale_max, 1e-10f);
@@ -1735,7 +1737,10 @@ void recompute_ideal_colors_2planes(
 		ep.endpt0[0] = select(ep.endpt0[0], avg, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], avg, full_mask);
 
-		rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
+		if (plane2_component == 3)
+		{
+			rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
+		}
 	}
 	else
 	{
@@ -1743,22 +1748,12 @@ void recompute_ideal_colors_2planes(
 		vfloat4 color_det1 = (left1_sum * right1_sum) - (middle1_sum * middle1_sum);
 		vfloat4 color_rdet1 = 1.0f / color_det1;
 
-		float ls_det1  = (lmrs_sum.lane<0>() * lmrs_sum.lane<2>()) - (lmrs_sum.lane<1>() * lmrs_sum.lane<1>());
-		float ls_rdet1 = 1.0f / ls_det1;
-
 		vfloat4 color_mss1 = (left1_sum * left1_sum)
 		                   + (2.0f * middle1_sum * middle1_sum)
 		                   + (right1_sum * right1_sum);
 
-		float ls_mss1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<0>())
-		              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
-		              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
-
 		vfloat4 ep0 = (right1_sum * color_vec_x - middle1_sum * color_vec_y) * color_rdet1;
 		vfloat4 ep1 = (left1_sum * color_vec_y - middle1_sum * color_vec_x) * color_rdet1;
-
-		float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>() - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
-		float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>() - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
 
 		vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 		vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
@@ -1767,13 +1762,6 @@ void recompute_ideal_colors_2planes(
 
 		ep.endpt0[0] = select(ep.endpt0[0], ep0, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
-
-		if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
-		{
-			float scalediv2 = scale_ep0 / scale_ep1;
-			vfloat4 sdsm = scale_dir * scale_ep1;
-			rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
-		}
 	}
 
 	if (wmin2 >= wmax2 * 0.999f)
@@ -1806,6 +1794,29 @@ void recompute_ideal_colors_2planes(
 
 		ep.endpt0[0] = select(ep.endpt0[0], ep0, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
+	}
+
+	// A varying RGB plane can constrain the scale even when the other plane is constant
+	if ((plane2_component != 3) || (wmin1 < wmax1 * 0.999f))
+	{
+		float ls_det = lmrs_sum.lane<0>() * lmrs_sum.lane<2>() - lmrs_sum.lane<1>() * lmrs_sum.lane<1>();
+		float ls_rdet = 1.0f / ls_det;
+		float ls_mss = lmrs_sum.lane<0>() * lmrs_sum.lane<0>()
+		             + 2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>()
+		             + lmrs_sum.lane<2>() * lmrs_sum.lane<2>();
+
+		float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
+		                  - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet;
+		float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>()
+		                  - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet;
+
+		if ((fabsf(ls_det) > ls_mss * 1e-4f) && (scale_ep0 == scale_ep0) &&
+		    (scale_ep1 == scale_ep1) && (scale_ep0 < scale_ep1))
+		{
+			float scalediv2 = scale_ep0 / scale_ep1;
+			vfloat4 sdsm = scale_dir * scale_ep1;
+			rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+		}
 	}
 
 	// Calculations specific to mode #7, the HDR RGB-scale mode - skip if known LDR
