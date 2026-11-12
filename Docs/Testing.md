@@ -115,6 +115,10 @@ python3 ./Test/astc_test_image.py --encoder ref-5.7-avx2 --reference rebuild ...
 some time to complete, especially if your command line enables many test sets,
 high quality levels, or uses many repeats to improve result stability.
 
+Add `--quality-update` to update existing CSV records only when their PSNR
+changes. Records with unchanged PSNR are not updated to make it easier to
+review impact of changes in PRs.
+
 **WARNING:** This may take some hours to complete, and it is best done when the
 test suite gets exclusive use of the machine to avoid other processing slowing
 down the compression and disturbing the performance data. It is recommended to

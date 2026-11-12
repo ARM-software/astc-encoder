@@ -205,6 +205,47 @@ class ResultSet:
             for record in self.records:
                 self._save_record(writer, record)
 
+    def save_quality_changes(self, file_path: Path) -> None:
+        '''
+        Update a CSV only for new records or changed PSNR values.
+
+        Compare PSNR at the four decimal places stored in the CSV. Preserve
+        existing records, including timing and SSIM, when PSNR is unchanged.
+        Retain untested records, and leave unchanged files untouched.
+
+        Args:
+            file_path: The output file path.
+        '''
+        if not file_path.exists():
+            self.save_to_file(file_path)
+            return
+
+        existing = ResultSet(self.test_set_name)
+        existing.load_from_file(file_path)
+        indices = {
+            (record.block_size, record.name): index
+            for index, record in enumerate(existing.records)
+        }
+
+        is_changed = False
+        for record in self.records:
+            key = (record.block_size, record.name)
+            index = indices.get(key)
+            if index is None:
+                indices[key] = len(existing.records)
+                existing.add_record(record)
+            else:
+                previous = existing.records[index]
+                if f'{previous.psnr:0.4f}' == f'{record.psnr:0.4f}':
+                    continue
+
+                existing.records[index] = record
+
+            is_changed = True
+
+        if is_changed:
+            existing.save_to_file(file_path)
+
     @staticmethod
     def _save_header(writer) -> None:
         '''

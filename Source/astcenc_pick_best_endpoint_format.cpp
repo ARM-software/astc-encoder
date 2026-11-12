@@ -555,16 +555,17 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			float base_quant_error = baseline_quant_error[i - QUANT_6] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
 			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error * 2.0f;
-			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
+
+			// RGB uses the same endpoint encoding with or without explicit alpha
+			float hdr_rgb_error = (rgb_quantization_error * mode11mult) + rgb_range_error;
 
 			// Eight integers support HDR RGB with HDR or LDR alpha
-
-			float full_hdr_rgba_error = rgba_quantization_error + rgb_range_error + alpha_range_error;
+			float full_hdr_rgba_error = hdr_rgb_error + alpha_quantization_error + alpha_range_error;
 			best_error[i][3] = full_hdr_rgba_error;
 			format_of_choice[i][3] = static_cast<uint8_t>(encode_hdr_alpha ? FMT_HDR_RGBA : FMT_HDR_RGB_LDR_ALPHA);
 
 			// Six integers support HDR RGB
-			float full_hdr_rgb_error = (rgb_quantization_error * mode11mult) + rgb_range_error + eci.alpha_drop_error;
+			float full_hdr_rgb_error = hdr_rgb_error + eci.alpha_drop_error;
 			best_error[i][2] = full_hdr_rgb_error;
 			format_of_choice[i][2] = FMT_HDR_RGB;
 

@@ -1,5 +1,5 @@
 Image Set,Block Size,Name,PSNR,SSIM,Total Time,Coding Time,Coding Rate
-Small,4x4,hdr-rgb-00.hdr,31.2598,0.9667,0.0434,0.0044,14.9317
+Small,4x4,hdr-rgb-00.hdr,31.2819,0.9669,0.0599,0.0125,5.2496
 Small,4x4,hdr-rgb-r16.ktx,999.0000,1.0000,0.0014,0.0004,0.6480
 Small,4x4,hdr-rgb-r32.ktx,999.0000,1.0000,0.0014,0.0004,0.7036
 Small,4x4,hdr-rgb-rg16.ktx,999.0000,1.0000,0.0014,0.0004,0.7231
