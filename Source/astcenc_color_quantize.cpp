@@ -1013,6 +1013,9 @@ static void quantize_hdr_rgbo(
 		// Quantize and unquantize R
 		int r_intval = astc::flt2int_rtn(r_base * mode_scale);
 
+		// Saturate after rounding so the base still fits in the mode's field
+		r_intval = astc::min(r_intval, (1 << mode_bits[mode][0]) - 1);
+
 		int r_lowbits = r_intval & 0x3f;
 
 		r_lowbits |= (mode_enc & 3) << 6;
@@ -1366,8 +1369,11 @@ static void quantize_hdr_rgb(
 		int c_intcutoff = 1 << mode_bits[mode][2];
 		int d_intcutoff = 1 << (mode_bits[mode][3] - 1);
 
-		// Quantize and unquantize A, with the assumption that its high bits can be handled safely
+		// Quantize and unquantize A
 		int a_intval = astc::flt2int_rtn(a_base * mode_scale);
+
+		// Saturate after rounding so the base still fits in the mode's field
+		a_intval = astc::min(a_intval, (1 << mode_bits[mode][0]) - 1);
 		int a_lowbits = a_intval & 0xFF;
 
 		int a_quantval = quant_color(quant_level, a_lowbits);
@@ -1871,6 +1877,11 @@ static void quantize_hdr_alpha(
 	// Could not encode any of the delta modes; instead encode a flat value
 	val0 = (ialpha0 + 256) >> 9;
 	val1 = (ialpha1 + 256) >> 9;
+
+	// Saturate after rounding so the values still fit in the mode's field
+	val0 = astc::min(val0, 127);
+	val1 = astc::min(val1, 127);
+
 	v6 = val0 | 0x80;
 	v7 = val1 | 0x80;
 
