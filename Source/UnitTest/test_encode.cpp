@@ -294,7 +294,8 @@ TEST(compress, large_dimensions)
 	astcenc_error status;
 	astcenc_config config;
 	astcenc_context* context;
-	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	// Use 3D blocks so every axis reaches the buffer capacity check
+	astcenc_config_init(ASTCENC_PRF_LDR, 3, 3, 3, ASTCENC_PRE_MEDIUM, 0, &config);
 	status = astcenc_context_alloc(&config, 1, &context, nullptr);
 	ASSERT_EQ(status, ASTCENC_SUCCESS);
 
