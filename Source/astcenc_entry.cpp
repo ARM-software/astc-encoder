@@ -548,8 +548,8 @@ astcenc_error astcenc_config_init(
 	// Process the performance quality level or preset; note that this must be done before we
 	// process any additional settings, such as color profile and flags, which may replace some of
 	// these settings with more use case tuned values
-	if (quality < ASTCENC_PRE_FASTEST ||
-	    quality > ASTCENC_PRE_EXHAUSTIVE)
+	// Require an ordered value so NaNs cannot reach the preset lookup
+	if (!((quality >= ASTCENC_PRE_FASTEST) && (quality <= ASTCENC_PRE_EXHAUSTIVE)))
 	{
 		return ASTCENC_ERR_BAD_QUALITY;
 	}
