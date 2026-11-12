@@ -561,12 +561,11 @@ static float compress_symbolic_block_for_partition_1plane(
 		    dec_weights_ideal + i * BLOCK_MAX_WEIGHTS);
 	}
 
-	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
-	// weight pair, compute the smallest weight that will result in a color value greater than 1
+	// Find the smallest weight that exceeds the color range; endpoints use the 0-65535 scale
 	vfloat4 min_ep(10.0f);
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
-		vfloat4 ep = (vfloat4(1.0f) - ei.ep.endpt0[i]) / (ei.ep.endpt1[i] - ei.ep.endpt0[i]);
+		vfloat4 ep = (vfloat4(65535.0f) - ei.ep.endpt0[i]) / (ei.ep.endpt1[i] - ei.ep.endpt0[i]);
 
 		vmask4 use_ep = (ep > vfloat4(0.5f)) & (ep < min_ep);
 		min_ep = select(min_ep, ep, use_ep);
@@ -923,16 +922,15 @@ static float compress_symbolic_block_for_partition_2planes(
 		    dec_weights_ideal + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
 	}
 
-	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
-	// weight pair, compute the smallest weight that will result in a color value greater than 1
+	// Find the smallest weight that exceeds the color range; endpoints use the 0-65535 scale
 	vfloat4 min_ep1(10.0f);
 	vfloat4 min_ep2(10.0f);
 
-	vfloat4 ep1 = (vfloat4(1.0f) - ei1.ep.endpt0[0]) / (ei1.ep.endpt1[0] - ei1.ep.endpt0[0]);
+	vfloat4 ep1 = (vfloat4(65535.0f) - ei1.ep.endpt0[0]) / (ei1.ep.endpt1[0] - ei1.ep.endpt0[0]);
 	vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
 	min_ep1 = select(min_ep1, ep1, use_ep1);
 
-	vfloat4 ep2 = (vfloat4(1.0f) - ei2.ep.endpt0[0]) / (ei2.ep.endpt1[0] - ei2.ep.endpt0[0]);
+	vfloat4 ep2 = (vfloat4(65535.0f) - ei2.ep.endpt0[0]) / (ei2.ep.endpt1[0] - ei2.ep.endpt0[0]);
 	vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
 	min_ep2 = select(min_ep2, ep2, use_ep2);
 
