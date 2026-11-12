@@ -1349,6 +1349,9 @@ static void quantize_hdr_rgb(
 		16.0f
 	};
 
+	uint8_t delta_output[6];
+	bool is_delta_valid = false;
+
 	// Try modes in decreasing precision order
 	for (int mode = 7; mode >= 0; mode--)
 	{
@@ -1573,7 +1576,20 @@ static void quantize_hdr_rgb(
 		output[3] = b1_quantval;
 		output[4] = d0_quantval;
 		output[5] = d1_quantval;
-		return;
+
+		// Clamping negative C can retain more precision than the direct encoding
+		if (c_base >= 0.0f)
+		{
+			return;
+		}
+
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			delta_output[i] = output[i];
+		}
+
+		is_delta_valid = true;
+		break;
 	}
 
 	// Fall back to flat 8-bit red/green and 7-bit blue, with accuracy comparable to LDR 4:4:3. This
@@ -1602,6 +1618,34 @@ static void quantize_hdr_rgb(
 		int idx = astc::flt2int_rtn(vals[i] * 1.0f / 512.0f) + 128;
 		quantize_and_unquantize_retain_top_two_bits(
 		    quant_level, static_cast<uint8_t>(idx), output[i]);
+	}
+
+	// For negative C, retain the clamped delta encoding if it beats the direct fallback
+	if (is_delta_valid)
+	{
+		bool rgb_hdr;
+		bool alpha_hdr;
+		vint4 delta0, delta1, direct0, direct1;
+		unpack_color_endpoints(ASTCENC_PRF_HDR, FMT_HDR_RGB, delta_output,
+		                       rgb_hdr, alpha_hdr, delta0, delta1);
+		unpack_color_endpoints(ASTCENC_PRF_HDR, FMT_HDR_RGB, output,
+		                       rgb_hdr, alpha_hdr, direct0, direct1);
+
+		vfloat4 d0 = color0_bak - int_to_float(delta0);
+		vfloat4 d1 = color1_bak - int_to_float(delta1);
+		float delta_error = hadd_rgb_s(d0 * d0 + d1 * d1);
+
+		d0 = color0_bak - int_to_float(direct0);
+		d1 = color1_bak - int_to_float(direct1);
+		float direct_error = hadd_rgb_s(d0 * d0 + d1 * d1);
+
+		if (delta_error <= direct_error)
+		{
+			for (unsigned int i = 0; i < 6; i++)
+			{
+				output[i] = delta_output[i];
+			}
+		}
 	}
 
 	return;
