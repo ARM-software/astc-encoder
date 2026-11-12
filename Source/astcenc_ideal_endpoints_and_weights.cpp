@@ -373,7 +373,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	const float* data_vb = nullptr;
 	if (omitted_component == 0)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>());
+		error_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>());
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
