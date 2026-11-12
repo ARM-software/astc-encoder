@@ -903,8 +903,8 @@ static void compress_image(
 		blk.active_channel_mask = 0xF;
 	}
 
-	// Populate the block channel weights
-	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
+	// Preserve the configured weights before applying per-block adjustments
+	const vfloat4 channel_weight(ctx.config.cw_r_weight,
 	                             ctx.config.cw_g_weight,
 	                             ctx.config.cw_b_weight,
 	                             ctx.config.cw_a_weight);
@@ -985,6 +985,7 @@ static void compress_image(
 			}
 
 			// Fetch the full block for compression
+			blk.channel_weight = channel_weight;
 			if (use_full_block)
 			{
 				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
@@ -1001,10 +1002,7 @@ static void compress_image(
 					// Retain at least 1% weight for dim channels
 					vfloat4 weights = max(geometric_mean / maximum, vfloat4(0.01f));
 					weights.set_lane<3>(1.0f);
-					blk.channel_weight = weights * vfloat4(ctx.config.cw_r_weight,
-					                                       ctx.config.cw_g_weight,
-					                                       ctx.config.cw_b_weight,
-					                                       ctx.config.cw_a_weight);
+					blk.channel_weight = weights * blk.channel_weight;
 				}
 
 				// Scale RGB error contribution by the maximum alpha in the block. This encourages
@@ -1012,10 +1010,8 @@ static void compress_image(
 				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 				{
 					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
-					blk.channel_weight = vfloat4(ctx.config.cw_r_weight * alpha_scale,
-					                             ctx.config.cw_g_weight * alpha_scale,
-					                             ctx.config.cw_b_weight * alpha_scale,
-					                             ctx.config.cw_a_weight);
+					blk.channel_weight = blk.channel_weight
+					                   * vfloat4(alpha_scale, alpha_scale, alpha_scale, 1.0f);
 				}
 			}
 			// Apply alpha scale RDO - substitute constant color block
