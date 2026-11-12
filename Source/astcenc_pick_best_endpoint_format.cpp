@@ -40,6 +40,9 @@
  *
  * Apart from these effects, we assume the error is proportional to the quantization step size.
  *
+ * Combined errors saturate only at ERROR_CALC_DEFAULT so unavailable formats remain unavailable
+ * and large finite errors retain their ordering.
+ *
  * ASTC permits at most 18 encoded endpoint integers per block, independent of the available bit
  * budget. We count these as at most nine integer pairs; each pair is two scalar integers, not two
  * complete endpoint colors. Endpoint class c (0 to 3) use c + 1 pairs.
@@ -785,7 +788,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 
 				int intcnt = i + j;
 				float error01 = error0 + best_error[1][quant][j];
-				error01 = astc::min(error01, 1e10f);
+				error01 = astc::min(error01, ERROR_CALC_DEFAULT);
 				if (error01 <= best_combined_error[quant][intcnt])
 				{
 					best_combined_error[quant][intcnt] = error01;
@@ -814,7 +817,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 
 				int intcnt = i + j;
 				float error01 = error0 + best_error[1][quant][j];
-				error01 = astc::min(error01, 1e10f);
+				error01 = astc::min(error01, ERROR_CALC_DEFAULT);
 				if (error01 <= best_combined_error[quant][intcnt])
 				{
 					best_combined_error[quant][intcnt] = error01;
@@ -837,7 +840,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 			{
 				int intcnt = i + j;
 				float error01 = error0 + best_error[1][quant][j];
-				error01 = astc::min(error01, 1e10f);
+				error01 = astc::min(error01, ERROR_CALC_DEFAULT);
 				if (error01 <= best_combined_error[quant][intcnt])
 				{
 					best_combined_error[quant][intcnt] = error01;
@@ -974,7 +977,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 
 					int intcnt = i + j + k;
 					float error012 = error01 + best_error[2][quant][k];
-					error012 = astc::min(error012, 1e10f);
+					error012 = astc::min(error012, ERROR_CALC_DEFAULT);
 					if (error012 <= best_combined_error[quant][intcnt])
 					{
 						best_combined_error[quant][intcnt] = error012;
@@ -1004,7 +1007,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 				{
 					int intcnt = i + j + k;
 					float error012 = error01 + best_error[2][quant][k];
-					error012 = astc::min(error012, 1e10f);
+					error012 = astc::min(error012, ERROR_CALC_DEFAULT);
 					if (error012 <= best_combined_error[quant][intcnt])
 					{
 						best_combined_error[quant][intcnt] = error012;
@@ -1156,7 +1159,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 						int intcnt = i + j + k + l;
 						float error0123 = error012 + best_error[3][quant][l];
-						error0123 = astc::min(error0123, 1e10f);
+						error0123 = astc::min(error0123, ERROR_CALC_DEFAULT);
 						if (error0123 <= best_combined_error[quant][intcnt])
 						{
 							best_combined_error[quant][intcnt] = error0123;
@@ -1192,7 +1195,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 					{
 						int intcnt = i + j + k + l;
 						float error0123 = error012 + best_error[3][quant][l];
-						error0123 = astc::min(error0123, 1e10f);
+						error0123 = astc::min(error0123, ERROR_CALC_DEFAULT);
 						if (error0123 <= best_combined_error[quant][intcnt])
 						{
 							best_combined_error[quant][intcnt] = error0123;
