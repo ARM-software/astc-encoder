@@ -33,13 +33,21 @@
 /**
  * @brief Validate image storage and resolve the default row stride.
  *
- * @param[in,out] image   The image descriptor.
+ * @param[in,out] image     The image descriptor.
+ * @param         block_z   The configured block depth.
  *
  * @return The texel count, or zero for invalid dimensions, data type, or byte size.
  */
 static size_t validate_image(
-	astcenc_image& image
+	astcenc_image& image,
+	unsigned int block_z
 ) {
+	// Volumetric images require a three-dimensional block size
+	if ((image.dim_z > 1) && (block_z == 1))
+	{
+		return 0;
+	}
+
 	size_t component_size;
 	switch (image.data_type)
 	{
@@ -1140,9 +1148,9 @@ astcenc_error astcenc_compress_image(
 	size_t dim_y = image.dim_y;
 	size_t dim_z = image.dim_z;
 
-	size_t texel_count = validate_image(image);
+	size_t texel_count = validate_image(image, ctx->config.block_z);
 
-	// Image storage must fit in a size_t
+	// Image storage must fit in a size_t and pass other validation
 	if (texel_count == 0)
 	{
 		return ASTCENC_ERR_BAD_PARAM;
@@ -1289,9 +1297,9 @@ astcenc_error astcenc_decompress_image(
 	size_t dim_y = image_out.dim_y;
 	size_t dim_z = image_out.dim_z;
 
-	size_t texel_count = validate_image(image_out);
+	size_t texel_count = validate_image(image_out, ctx->config.block_z);
 
-	// Image storage must fit in a size_t
+	// Image storage must fit in a size_t and pass other validation
 	if (texel_count == 0)
 	{
 		return ASTCENC_ERR_BAD_PARAM;

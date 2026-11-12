@@ -291,6 +291,7 @@ void load_image_block_fast_ldr(
 ) {
 	(void)swz;
 	(void)decode_mode;
+	assert(pos_z == 0);
 
 	size_t size_x = img.dim_x;
 	size_t size_y = img.dim_y;
