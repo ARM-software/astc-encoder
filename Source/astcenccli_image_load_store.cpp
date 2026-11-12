@@ -1196,12 +1196,20 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
 	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
 
+	// KTX imageSize includes all array layers and faces, except for non-array cubemaps
+	size_t bytes_per_mip = bytes_per_image;
+	if (hdr.number_of_array_elements > 0)
+	{
+		bytes_per_mip = astc::mul_safe(bytes_per_mip, hdr.number_of_array_elements, overflow);
+		bytes_per_mip = astc::mul_safe(bytes_per_mip, hdr.number_of_faces, overflow);
+	}
+
 	// Also verify that our output plane allocation does not overflow because
 	// this always uses 4 components which can be more than the input file used
 	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
 	astc::mul_safe(plane_texels, 4, overflow);
 
-	if (overflow || bytes_per_image != specified_bytes_per_image)
+	if (overflow || (bytes_per_mip != specified_bytes_per_image))
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		return nullptr;
@@ -1485,6 +1493,12 @@ static bool store_ktx_uncompressed_image(
 
 	unsigned int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	unsigned int image_components = determine_image_components(img);
+
+	// Preserve luminance and alpha using RGB/RGBA instead of RED/RG channel semantics
+	if (image_components < 3)
+	{
+		image_components += 2;
+	}
 
 	// KTX rows must be padded to four bytes, including the final row
 	bool overflow { false };
