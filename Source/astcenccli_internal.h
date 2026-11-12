@@ -363,20 +363,41 @@ void astcenc_print_shorthelp();
 void astcenc_print_longhelp();
 
 /**
+ * @brief Select an HDR exposure using the original image's geometric mean luminance.
+ *
+ * @param img   The FP16 or FP32 original image, including any crop view.
+ *
+ * @return The nearest whole fstop mapping the geometric mean to 18% grey, clamped to [-10, 10],
+ *         or zero for black images.
+ */
+int compute_hdr_exposure(
+	const astcenc_image* img);
+
+/**
+ * @brief Tone map a nonnegative HDR color component for exposure previews and metrics.
+ *
+ * @param val     The nonnegative color value to tone map.
+ * @param fstop   The exposure fstop, in range [-12, 12].
+ *
+ * @return The mapped color value in [0.0f, 255.0f] range.
+ */
+float tone_map_hdr(
+	float val,
+	int fstop);
+
+/**
  * @brief Compute error metrics comparing two images.
  *
- * @param is_hdr              @c true if HDR metrics should be computed.
- * @param is_hdr_fstop_auto   @c true to auto-select HDR exposures from the original image.
- * @param is_normal_map       @c true if normal map metrics should be computed.
- * @param input_components    The number of input color components.
- * @param img1                The original image.
- * @param img2                The compressed image.
- * @param fstop_lo            The low exposure fstop (HDR only).
- * @param fstop_hi            The high exposure fstop (HDR only).
+ * @param is_hdr             @c true if HDR metrics should be computed.
+ * @param is_normal_map      @c true if normal map metrics should be computed.
+ * @param input_components   The number of input color components.
+ * @param img1               The original image.
+ * @param img2               The compressed image.
+ * @param fstop_lo           The low exposure fstop (HDR only).
+ * @param fstop_hi           The high exposure fstop (HDR only).
  */
 void compute_error_metrics(
 	bool is_hdr,
-	bool is_hdr_fstop_auto,
 	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,

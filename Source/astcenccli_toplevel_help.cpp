@@ -304,7 +304,8 @@ ADVANCED COMPRESSION
 
     -mpsnr <low> <high>
         Set this option for an HDR texture to set the low and high f-stop
-        values for the mPSNR and mSSIM error metrics.
+        values for the mPSNR and mSSIM error metrics and LDR exposure
+        outputs. The supported range is [-12, 12], inclusive.
 
         By default, both metrics average five exposures centered on the
         nearest whole f-stop mapping the original image's geometric mean
@@ -312,7 +313,7 @@ ADVANCED COMPRESSION
         This option overrides the automatic range.
 
         This option does not impact the compressed image quality, but
-        changes how these error metrics are computed in test mode.
+        selects which exposures are evaluated and written in test mode.
 
     Performance-quality tradeoff options
     ------------------------------------
@@ -510,6 +511,13 @@ TEST
     list of supported formats. The output file path and extension must
     specify a valid file for the decompression operation. See the
     DECOMPRESSION FILE FORMATS section for the list of supported formats.
+
+    When the input image is HDR and the output image is LDR, the output name
+    is used as a base for an LDR image at every integer f-stop in the active
+    metric range. For example, out.png produces out_-1.png, out_0.png, and
+    out_+1.png for a range of -1 to +1. RGB uses the metric's exposure
+    scaling and gamma 2.2 tone map; alpha remains linear. Use -mpsnr to
+    override the automatic range.
 
 COMPRESSION FILE FORMATS
 

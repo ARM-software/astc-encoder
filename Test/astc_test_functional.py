@@ -54,6 +54,7 @@ from pathlib import Path
 import re
 import signal
 import string
+import struct
 import subprocess as sp
 import sys
 import tempfile
@@ -643,12 +644,17 @@ class CLIPTest(CLITestBase):
         black = bytes((0, 0, 0, 0))
         grey = bytes((128, 128, 128, 129))  # Linear RGB = 1
         bright = bytes((128, 128, 128, 133))  # Linear RGB = 16
+        very_bright = bytes((128, 128, 128, 144))  # Linear RGB = 32768
+        very_dim = bytes((128, 128, 128, 109))  # Linear RGB = 2^-20
+
         cases = (
             ('grey', grey + grey, -4, 0),
             ('scaled', bright + bright, -8, -4),
             ('geometric', grey + bright, -6, -2),
             ('sparse', black + grey, -4, 0),
-            ('black', black + black, -2, 2)
+            ('black', black + black, -2, 2),
+            ('clamped_low', very_bright + very_bright, -12, -8),
+            ('clamped_high', very_dim + very_dim, 8, 12)
         )
 
         for name, pixels, low, high in cases:
@@ -668,13 +674,123 @@ class CLIPTest(CLITestBase):
                 self.assertEqual(ranges, [expected, expected])
                 decoded = image_out.read_bytes()
 
-                # An explicit historical range must bypass automatic selection
-                stdout = self.exec(cmd + ['-mpsnr', '-10', '10'])
+                # Explicit limits bypass automatic range selection
+                stdout = self.exec(cmd + ['-mpsnr', '-12', '12'])
                 ranges = re.findall(
                     r'm(?:PSNR|SSIM) \(RGB\):.*'
                     r'\(fstops ([+-]\d+) to ([+-]\d+)\)', stdout)
-                self.assertEqual(ranges, [('-10', '+10'), ('-10', '+10')])
+                self.assertEqual(ranges, [('-12', '+12'), ('-12', '+12')])
                 self.assertEqual(image_out.read_bytes(), decoded)
+
+    def test_hdr_ldr_exposures(self) -> None:
+        '''
+        Test exposure names, HDR highlights, linear alpha, and LDR file types.
+        '''
+        src = self.get_tmp_image_path('EXP', '.ktx')
+
+        # Solid blocks isolate exposure mapping from compression error
+        # Highlights exceed 1.0, while alpha stays at 0.5 to check scaling
+        data = numpy.full((4, 8, 4), 0.25, dtype='<f4')
+        data[:, 4:, :3] = 4.0
+        data[:, :, 3] = 0.5
+        header = b'\xabKTX 11\xbb\r\n\x1a\n' + struct.pack(
+            '<13I', 0x04030201, 0x1406, 4, 0x1908, 0x8814, 0x1908,
+            8, 4, 0, 0, 1, 1, 0)
+        payload = struct.pack('<I', data.nbytes) + data.tobytes()
+        src.write_bytes(header + payload)
+
+        # Exposure suffixes show signs only for nonzero f-stops
+        suffixes = ('-3', '-2', '-1', '0', '+1')
+
+        for mode in ('-tl', '-ts', '-th', '-tH'):
+            for ext in ('.png', '.PNG', '.bmp', '.tga'):
+                with self.subTest(mode=mode, extension=ext):
+                    dst = self.get_tmp_image_path('EXP', ext)
+                    args = ['4x4', '-fastest', '-mpsnr', '-3', '1', '-j', '1']
+                    cmd = [self.binary, mode, src, dst] + args
+                    stdout = self.exec(cmd)
+                    self.assertFalse(dst.exists())
+                    expected = {f'{dst.stem}_{s}{ext}' for s in suffixes}
+                    paths = dst.parent.glob(f'{dst.stem}_*{ext}')
+                    actual = {p.name for p in paths}
+                    self.assertEqual(actual, expected)
+
+                    # Check gamma-mapped RGB and unchanged linear alpha
+                    for fstop, suffix in zip(range(-3, 2), suffixes):
+                        exposure = dst.with_name(f'{dst.stem}_{suffix}{ext}')
+                        with Image.open(exposure) as image:
+                            self.assertEqual(image.size, (8, 4))
+                            rgba = image.convert('RGBA')
+                            for x, value in ((0, 0.25), (4, 4.0)):
+                                # LDR compression clips HDR highlights first
+                                if mode in ('-tl', '-ts'):
+                                    value = min(value, 1.0)
+
+                                gamma = (value * 2**fstop)**(1/2.2)
+                                rgb = round(min(gamma, 1) * 255)
+                                pixel = rgba.getpixel((x, 0))
+                                assert isinstance(pixel, tuple)
+                                for chan in pixel[:3]:
+                                    self.assertAlmostEqual(chan, rgb, delta=1)
+
+                                self.assertAlmostEqual(pixel[3], 128, delta=1)
+
+                    # Preview output must preserve floating-point HDR metrics
+                    if (mode in ('-th', '-tH')) and (ext == '.png'):
+                        hdr_out = self.get_tmp_image_path('EXP', '.ktx')
+                        cmd = [self.binary, mode, src, hdr_out] + args
+                        hdr_log = self.exec(cmd)
+                        pattern = r'm(?:PSNR|SSIM) \(RGB\):[^\n]+'
+                        scores = re.findall(pattern, stdout)
+                        hdr_scores = re.findall(pattern, hdr_log)
+                        self.assertEqual(scores, hdr_scores)
+
+    def test_hdr_ldr_container_exposures(self) -> None:
+        '''
+        Test 8-bit DDS, KTX, and default KTX output also write LDR exposures.
+        '''
+        src = self.get_ref_image_path('HDR', 'input', 'A')
+        args = ['4x4', '-fastest', '-j', '1']
+        for mode in ('-tl', '-ts'):
+            for ext in ('.dds', '.ktx', ''):
+                with self.subTest(mode=mode, extension=ext):
+                    dst = Path(self.tmp_dir.name) / ('preview' + ext)
+                    cmd = [self.binary, mode, src, dst] + args
+                    self.exec(cmd + ['-mpsnr', '0', '0'])
+                    self.assertFalse(dst.exists())
+                    exposure = dst.with_name('preview_0' + ext)
+                    self.assertTrue(exposure.is_file())
+                    if not ext:
+                        # The container loader needs an extension
+                        path = self.get_tmp_image_path('EXP', '.ktx')
+                        exposure = exposure.rename(path)
+
+                    # Re-encode to verify the exposure stores LDR image data
+                    ldr_out = self.get_tmp_image_path('LDR', 'decomp')
+                    cmd = [self.binary, '-tl', exposure, ldr_out] + args
+                    stdout = self.exec(cmd)
+                    self.assertNotIn('mPSNR', stdout)
+                    self.assertTrue(ldr_out.is_file())
+
+    def test_hdr_ldr_auto_exposures(self) -> None:
+        '''
+        Test automatic exposure filenames match the HDR metric range.
+        '''
+        src = self.get_tmp_image_path('EXP', '.hdr')
+
+        # Unit grey selects the automatic -4 to 0 exposure range
+        grey = bytes((128, 128, 128, 129))
+        header = b'#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X 2\n'
+        src.write_bytes(header + grey * 2)
+        dst = Path(self.tmp_dir.name) / 'preview.with.dots.png'
+        cmd = [self.binary, '-th', src, dst, '4x4', '-fastest', '-j', '1']
+        stdout = self.exec(cmd)
+        self.assertRegex(stdout, r'mPSNR \(RGB\):.*\(fstops -4 to \+0\)')
+        expected = {f'preview.with.dots_{s}.png'
+                    for s in ('-4', '-3', '-2', '-1', '0')}
+        paths = dst.parent.glob('preview.with.dots*.png')
+        actual = {p.name for p in paths}
+        self.assertEqual(actual, expected)
 
     def test_valid_2d_block_sizes(self) -> None:
         '''
@@ -2471,6 +2587,34 @@ class CLINTest(CLITestBase):
         for args in cases:
             with self.subTest(args=args):
                 self.exec(base + args)
+
+    def test_hdr_ldr_exposure_invalid_range(self) -> None:
+        '''
+        Test unsupported exposure ranges fail before writing preview files.
+        '''
+        src = self.get_ref_image_path('HDR', 'input', 'A')
+        dst = self.get_tmp_image_path('LDR', 'decomp')
+        cmd = [self.binary, '-th', src, dst, '4x4', '-fastest']
+
+        # Invalid limits must fail before writing any exposure files
+        cases = ((-13, 0), (0, 13), (2, 1), (-2147483648, 2147483647))
+        for low, high in cases:
+            with self.subTest(low=low, high=high):
+                args = ['-mpsnr', str(low), str(high), '-j', '1']
+                self.exec(cmd + args)
+
+        self.assertFalse(dst.exists())
+        outputs = list(dst.parent.glob(f'{dst.stem}_*'))
+        self.assertEqual(outputs, [])
+
+    def test_hdr_ldr_exposure_write_error(self) -> None:
+        '''
+        Test a failed exposure write reports an ordinary CLI error.
+        '''
+        image_in = self.get_ref_image_path('HDR', 'input', 'A')
+        image_out = Path(self.tmp_dir.name) / 'missing' / 'preview.png'
+        self.exec([self.binary, '-th', image_in, image_out, '4x4', '-fastest',
+                   '-mpsnr', '0', '0', '-j', '1'])
 
     def test_ch_mpsnr_missing_args(self) -> None:
         '''
