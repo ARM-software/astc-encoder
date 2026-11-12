@@ -1345,13 +1345,17 @@ void compute_partition_errors_rgb_batch(
 	// Reuse the original per-channel texel accumulation and reduction for partition averages
 	vfloat4 averages[batch_size][BLOCK_MAX_PARTITIONS];
 	vfloat4 units[batch_size];
+	vfloat4 channel_weights[batch_size];
+
 	for (unsigned int c = 0; c < batch_size; c++)
 	{
 		compute_partition_averages_rgb(*candidates[c], blk, averages[c]);
 		units[c] = unit3();
+		channel_weights[c] = blk.channel_weight;
 	}
 
 	vfloat safe = pack_quads(units);
+	vfloat channel_weight = pack_quads(channel_weights);
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
@@ -1495,7 +1499,7 @@ void compute_partition_errors_rgb_batch(
 
 		// Defer adding quantization errors until after the texel sums are reduced
 		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
-		vfloat error_weights = countv * vfloat(weight_imprecision);
+		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
 
 		vfloat uncor_vector = bs * length;
 		uncor_quant[p] = sum_rgb_quads((uncor_vector * uncor_vector) * error_weights);
@@ -1541,13 +1545,17 @@ void compute_partition_errors_rgba_grayscale_batch(
 	// Reuse the original per-channel texel accumulation and reduction for partition averages
 	vfloat4 averages[batch_size][BLOCK_MAX_PARTITIONS];
 	vfloat4 units[batch_size];
+	vfloat4 channel_weights[batch_size];
+
 	for (unsigned int c = 0; c < batch_size; c++)
 	{
 		compute_partition_averages_rgba_grayscale(*candidates[c], blk, averages[c]);
 		units[c] = unit4();
+		channel_weights[c] = blk.channel_weight;
 	}
 
 	vfloat safe = pack_quads(units);
+	vfloat channel_weight = pack_quads(channel_weights);
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
@@ -1674,7 +1682,7 @@ void compute_partition_errors_rgba_grayscale_batch(
 
 		// Defer adding quantization errors until after the texel sums are reduced
 		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
-		vfloat error_weights = countv * vfloat(weight_imprecision);
+		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
 
 		vfloat uncor_vector = bs * length;
 		vfloat samec_vector = samec_bs * length;
