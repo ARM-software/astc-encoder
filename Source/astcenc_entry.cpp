@@ -1318,6 +1318,7 @@ astcenc_error astcenc_decompress_image(
 
 	// Only the first thread runs initialization
 	ctxo->manage_decompress.init(block_count, nullptr);
+	status = ASTCENC_SUCCESS;
 
 	// Each thread claims tasks until none remain
 	while (true)
@@ -1344,11 +1345,15 @@ astcenc_error astcenc_decompress_image(
 
 			physical_to_symbolic(*ctx->bsd, bp, scb);
 
-			decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
-			                          x * block_x,
-			                          y * block_y,
-			                          z * block_z,
-			                          scb, blk);
+			bool is_valid = decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
+			                                          x * block_x,
+			                                          y * block_y,
+			                                          z * block_z,
+			                                          scb, blk);
+			if (!is_valid)
+			{
+				status = ASTCENC_ERR_BAD_BLOCK;
+			}
 
 			store_image_block(image_out, blk, *ctx->bsd,
 			                  x * block_x, y * block_y, z * block_z,
@@ -1358,7 +1363,7 @@ astcenc_error astcenc_decompress_image(
 		ctxo->manage_decompress.complete_task_assignment(count);
 	}
 
-	return ASTCENC_SUCCESS;
+	return status;
 }
 
 /* See header for documentation. */
@@ -1519,6 +1524,8 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
 	case ASTCENC_ERR_BAD_DECODE_MODE:
 		return "ASTCENC_ERR_BAD_DECODE_MODE";
+	case ASTCENC_ERR_BAD_BLOCK:
+		return "ASTCENC_ERR_BAD_BLOCK";
 #if defined(ASTCENC_DIAGNOSTICS)
 	case ASTCENC_ERR_DTRACE_FAILURE:
 		return "ASTCENC_ERR_DTRACE_FAILURE";

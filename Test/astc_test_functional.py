@@ -2553,6 +2553,71 @@ class CLINTest(CLITestBase):
 
         self.exec(cmd)
 
+    def test_decompress_invalid_blocks_warning(self) -> None:
+        '''
+        Test invalid blocks warn, return 2, and still write the full image.
+        '''
+        image_in = self.get_image_path('Tiles/invalid.astc')
+
+        for mode in ('-dl', '-ds', '-dh', '-dH'):
+            for threads in (1, 12):
+                with self.subTest(mode=mode, threads=threads):
+                    is_hdr = mode in ('-dh', '-dH')
+                    extension = 'png'
+                    if is_hdr:
+                        extension = 'ktx'
+
+                    image_name = f'{mode}-{threads}.{extension}'
+                    image_out = Path(self.tmp_dir.name) / image_name
+                    cmd = [str(self.binary), mode, str(image_in),
+                           str(image_out), '-j', str(threads)]
+                    result = sp.run(cmd, capture_output=True, text=True,
+                                    check=False)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn('WARNING:', result.stderr)
+                    self.assertNotIn('ERROR:', result.stderr)
+                    if is_hdr:
+                        # Floating-point KTX preserves NaN error texels
+                        self.assertGreater(image_out.stat().st_size, 8 * 8 * 6)
+                    else:
+                        with Image.open(image_out) as image:
+                            self.assertEqual(image.size, (8, 8))
+                            pixels = image.convert('RGBA')
+                            self.assertEqual(pixels.getpixel((0, 0)),
+                                             (255, 0, 255, 255))
+                            self.assertEqual(pixels.getpixel((4, 0)),
+                                             (0, 0, 0, 255))
+                            self.assertEqual(pixels.getpixel((7, 7)),
+                                             (255, 0, 255, 255))
+
+        # A failure to write the image must retain the ordinary error exit code
+        image_out = Path(self.tmp_dir.name) / 'missing' / 'output.png'
+        cmd = [str(self.binary), '-dl', str(image_in), str(image_out),
+               '-j', '12']
+        result = sp.run(cmd, capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('ERROR:', result.stderr)
+        self.assertFalse(image_out.exists())
+
+    def test_decompress_hdr_with_ldr_profile_warning(self) -> None:
+        '''
+        Test HDR encodings warn and write error colors when decoded as LDR.
+        '''
+        for mode in ('-dl', '-ds'):
+            with self.subTest(mode=mode):
+                image_in = self.get_image_path('HDR-A-1x1.astc')
+                image_out = Path(self.tmp_dir.name) / f'{mode}.png'
+                cmd = [str(self.binary), mode, str(image_in), str(image_out),
+                       '-j', '12']
+                result = sp.run(cmd, capture_output=True, text=True,
+                                check=False)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn('WARNING:', result.stderr)
+                self.assertNotIn('ERROR:', result.stderr)
+                with Image.open(image_out) as image:
+                    pixel = image.convert('RGBA').getpixel((0, 0))
+                    self.assertEqual(pixel, (255, 0, 255, 255))
+
 
 def main() -> int:
     '''

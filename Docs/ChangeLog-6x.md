@@ -23,6 +23,12 @@ header from the same release to avoid compatibility issues.
     and decompression output. A zero stride selects tightly packed rows.
   * **API Change:** Use `size_t` for image dimensions, context thread counts,
     and thread indices in the library API.
+  * **API Change:** Decompressing images containing invalid encodings, or HDR
+    encodings in an LDR profile, now return an identifiable
+    `ASTCENC_ERR_BAD_BLOCK` return code. The image will still be decompressed,
+    using the specified error color for the format in use for the bad blocks.
+    The command line tool will write the image, emit a warning, and exit with
+    code 2 for these failures. Functional errors continue to use exit code 1.
   * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
     command line tool variants. Implementation provides "AVX-256", which uses
     an enhanced version of the AVX2 backend operating on 256-bit vectors, and

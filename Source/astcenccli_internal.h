@@ -432,7 +432,7 @@ void set_thread_name(
  * @param argc   The number of arguments.
  * @param argv   The vector of arguments.
  *
- * @return 0 on success, non-zero otherwise.
+ * @return 0 on success, 1 on error, or 2 if the output contains decode error colors.
  */
 int astcenc_main(
 	int argc,

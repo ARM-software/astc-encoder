@@ -163,7 +163,7 @@
  *
  * Using this flag while attempting to decompress an valid image which was created by another
  * compressor, or even another astcenc compressor version or configuration, may result in blocks
- * returning as solid magenta or NaN value error blocks.
+ * returning as solid magenta or NaN value error blocks and reporting @c ASTCENC_ERR_BAD_BLOCK.
  */
 
 #if !defined(ASTCENC_INCLUDED)
@@ -229,6 +229,8 @@ enum astcenc_error {
 	ASTCENC_ERR_NOT_IMPLEMENTED,
 	/** @brief The call failed due to an out-of-spec decode mode flag set. */
 	ASTCENC_ERR_BAD_DECODE_MODE,
+	/** @brief A compressed block is invalid or unsupported by the decoding context. */
+	ASTCENC_ERR_BAD_BLOCK,
 #if defined(ASTCENC_DIAGNOSTICS)
 	/** @brief The call failed due to an issue with diagnostic tracing. */
 	ASTCENC_ERR_DTRACE_FAILURE,
@@ -836,6 +838,13 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_compress_cancel(
 
 /**
  * @brief Decompress an image.
+ *
+ * Invalid blocks, including HDR encodings decoded with an LDR profile, are decoded as error colors
+ * and reported as @c ASTCENC_ERR_BAD_BLOCK. All assigned blocks are decoded even if an error is
+ * found. Valid image content that matches an error color does not cause a failure.
+ *
+ * For multi-threaded contexts, each call reports errors in the blocks assigned to that thread.
+ * The caller must check the return value from every worker thread to detect all decode errors.
  *
  * @param         context        Codec context.
  * @param[in]     data           Pointer to compressed data.

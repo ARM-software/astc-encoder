@@ -182,7 +182,7 @@ static float error_color_nan()
 }
 
 /* See header for documentation. */
-void decompress_symbolic_block(
+bool decompress_symbolic_block(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	size_t pos_x,
@@ -214,7 +214,7 @@ void decompress_symbolic_block(
 			blk.alpha_lns[i] = 0;
 		}
 
-		return;
+		return false;
 	}
 
 	if ((scb.block_type == SYM_BTYPE_CONST_F16) ||
@@ -222,6 +222,7 @@ void decompress_symbolic_block(
 	{
 		vfloat4 color;
 		uint8_t use_lns = 0;
+		bool is_valid = true;
 
 		// UNORM16 constant color block
 		if (scb.block_type == SYM_BTYPE_CONST_U16)
@@ -246,6 +247,7 @@ void decompress_symbolic_block(
 			case ASTCENC_PRF_LDR_SRGB:
 			case ASTCENC_PRF_LDR:
 				color = vfloat4(error_color_nan());
+				is_valid = false;
 				break;
 			case ASTCENC_PRF_HDR_RGB_LDR_A:
 			case ASTCENC_PRF_HDR:
@@ -267,7 +269,7 @@ void decompress_symbolic_block(
 			blk.alpha_lns[i] = use_lns;
 		}
 
-		return;
+		return is_valid;
 	}
 
 	// Get the appropriate partition-table entry
@@ -290,6 +292,7 @@ void decompress_symbolic_block(
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
 	vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
+	bool is_valid = true;
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -299,11 +302,12 @@ void decompress_symbolic_block(
 		bool rgb_lns;
 		bool a_lns;
 
-		unpack_color_endpoints(decode_mode,
-		                       scb.color_formats[i],
-		                       scb.color_values[i],
-		                       rgb_lns, a_lns,
-		                       ep0, ep1);
+		bool is_partition_valid = unpack_color_endpoints(decode_mode,
+		                                                 scb.color_formats[i],
+		                                                 scb.color_values[i],
+		                                                 rgb_lns, a_lns,
+		                                                 ep0, ep1);
+		is_valid = is_valid && is_partition_valid;
 
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
@@ -322,6 +326,8 @@ void decompress_symbolic_block(
 			blk.data_rgba[tix] = colorf;
 		}
 	}
+
+	return is_valid;
 }
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)

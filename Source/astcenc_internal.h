@@ -1971,8 +1971,10 @@ uint8_t pack_color_endpoints(
  * @param[out] alpha_hdr     Is the endpoint using HDR for the A channel?
  * @param[out] output0       The output color for endpoint 0.
  * @param[out] output1       The output color for endpoint 1.
+ *
+ * @return True if the endpoint format is supported by the decode profile, false otherwise.
  */
-void unpack_color_endpoints(
+bool unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
 	const uint8_t* input,
@@ -2180,8 +2182,10 @@ void compress_block(
  * @param      pos_z         The Z coordinate of the block in the overall image.
  * @param      scb           The symbolic compressed encoding.
  * @param[out] blk           The decompressed image block color data.
+ *
+ * @return True if the block is valid for the decode profile, false if error colors were generated.
  */
-void decompress_symbolic_block(
+bool decompress_symbolic_block(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	size_t pos_x,

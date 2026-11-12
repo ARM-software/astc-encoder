@@ -841,7 +841,7 @@ static void hdr_rgb_hdr_alpha_unpack(
 }
 
 /* See header for documentation. */
-void unpack_color_endpoints(
+bool unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
 	const uint8_t* input,
@@ -855,6 +855,7 @@ void unpack_color_endpoints(
 	alpha_hdr = false;
 
 	bool alpha_hdr_default = false;
+	bool is_valid = true;
 
 	switch (format)
 	{
@@ -984,6 +985,7 @@ void unpack_color_endpoints(
 		// Error color - HDR endpoint in an LDR encoding
 		if (rgb_hdr || alpha_hdr)
 		{
+			is_valid = false;
 			output0 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			output1 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			rgb_hdr = false;
@@ -1001,6 +1003,7 @@ void unpack_color_endpoints(
 		// Error color - HDR endpoint in an LDR encoding
 		if (rgb_hdr || alpha_hdr)
 		{
+			is_valid = false;
 			output0 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			output1 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			rgb_hdr = false;
@@ -1019,4 +1022,6 @@ void unpack_color_endpoints(
 		output0 = output0 * output_scale;
 		output1 = output1 * output_scale;
 	}
+
+	return is_valid;
 }
