@@ -1952,7 +1952,7 @@ static astcenc_image* load_dds_uncompressed_image(
 			copy_method = BGR8_TO_RGBA8;
 		}
 		// RG-unorm16
-		else if ((flags & 0x40) && bitcount == 16 && rmask == 0xFFFF && gmask == 0xFFFF0000)
+		else if ((flags & 0x40) && bitcount == 32 && rmask == 0xFFFF && gmask == 0xFFFF0000)
 		{
 			bytes_per_component = 2;
 			components = 2;
