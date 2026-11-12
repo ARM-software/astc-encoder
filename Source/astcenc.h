@@ -88,6 +88,7 @@
  * half-float, or 32-bit float, as indicated by the data_type field.
  *
  * Images can be any dimension; there is no requirement to be a multiple of the ASTC block size.
+ * Images with depth greater than one require a context configured with a 3D block size.
  *
  * Data is always passed in as 4 color components, and accessed as an array of 2D image slices. Data
  * within an image slice is always tightly packed without padding. Addressing looks like this:

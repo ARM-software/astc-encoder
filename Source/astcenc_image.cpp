@@ -277,6 +277,7 @@ void load_image_block_fast_ldr(
 ) {
 	(void)swz;
 	(void)decode_mode;
+	assert(zpos == 0);
 
 	unsigned int xsize = img.dim_x;
 	unsigned int ysize = img.dim_y;

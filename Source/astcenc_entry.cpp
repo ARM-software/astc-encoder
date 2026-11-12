@@ -1045,6 +1045,12 @@ astcenc_error astcenc_compress_image(
 	unsigned int block_y = ctx->config.block_y;
 	unsigned int block_z = ctx->config.block_z;
 
+	// Volumetric images require a three-dimensional block size
+	if ((image.dim_z > 1) && (block_z == 1))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
 	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
 	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
 	unsigned int zblocks = (image.dim_z + block_z - 1) / block_z;
@@ -1151,6 +1157,12 @@ astcenc_error astcenc_decompress_image(
 	unsigned int block_x = ctx->config.block_x;
 	unsigned int block_y = ctx->config.block_y;
 	unsigned int block_z = ctx->config.block_z;
+
+	// Volumetric images require a three-dimensional block size
+	if ((image_out.dim_z > 1) && (block_z == 1))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
 
 	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
 	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
