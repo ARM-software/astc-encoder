@@ -99,7 +99,7 @@ static void set_group_affinity(
 	// Ensure we have a valid assign if user creates more threads than cores
 	int assign_index = thread_index % get_cpu_count();
 	int assign_group { 0 };
-	int assign_group_cpu_count { 0 };
+	size_t assign_group_cpu_count { 0 };
 
 	// Determine which core group and core in the group to use for this thread
 	int group_cpu_count_sum { 0 };
@@ -118,7 +118,14 @@ static void set_group_affinity(
 
 	// Set the affinity to the assigned group, and all supported cores
 	GROUP_AFFINITY affinity {};
-	affinity.Mask = (1 << assign_group_cpu_count) - 1;
+
+	// A full processor group needs every mask bit without shifting by the mask width
+	affinity.Mask = ~static_cast<KAFFINITY>(0);
+	if (assign_group_cpu_count < sizeof(KAFFINITY) * 8)
+	{
+		affinity.Mask = (static_cast<KAFFINITY>(1) << assign_group_cpu_count) - 1;
+	}
+
 	affinity.Group = assign_group;
 	SetThreadGroupAffinity(thread, &affinity, nullptr);
 }
