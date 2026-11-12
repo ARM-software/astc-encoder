@@ -1630,7 +1630,7 @@ void recompute_ideal_colors_2planes(
 	if (blk.rgb_lns[0] || blk.alpha_lns[0])
 	{
 		weight_weight_sum = weight_weight_sum * color_weight;
-		float psum = dot3_s(select(right1_sum, right2_sum, p2_mask), color_weight);
+		float psum = hadd_rgb_s(select(right1_sum, right2_sum, p2_mask));
 
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
