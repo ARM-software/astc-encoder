@@ -1250,7 +1250,20 @@ static astcenc_image* load_ktx_uncompressed_image(
 	size_t computed_bytes_of_surface { 0 };
 	bool is_valid = get_ktx_image_layout(dim_x, dim_y, dim_z, bytes_per_component * components,
 	                                     xstride, ystride, computed_bytes_of_surface);
-	if (!is_valid || (computed_bytes_of_surface != specified_bytes_of_surface))
+
+	// KTX imageSize includes all array layers and faces, except for non-array cubemaps
+	uint64_t bytes_per_mip = computed_bytes_of_surface;
+	if (hdr.number_of_array_elements > 0)
+	{
+		bytes_per_mip *= hdr.number_of_array_elements;
+		is_valid = is_valid && (bytes_per_mip <= UINT32_MAX);
+		if (is_valid)
+		{
+			bytes_per_mip *= hdr.number_of_faces;
+		}
+	}
+
+	if (!is_valid || (bytes_per_mip != specified_bytes_of_surface))
 	{
 		fclose(f);
 		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, "
@@ -1505,6 +1518,12 @@ static bool store_ktx_uncompressed_image(
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = determine_image_components(img);
+
+	// Preserve luminance and alpha using RGB/RGBA instead of RED/RG channel semantics
+	if (image_components < 3)
+	{
+		image_components += 2;
+	}
 
 	// The padded image size must fit the KTX 32-bit size field
 	size_t row_bytes;
