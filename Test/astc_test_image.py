@@ -34,6 +34,7 @@ Attributes:
 
 import argparse
 from pathlib import Path
+import re
 import sys
 from typing import Optional
 
@@ -342,8 +343,7 @@ def get_encoder_params(encoder_name: str, reference_name: str,
         _, version, simd = encoder_name.split('-')
 
         # Version-specific variants
-        compatible_prefixes = ['5.']
-        if any(True for x in compatible_prefixes if version.startswith(x)):
+        if re.match(r'[0-9]+\.', version):
             encoder = te.Encoder2xRel(version, simd)
             name = f'reference-{version}-{simd}'
             out_dir = f'Test/Images/{test_set_name}'
@@ -366,6 +366,29 @@ def get_encoder_params(encoder_name: str, reference_name: str,
     return (encoder, name, out_dir, used_reference_name)
 
 
+def find_reference_encoders(test_dir: Path) -> list[str]:
+    '''
+    Find reference encoders with result CSVs in the image tree.
+
+    Args:
+        test_dir: The root of the test image tree.
+
+    Return:
+        The sorted, unique reference encoder names.
+    '''
+    quality_pattern = '|'.join(TEST_QUALITIES)
+    result_pattern = re.compile(
+        rf'astc_reference-(.+)_(?:{quality_pattern})_results\.csv')
+    reference_encoders = set()
+
+    for result_file in test_dir.rglob('astc_reference-*_results.csv'):
+        match = result_pattern.fullmatch(result_file.name)
+        if match and result_file.is_file():
+            reference_encoders.add(f'ref-{match.group(1)}')
+
+    return sorted(reference_encoders)
+
+
 def parse_command_line():
     '''
     Parse the command line.
@@ -374,17 +397,10 @@ def parse_command_line():
         Namespace: The parsed command line container.
     '''
     parser = argparse.ArgumentParser()
+    test_dir = Path(__file__).parent / 'Images'
 
     # All reference encoders
-    reference_encoders = [
-        'rebuild',
-
-        'ref-5.7-neon',
-        'ref-5.7-sse2', 'ref-5.7-sse4.1', 'ref-5.7-avx2',
-
-        'ref-main-neon', 'ref-main-sve_256', 'ref-main-sve_128',
-        'ref-main-sse2', 'ref-main-sse4.1', 'ref-main-avx2'
-    ]
+    reference_encoders = ['rebuild'] + find_reference_encoders(test_dir)
 
     # All test encoders
     test_encoders = [
@@ -403,12 +419,13 @@ def parse_command_line():
         'sse2', 'sse4.1', 'avx2'
     ]
 
-    encoder_choices = reference_encoders + test_encoders
+    encoder_choices = list(test_encoders)
     encoder_choices.append('all-aarch64')
     encoder_choices.append('all-x86')
 
     parser.add_argument('--encoder', dest='encoders', default='avx2',
-                        choices=encoder_choices, help='test encoder variant')
+                        help='test encoder variant or '
+                             'ref-<version>-<variant>')
 
     parser.add_argument('--reference', default='ref-main-avx2',
                         choices=reference_encoders,
@@ -425,8 +442,6 @@ def parse_command_line():
     block_size_choices = list(TEST_BLOCK_SIZES) + ['all']
     parser.add_argument('--block-size', dest='block_sizes', action='append',
                         choices=block_size_choices, help='test block size')
-
-    test_dir = Path(__file__).parent / 'Images'
 
     test_set_choices = [x.name for x in test_dir.iterdir() if x.is_dir()]
     test_set_choices.sort()
@@ -457,6 +472,13 @@ def parse_command_line():
                         type=int, help='encoder thread count')
 
     args = parser.parse_args()
+
+    # Allow new reference encoders before their result CSVs have been generated
+    if args.encoders not in encoder_choices:
+        pattern = r'ref-(?:main|[0-9]+\.[^-]+)-(.+)'
+        match = re.fullmatch(pattern, args.encoders)
+        if (match is None) or (match.group(1) not in test_encoders):
+            parser.error(f'--encoder: invalid choice: {args.encoders!r}')
 
     # Turn things into canonical format lists
     if args.encoders == 'all-aarch64':
