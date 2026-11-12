@@ -922,6 +922,56 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 }
 
 /**
+ * @brief Compute padded KTX image strides within the 32-bit image size limit.
+ *
+ * @param      dim_x             The image width in texels.
+ * @param      dim_y             The image height in texels.
+ * @param      dim_z             The image depth in texels.
+ * @param      bytes_per_pixel   The size of an input texel in bytes.
+ * @param[out] row_bytes         The padded row size in bytes.
+ * @param[out] plane_bytes       The padded slice size in bytes.
+ * @param[out] image_bytes       The padded image size in bytes.
+ *
+ * @return @c true for a valid layout, or @c false for zero or excessive dimensions.
+ */
+static bool get_ktx_image_layout(
+	unsigned int dim_x,
+	unsigned int dim_y,
+	unsigned int dim_z,
+	unsigned int bytes_per_pixel,
+	size_t& row_bytes,
+	size_t& plane_bytes,
+	size_t& image_bytes
+) {
+	// KTX rows must be padded to four bytes, including the final row
+	uint64_t size = (static_cast<uint64_t>(dim_x) * bytes_per_pixel + 3)
+	              & ~static_cast<uint64_t>(3);
+	if ((size == 0) || (size > UINT32_MAX))
+	{
+		return false;
+	}
+
+	row_bytes = static_cast<size_t>(size);
+
+	// Validate each product before using it to compute the next dimension
+	size *= dim_y;
+	if ((size == 0) || (size > UINT32_MAX))
+	{
+		return false;
+	}
+
+	plane_bytes = static_cast<size_t>(size);
+	size *= dim_z;
+	if ((size == 0) || (size > UINT32_MAX))
+	{
+		return false;
+	}
+
+	image_bytes = static_cast<size_t>(size);
+	return true;
+}
+
+/**
  * @brief Load an uncompressed KTX image using the local custom loader.
  *
  * @param      filename          The name of the file to load.
@@ -1194,21 +1244,25 @@ static astcenc_image* load_ktx_uncompressed_image(
 		specified_bytes_of_surface = u32_byterev(specified_bytes_of_surface);
 	}
 
-	// read the surface
-	uint32_t xstride = bytes_per_component * components * dim_x;
-	uint32_t ystride = xstride * dim_y;
-	uint32_t computed_bytes_of_surface = dim_z * ystride;
-	if (computed_bytes_of_surface != specified_bytes_of_surface)
+	// Read the first surface using the padded row and slice strides
+	size_t xstride;
+	size_t ystride;
+	size_t computed_bytes_of_surface { 0 };
+	bool is_valid = get_ktx_image_layout(dim_x, dim_y, dim_z, bytes_per_component * components,
+	                                     xstride, ystride, computed_bytes_of_surface);
+	if (!is_valid || (computed_bytes_of_surface != specified_bytes_of_surface))
 	{
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %d bytes, but specified size is %d bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
+		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, "
+		       "but specified size is %u bytes\n", filename,
+		       computed_bytes_of_surface, specified_bytes_of_surface);
 		return nullptr;
 	}
 
-	uint8_t *buf = new uint8_t[specified_bytes_of_surface];
-	size_t bytes_read = fread(buf, 1, specified_bytes_of_surface, f);
+	uint8_t *buf = new uint8_t[computed_bytes_of_surface];
+	size_t bytes_read = fread(buf, 1, computed_bytes_of_surface, f);
 	fclose(f);
-	if (bytes_read != specified_bytes_of_surface)
+	if (bytes_read != computed_bytes_of_surface)
 	{
 		delete[] buf;
 		printf("Failed to read file %s\n", filename);
@@ -1220,12 +1274,12 @@ static astcenc_image* load_ktx_uncompressed_image(
 	{
 		if (hdr.gl_type_size == 2)
 		{
-			switch_endianness2(buf, specified_bytes_of_surface);
+			switch_endianness2(buf, computed_bytes_of_surface);
 		}
 
 		if (hdr.gl_type_size == 4)
 		{
-			switch_endianness4(buf, specified_bytes_of_surface);
+			switch_endianness4(buf, computed_bytes_of_surface);
 		}
 	}
 
@@ -1452,6 +1506,19 @@ static bool store_ktx_uncompressed_image(
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = determine_image_components(img);
 
+	// The padded image size must fit the KTX 32-bit size field
+	size_t row_bytes;
+	size_t plane_bytes;
+	size_t image_bytes;
+	bool is_valid = get_ktx_image_layout(dim_x, dim_y, dim_z, image_components * (bitness / 8),
+	                                     row_bytes, plane_bytes, image_bytes);
+	if (!is_valid)
+	{
+		return false;
+	}
+
+	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
+
 	ktx_header hdr;
 
 	static const int gl_format_of_components[4] {
@@ -1495,19 +1562,19 @@ static bool store_ktx_uncompressed_image(
 	{
 		row_pointers8 = new uint8_t **[dim_z];
 		row_pointers8[0] = new uint8_t *[dim_y * dim_z];
-		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_components + 3];
+		row_pointers8[0][0] = new uint8_t[image_bytes] {};
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_x * image_components * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + plane_bytes * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
+				row_pointers8[z][y] = row_pointers8[z][0] + row_bytes * y;
 			}
 		}
 
@@ -1555,21 +1622,24 @@ static bool store_ktx_uncompressed_image(
 	}
 	else						// if bitness == 16
 	{
+		size_t row_components = row_bytes / sizeof(uint16_t);
+		size_t plane_components = plane_bytes / sizeof(uint16_t);
+
 		row_pointers16 = new uint16_t **[dim_z];
 		row_pointers16[0] = new uint16_t *[dim_y * dim_z];
-		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_components + 1];
+		row_pointers16[0][0] = new uint16_t[image_bytes / sizeof(uint16_t)] {};
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + plane_components * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
+				row_pointers16[z][y] = row_pointers16[z][0] + row_components * y;
 			}
 		}
 
@@ -1617,8 +1687,6 @@ static bool store_ktx_uncompressed_image(
 	}
 
 	bool retval { true };
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
-	uint32_t image_write_bytes = (image_bytes + 3) & ~3;
 
 	FILE *wf = fopen(filename, "wb");
 	if (wf)
@@ -1627,10 +1695,10 @@ static bool store_ktx_uncompressed_image(
 			reinterpret_cast<void*>(row_pointers16[0][0]) :
 			reinterpret_cast<void*>(row_pointers8[0][0]);
 
-		size_t expected_bytes_written = sizeof(ktx_header) + image_write_bytes + 4;
+		size_t expected_bytes_written = sizeof(ktx_header) + image_bytes + 4;
 		size_t hdr_bytes_written = fwrite(&hdr, 1, sizeof(ktx_header), wf);
-		size_t bytecount_bytes_written = fwrite(&image_bytes, 1, 4, wf);
-		size_t data_bytes_written = fwrite(dataptr, 1, image_write_bytes, wf);
+		size_t bytecount_bytes_written = fwrite(&image_bytes_field, 1, sizeof(image_bytes_field), wf);
+		size_t data_bytes_written = fwrite(dataptr, 1, image_bytes, wf);
 		fclose(wf);
 		if (hdr_bytes_written + bytecount_bytes_written + data_bytes_written != expected_bytes_written)
 		{
