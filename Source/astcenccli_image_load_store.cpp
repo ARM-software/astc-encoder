@@ -1187,6 +1187,12 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	bool overflow { false };
 
 	size_t bytes_per_row = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
+
+	// KTX rows must be padded to four bytes, including the final row
+	size_t padded_row = (bytes_per_row + 3) & ~static_cast<size_t>(3);
+	overflow = overflow || (padded_row < bytes_per_row);
+	bytes_per_row = padded_row;
+
 	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
 	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
 
@@ -1480,27 +1486,23 @@ static bool store_ktx_uncompressed_image(
 	unsigned int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	unsigned int image_components = determine_image_components(img);
 
-	// Size of the image data in bytes
+	// KTX rows must be padded to four bytes, including the final row
 	bool overflow { false };
-	size_t image_bytes = astc::mul_safe(dim_x, dim_y, overflow);
-	image_bytes = astc::mul_safe(image_bytes, dim_z, overflow);
-	image_bytes = astc::mul_safe(image_bytes, image_components, overflow);
-	image_bytes = astc::mul_safe(image_bytes, bitness / 8, overflow);
-	if (overflow)
+	size_t row_bytes = astc::mul_safe(dim_x, image_components * (bitness / 8), overflow);
+	size_t padded_row = (row_bytes + 3) & ~static_cast<size_t>(3);
+	overflow = overflow || (padded_row < row_bytes);
+	row_bytes = padded_row;
+
+	size_t plane_bytes = astc::mul_safe(row_bytes, dim_y, overflow);
+	size_t image_bytes = astc::mul_safe(plane_bytes, dim_z, overflow);
+
+	// The padded image size must fit the KTX 32-bit size field
+	if (overflow || (image_bytes > UINT32_MAX))
 	{
 		return false;
 	}
 
-	// Size of image data padded to a multiple of 4 bytes
-	size_t image_write_bytes = (image_bytes + 3) & ~3;
-
-	// The KTX data size field is a fixed 32-bit value, so check that the
-	// size_t value can be safely narrowed and does not wrap when padded
 	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
-	if ((image_bytes_field != image_bytes) || (image_write_bytes < image_bytes))
-	{
-		return false;
-	}
 
 	ktx_header hdr;
 
@@ -1553,8 +1555,7 @@ static bool store_ktx_uncompressed_image(
 	{
 		row_pointers8.resize(dim_z);
 		row_data8.resize(dim_y * dim_z);
-		// + 3 to ensure this can be padded to be word aligned when written
-		pixel_data8.resize(dim_x * dim_y * dim_z * image_components + 3);
+		pixel_data8.resize(image_bytes);
 
 		row_pointers8[0] = row_data8.data();
 		row_pointers8[0][0] = pixel_data8.data();
@@ -1562,14 +1563,14 @@ static bool store_ktx_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + plane_bytes * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
 		{
 			for (size_t y = 1; y < dim_y; y++)
 			{
-				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
+				row_pointers8[z][y] = row_pointers8[z][0] + row_bytes * y;
 			}
 		}
 
@@ -1619,8 +1620,9 @@ static bool store_ktx_uncompressed_image(
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
-		// + 1 to ensure this can be padded to be word aligned when written
-		pixel_data16.resize(dim_x * dim_y * dim_z * image_components + 1);
+		pixel_data16.resize(image_bytes / sizeof(uint16_t));
+		size_t row_components = row_bytes / sizeof(uint16_t);
+		size_t plane_components = plane_bytes / sizeof(uint16_t);
 
 		row_pointers16[0] = row_data16.data();
 		row_pointers16[0][0] = pixel_data16.data();
@@ -1628,14 +1630,14 @@ static bool store_ktx_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + plane_components * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
 		{
 			for (size_t y = 1; y < dim_y; y++)
 			{
-				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
+				row_pointers16[z][y] = row_pointers16[z][0] + row_components * y;
 			}
 		}
 
@@ -1692,7 +1694,7 @@ static bool store_ktx_uncompressed_image(
 
 		file.write(reinterpret_cast<const char*>(&hdr), sizeof(ktx_header));
 		file.write(reinterpret_cast<const char*>(&image_bytes_field), sizeof(image_bytes_field));
-		file.write(reinterpret_cast<const char*>(dataptr), image_write_bytes);
+		file.write(reinterpret_cast<const char*>(dataptr), image_bytes);
 		if (file.fail())
 		{
 			retval = false;
