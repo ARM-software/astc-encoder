@@ -555,6 +555,13 @@ DECOMPRESSION FILE FORMATS
         * Khronos Texture KTX (*.ktx)
         * DirectDraw Surface DDS (*.dds)
 
+EXIT STATUS
+
+    * 0 indicates success.
+    * 1 indicates an error.
+    * 2 indicates that decompression completed with invalid or unsupported blocks decoded as error
+      colors. In this case a warning is printed and the output image is still written.
+
 QUICK REFERENCE
 
     To compress an image use:

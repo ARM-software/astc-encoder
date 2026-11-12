@@ -28,6 +28,7 @@
 #else
 	#include <unistd.h>
 #endif
+#include <atomic>
 #include <cassert>
 #include <charconv>
 #include <cerrno>
@@ -165,7 +166,9 @@ struct decompression_workload
 	size_t data_len;
 	astcenc_image* image_out;
 	astcenc_swizzle swizzle;
-	astcenc_error error;
+
+	/** @brief An error reported by any worker, or success if no worker failed. */
+	std::atomic<astcenc_error> error;
 };
 
 /**
@@ -491,7 +494,7 @@ static void decompression_workload_runner(
 	                       work->context, work->data, work->data_len,
 	                       work->image_out, &work->swizzle, thread_id);
 
-	// Concurrent error writes race; which failure is reported is nondeterministic
+	// Preserve failures from any worker without racing with other error reports
 	if (error != ASTCENC_SUCCESS)
 	{
 		work->error = error;
@@ -2349,7 +2352,7 @@ static void print_diagnostic_images(
  * @param argc   The number of arguments.
  * @param argv   The vector of arguments.
  *
- * @return 0 on success, non-zero otherwise.
+ * @return 0 on success, 1 on error, or 2 if the output contains decode error colors.
  */
 int astcenc_main(
 	int argc,
@@ -2764,6 +2767,7 @@ int astcenc_main(
 
 	// Decompress an image
 	double decompression_time = 0.0;
+	bool is_decompression_warning = false;
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
 		image_decomp_out = alloc_image(
@@ -2802,10 +2806,17 @@ int astcenc_main(
 
 		decompression_time = get_time() - start_decompression_time;
 
-		if (work.error != ASTCENC_SUCCESS)
+
+		astcenc_error decode_status = work.error.load();
+		if (decode_status == ASTCENC_ERR_BAD_BLOCK)
+		{
+			print_error("WARNING: Invalid or unsupported blocks decoded as error colors\n");
+			is_decompression_warning = true;
+		}
+		else if (decode_status != ASTCENC_SUCCESS)
 		{
 			print_error("ERROR: Codec decompress failed: %s\n",
-				        astcenc_get_error_string(work.error));
+			            astcenc_get_error_string(decode_status));
 			return 1;
 		}
 	}
@@ -2905,6 +2916,11 @@ int astcenc_main(
 			printf("    Decoding time:             %8.4f s\n", decompression_time);
 			printf("    Decoding rate:             %8.4f MT/s\n", decompression_rate);
 		}
+	}
+
+	if (is_decompression_warning)
+	{
+		return 2;
 	}
 
 	return 0;
