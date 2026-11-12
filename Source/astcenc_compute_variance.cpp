@@ -226,6 +226,9 @@ void compute_pixel_region_variance(
 					vint4 di(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
 					vfloat4 d = float16_to_float(di);
 
+					// Match the block loader's alpha clamping before building the summed-area table
+					d.set_lane<3>(astc::clamp1f(d.lane<3>()));
+
 					VARBUF1(z, y, x) = d;
 					VARBUF2(z, y, x) = d * d;
 				}
@@ -268,6 +271,8 @@ void compute_pixel_region_variance(
 					float a = data[swz.a];
 
 					vfloat4 d(r, g, b, a);
+					// Match the block loader's alpha clamping before building the summed-area table
+					d.set_lane<3>(astc::clamp1f(d.lane<3>()));
 
 					VARBUF1(z, y, x) = d;
 					VARBUF2(z, y, x) = d * d;

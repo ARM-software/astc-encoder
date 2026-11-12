@@ -129,6 +129,9 @@ static vfloat4 encode_texel_unorm(
 	vmask4 lns_mask
 ) {
 	(void)lns_mask;
+
+	// Keep alpha in the same range used by alpha preprocessing
+	data.set_lane<3>(astc::clamp1f(data.lane<3>()));
 	return data * 65535.0f;
 }
 
@@ -142,7 +145,7 @@ static vfloat4 encode_texel_lns(
 	vfloat4 data,
 	vmask4 lns_mask
 ) {
-	vfloat4 datav_unorm = data * 65535.0f;
+	vfloat4 datav_unorm = encode_texel_unorm(data, lns_mask);
 	vfloat4 datav_lns = float_to_lns(data);
 	return select(datav_unorm, datav_lns, lns_mask);
 }
