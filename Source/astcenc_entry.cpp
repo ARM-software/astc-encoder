@@ -476,8 +476,8 @@ astcenc_error astcenc_config_init(
 	float ltexels = logf(texels) / logf(10.0f);
 
 	// Apply the quality preset before profile and flag adjustments, which may override its settings
-	if (quality < ASTCENC_PRE_FASTEST ||
-	    quality > ASTCENC_PRE_EXHAUSTIVE)
+	// Require an ordered value so NaNs cannot reach the preset lookup
+	if (!((quality >= ASTCENC_PRE_FASTEST) && (quality <= ASTCENC_PRE_EXHAUSTIVE)))
 	{
 		return ASTCENC_ERR_BAD_QUALITY;
 	}
