@@ -914,6 +914,14 @@ static void compress_image(
 				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 				{
 					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
+					if (decode_mode == ASTCENC_PRF_HDR)
+					{
+						// Transparency uses linear alpha, even when the endpoints use LNS
+						vint4 alpha_lns = float_to_int(blk.data_max);
+						vfloat4 alpha = float16_to_float(lns_to_sf16(alpha_lns));
+						alpha_scale = astc::clamp1f(alpha.lane<3>());
+					}
+
 					blk.channel_weight = vfloat4(ctx.config.cw_r_weight * alpha_scale,
 					                             ctx.config.cw_g_weight * alpha_scale,
 					                             ctx.config.cw_b_weight * alpha_scale,
