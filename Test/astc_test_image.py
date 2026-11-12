@@ -462,6 +462,9 @@ def parse_command_line():
                         help='cover all profile-format/block/quality pairs '
                              'and images')
 
+    parser.add_argument('--quality-update', action='store_true',
+                        help='only update records with PSNR changes')
+
     parser.add_argument('--repeats', dest='repeats', default=1,
                         type=int, help='test repeat count')
 
@@ -567,7 +570,10 @@ def main() -> int:
                     test_cases, args.repeats,
                     args.keep_output, args.threads)
 
-                result_set.save_to_file(Path(test_csv))
+                if args.quality_update:
+                    result_set.save_quality_changes(Path(test_csv))
+                else:
+                    result_set.save_to_file(Path(test_csv))
 
                 if reference_name:
                     summary = result_set.get_results_summary()

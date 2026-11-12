@@ -21,9 +21,11 @@ test code base.
 '''
 
 import io
+import os
 from pathlib import Path
 import re
 import sys
+import tempfile
 import unittest
 
 import mypy
@@ -34,6 +36,7 @@ import pylint.lint
 from pylint.reporters.text import TextReporter
 
 import astc_test_image as ati
+from testlib.resultset import Record, ResultSet
 from testlib.testset import TestSet
 
 
@@ -112,6 +115,91 @@ class ImageSelectionTests(unittest.TestCase):
         self.assertEqual(
             expected, ati.select_test_cases(
                 self.test_set, ati.TEST_BLOCK_SIZES, ['fast']))
+
+
+class ResultSetUpdateTests(unittest.TestCase):
+    '''
+    Check quality-only CSV updates preserve existing reference data.
+    '''
+
+    def test_unchanged_quality(self):
+        '''
+        Ignore timing and SSIM changes when PSNR rounds to the same value.
+        '''
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'results.csv'
+            existing = ResultSet('Small')
+            existing.add_record(Record('4x4', 'image.png', 30.1235,
+                                       0.9, 1.0, 0.8, 2.0))
+            existing.save_to_file(path)
+            original = path.read_bytes()
+            os.utime(path, ns=(1000000000, 1000000000))
+
+            updated = ResultSet('Small')
+            updated.add_record(Record('4x4', 'image.png', 30.123456,
+                                      0.99, 5.0, 4.0, 0.4))
+            updated.save_quality_changes(path)
+
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(path.stat().st_mtime_ns, 1000000000)
+
+    def test_partial_quality_update(self):
+        '''
+        Replace changed scores, append new cases, and keep untested rows.
+        '''
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'results.csv'
+            existing = ResultSet('Small')
+            existing.add_record(Record('4x4', 'same.png', 30.0,
+                                       0.9, 1.0, 0.8, 2.0))
+            existing.add_record(Record('4x4', 'better.png', 30.0,
+                                       0.9, 1.0, 0.8, 2.0))
+            existing.add_record(Record('4x4', 'worse.png', 30.0,
+                                       0.9, 1.0, 0.8, 2.0))
+            existing.add_record(Record('6x6', 'same.png', 28.0,
+                                       0.8, 1.0, 0.8, 2.0))
+            existing.save_to_file(path)
+
+            updated = ResultSet('Small')
+            updated.add_record(Record('4x4', 'same.png', 30.0,
+                                      0.99, 5.0, 4.0, 0.4))
+            updated.add_record(Record('4x4', 'better.png', 31.0,
+                                      0.95, 2.0, 1.6, 1.0))
+            updated.add_record(Record('4x4', 'worse.png', 29.0,
+                                      0.85, 2.0, 1.6, 1.0))
+            updated.add_record(Record('8x8', 'same.png', 27.0,
+                                      0.75, 2.0, 1.6, 1.0))
+            updated.save_quality_changes(path)
+
+            expected = ResultSet('Small')
+            expected.add_record(existing.records[0])
+            expected.add_record(updated.records[1])
+            expected.add_record(updated.records[2])
+            expected.add_record(existing.records[3])
+            expected.add_record(updated.records[3])
+            expected_path = Path(directory) / 'expected.csv'
+            expected.save_to_file(expected_path)
+            self.assertEqual(path.read_bytes(), expected_path.read_bytes())
+
+    def test_new_quality_csv(self):
+        '''
+        Create missing CSVs and preserve the default full-replacement mode.
+        '''
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'nested' / 'results.csv'
+            results = ResultSet('Small')
+            results.add_record(Record('4x4', 'image.png', 30.0,
+                                      0.9, 1.0, 0.8, 2.0))
+            results.save_quality_changes(path)
+            original = path.read_bytes()
+            results.records[0].total_time = 5.0
+            results.save_to_file(path)
+
+            self.assertNotEqual(path.read_bytes(), original)
+            loaded = ResultSet('Small')
+            loaded.load_from_file(path)
+            self.assertEqual(len(loaded.records), 1)
+            self.assertEqual(loaded.records[0].total_time, 5.0)
 
 
 class PythonTests(unittest.TestCase):
