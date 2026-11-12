@@ -73,45 +73,18 @@ static void accumulate_hdr_luminance(
 	}
 }
 
-/**
- * @brief Select an HDR metric exposure using the original image's geometric mean luminance.
- *
- * @param img   The original image, including any crop view.
- *
- * @return The nearest whole fstop mapping the geometric mean to 18% grey, clamped to [-123, 123],
- *         or zero for black images.
- */
-static int compute_hdr_exposure(
+/* See header for documentation. */
+int compute_hdr_exposure(
 	const astcenc_image* img
 ) {
+	assert((img->data_type == ASTCENC_TYPE_F16) || (img->data_type == ASTCENC_TYPE_F32));
+
 	// Average log luminance in a fixed order; exclude black texels and alpha
 	double log_luminance_sum = 0.0;
 	size_t luminance_count = 0;
 
 	// Select the source format outside the loops and respect cropped row strides
-	if (img->data_type == ASTCENC_TYPE_U8)
-	{
-		size_t stride = img->row_stride;
-		if (stride == 0)
-		{
-			stride = img->dim_x * 4;
-		}
-
-		for (size_t z = 0; z < img->dim_z; z++)
-		{
-			const uint8_t* data = static_cast<const uint8_t*>(img->data[z]);
-			for (size_t y = 0; y < img->dim_y; y++)
-			{
-				for (size_t x = 0; x < img->dim_x; x++)
-				{
-					const uint8_t* texel = data + y * stride + 4 * x;
-					vfloat4 color = vfloat4(texel[0], texel[1], texel[2], texel[3]) / 255.0f;
-					accumulate_hdr_luminance(color, log_luminance_sum, luminance_count);
-				}
-			}
-		}
-	}
-	else if (img->data_type == ASTCENC_TYPE_F16)
+	if (img->data_type == ASTCENC_TYPE_F16)
 	{
 		size_t stride = img->row_stride / sizeof(uint16_t);
 		if (stride == 0)
@@ -136,7 +109,6 @@ static int compute_hdr_exposure(
 	}
 	else
 	{
-		assert(img->data_type == ASTCENC_TYPE_F32);
 		size_t stride = img->row_stride / sizeof(float);
 		if (stride == 0)
 		{
@@ -164,8 +136,9 @@ static int compute_hdr_exposure(
 		return 0;
 	}
 
+	// Clamp this with abs value two less than our limit to allow +-2 range
 	double fstop = std::round(std::log2(0.18) - log_luminance_sum / luminance_count);
-	return static_cast<int>(astc::clamp(fstop, -123.0, 123.0));
+	return static_cast<int>(astc::clamp(fstop, -10.0, 10.0));
 }
 
 /**
@@ -187,15 +160,8 @@ static error_accum4& operator+=(
 	return val;
 }
 
-/**
- * @brief mPSNR tone-mapping operator for HDR images.
- *
- * @param val     The color value to tone map.
- * @param fstop   The exposure fstop; should be in range [-125, 125].
- *
- * @return The mapped color value in [0.0f, 255.0f] range.
- */
-static float mpsnr_operator(
+/* See header for documentation. */
+float tone_map_hdr(
 	float val,
 	int fstop
 ) {
@@ -215,8 +181,8 @@ static float mpsnr_operator(
  *
  * @param val1       The first color value.
  * @param val2       The second color value.
- * @param fstop_lo   The low exposure fstop; should be in range [-125, 125].
- * @param fstop_hi   The high exposure fstop; should be in range [-125, 125].
+ * @param fstop_lo   The low exposure fstop, in range [-12, 12].
+ * @param fstop_hi   The high exposure fstop, in range [-12, 12].
  *
  * @return The summed squared difference across all active fstop levels.
  */
@@ -229,8 +195,8 @@ static float mpsnr_sumdiff(
 	float summa = 0.0f;
 	for (int i = fstop_lo; i <= fstop_hi; i++)
 	{
-		float mval1 = mpsnr_operator(val1, i);
-		float mval2 = mpsnr_operator(val2, i);
+		float mval1 = tone_map_hdr(val1, i);
+		float mval2 = tone_map_hdr(val2, i);
 		float mdiff = mval1 - mval2;
 		summa += mdiff * mdiff;
 	}
@@ -279,7 +245,7 @@ static void load_ssim_row(
 			for (size_t x = 0; x < width; x++)
 			{
 				float value = data[4 * x] / 255.0f;
-				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+				row[x + radius] = tone_map_hdr(value, fstop) / 255.0f - 0.5f;
 			}
 		}
 		else
@@ -307,7 +273,7 @@ static void load_ssim_row(
 				vint4 valuei(data[4 * x]);
 				float value = float16_to_float(valuei).lane<0>();
 				value = astc::clamp(value, 0.0f, 65504.0f);
-				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+				row[x + radius] = tone_map_hdr(value, fstop) / 255.0f - 0.5f;
 			}
 		}
 		else
@@ -336,7 +302,7 @@ static void load_ssim_row(
 			for (size_t x = 0; x < width; x++)
 			{
 				float value = astc::clamp(data[4 * x], 0.0f, 65504.0f);
-				row[x + radius] = mpsnr_operator(value, fstop) / 255.0f - 0.5f;
+				row[x + radius] = tone_map_hdr(value, fstop) / 255.0f - 0.5f;
 			}
 		}
 		else
@@ -371,7 +337,7 @@ static void load_ssim_row(
  * @param img2        The compressed image.
  * @param component   The color component index, in RGBA order.
  * @param is_hdr      True to apply the mPSNR tone map before computing SSIM.
- * @param fstop       The exposure fstop for HDR tone mapping, in range [-125, 125].
+ * @param fstop       The exposure fstop for HDR tone mapping, in range [-12, 12].
  *
  * @return The mean SSIM, where 1 indicates identical images.
  */
@@ -611,7 +577,6 @@ static ssim_stats compute_ssim_stats(
 /* See header for documentation */
 void compute_error_metrics(
 	bool is_hdr,
-	bool is_hdr_fstop_auto,
 	bool is_normal_map,
 	int input_components,
 	const astcenc_image* img1,
@@ -619,14 +584,6 @@ void compute_error_metrics(
 	int fstop_lo,
 	int fstop_hi
 ) {
-	// Use one reference-derived exposure range for both metrics and both images
-	if (is_hdr && is_hdr_fstop_auto)
-	{
-		int fstop = compute_hdr_exposure(img1);
-		fstop_lo = fstop - 2;
-		fstop_hi = fstop + 2;
-	}
-
 	static const int componentmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
 	int component_mask = componentmasks[input_components];
 

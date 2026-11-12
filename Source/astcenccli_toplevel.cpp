@@ -1515,6 +1515,12 @@ static bool edit_astcenc_config(
 				print_error("ERROR: -mpsnr switch <low> is greater than <high>\n");
 				return true;
 			}
+
+			if ((cli_config.low_fstop < -12) || (cli_config.high_fstop > 12))
+			{
+				print_error("ERROR: -mpsnr fstops must be in range [-12, 12]\n");
+				return true;
+			}
 		}
 		else if (!strcmp(argv[argidx], "-zdim"))
 		{
@@ -1793,6 +1799,79 @@ static vfloat4 image_get_pixel(
 			data[(row_stride * y) + (4 * x + 3)]
 		);
 	}
+}
+
+/**
+ * @brief Store one LDR exposure for each active HDR metric fstop.
+ *
+ * @param image        The decompressed image.
+ * @param filename     The base output filename, including its LDR extension.
+ * @param cli_config   The CLI configuration containing the exposure range and image orientation.
+ *
+ * @return @c true on error, @c false on success.
+ */
+static bool store_ldr_exposures(
+	const astcenc_image& image,
+	const std::string& filename,
+	const cli_config_options& cli_config
+) {
+	auto exposure = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+	if (!exposure)
+	{
+		return true;
+	}
+
+	size_t extension = filename.rfind('.');
+	std::string base = filename;
+	std::string ending;
+	if (extension != std::string::npos)
+	{
+		base = filename.substr(0, extension);
+		ending = filename.substr(extension);
+	}
+
+	for (int fstop = cli_config.low_fstop; fstop <= cli_config.high_fstop; fstop++)
+	{
+		// Apply the metric tone map to RGB, retaining linear alpha
+		for (size_t z = 0; z < image.dim_z; z++)
+		{
+			auto* data = static_cast<uint8_t*>(exposure->data[z]);
+			for (size_t y = 0; y < image.dim_y; y++)
+			{
+				for (size_t x = 0; x < image.dim_x; x++)
+				{
+					vfloat4 color = clamp(0.0f, 65504.0f, image_get_pixel(image, x, y, z));
+					float components[4];
+					store(color, components);
+					size_t index = (y * image.dim_x + x) * 4;
+					for (int c = 0; c < 3; c++)
+					{
+						float mapped = tone_map_hdr(components[c], fstop);
+						data[index + c] = static_cast<uint8_t>(astc::flt2int_rtn(mapped));
+					}
+
+					float alpha = astc::clamp1f(color.lane<3>()) * 255.0f;
+					data[index + 3] = static_cast<uint8_t>(astc::flt2int_rtn(alpha));
+				}
+			}
+		}
+
+		std::string suffix = "_" + std::to_string(fstop);
+		if (fstop > 0)
+		{
+			suffix = "_+" + std::to_string(fstop);
+		}
+
+		std::string output = base + suffix + ending;
+		bool is_store_error = store_ncimage(exposure.get(), output.c_str(), cli_config.y_flip);
+		if (is_store_error)
+		{
+			print_error("ERROR: Failed to write exposure image %s\n", output.c_str());
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -2499,27 +2578,14 @@ int astcenc_main(
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image_ptr image_decomp_out;
 
-	// Determine decompression output bitness, if limited by file type
-	int out_bitness = 0;
-	if (operation & ASTCENC_STAGE_DECOMPRESS)
-	{
-		out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
-		if (out_bitness == 0)
-		{
-			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) ||
-			              (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
-			out_bitness = is_hdr ? 16 : 8;
-		}
-
-		// If decompressed output is unorm8 then force the decode_unorm8 heuristics for compression
-		if (out_bitness == 8)
-		{
-			config.flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
-		}
-	}
-
 	astcenc_error codec_status;
 	astcenc_context_ptr codec_context;
+
+#if defined(_WIN32)
+	bool is_null = (output_filename == "NUL") || (output_filename == "nul");
+#else
+	bool is_null = output_filename == "/dev/null";
+#endif
 
 	// Preflight - check we have valid extensions for storing a file
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
@@ -2536,12 +2602,6 @@ int astcenc_main(
 
 	if (operation & ASTCENC_STAGE_ST_COMP)
 	{
-#if defined(_WIN32)
-		bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-		bool is_null = output_filename == "/dev/null";
-#endif
-
 		if (!(is_null || ends_with(output_filename, ".astc") || ends_with(output_filename, ".ktx")))
 		{
 			const char *eptr = strrchr(output_filename.c_str(), '.');
@@ -2550,15 +2610,6 @@ int astcenc_main(
 			return 1;
 		}
 	}
-
-	astcenc_context* codec_context_raw { nullptr };
-	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context_raw, nullptr);
-	if (codec_status != ASTCENC_SUCCESS)
-	{
-		print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
-		return 1;
-	}
-	codec_context.reset(codec_context_raw);
 
 	// Load the uncompressed input file if needed
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
@@ -2674,6 +2725,50 @@ int astcenc_main(
 			printf("    Components:                 %d\n\n", image_uncomp_in_component_count);
 		}
 	}
+
+	// Determine decompression output bitness, if limited by file type
+	bool is_ldr_exposure_output = false;
+	int out_bitness = 0;
+	if (operation & ASTCENC_STAGE_DECOMPRESS)
+	{
+		out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
+		if (out_bitness == 0)
+		{
+			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) ||
+			              (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
+			if (is_hdr)
+			{
+				out_bitness = 16;
+			}
+			else
+			{
+				out_bitness = 8;
+			}
+		}
+
+		// Preserve HDR values until after quality metrics and exposure tone mapping
+		is_ldr_exposure_output = (operation == ASTCENC_OP_TEST) && image_uncomp_in_is_hdr &&
+		                         (out_bitness == 8) && !is_null;
+		if (is_ldr_exposure_output)
+		{
+			out_bitness = 16;
+		}
+
+		// If decompressed output is unorm8 then force the decode_unorm8 heuristics for compression
+		if (out_bitness == 8)
+		{
+			config.flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
+		}
+	}
+
+	astcenc_context* codec_context_raw { nullptr };
+	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context_raw, nullptr);
+	if (codec_status != ASTCENC_SUCCESS)
+	{
+		print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
+		return 1;
+	}
+	codec_context.reset(codec_context_raw);
 
 	double image_size = 0.0;
 	if (image_uncomp_in)
@@ -2823,19 +2918,21 @@ int astcenc_main(
 		}
 	}
 
-#if defined(_WIN32)
-	bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-	bool is_null = output_filename == "/dev/null";
-#endif
-
-   // Print metrics in comparison mode
+	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
 		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
 
+		// Use the original image's exposure range for both metrics and preview files
+		if (image_uncomp_in_is_hdr && cli_config.is_hdr_fstop_auto)
+		{
+			int fstop = compute_hdr_exposure(image_uncomp_in);
+			cli_config.low_fstop = fstop - 2;
+			cli_config.high_fstop = fstop + 2;
+		}
+
 		compute_error_metrics(
-		    image_uncomp_in_is_hdr, cli_config.is_hdr_fstop_auto, is_normal_map,
+		    image_uncomp_in_is_hdr, is_normal_map,
 		    image_uncomp_in_component_count,
 		    image_uncomp_in, image_decomp_out.get(),
 		    cli_config.low_fstop, cli_config.high_fstop);
@@ -2878,9 +2975,18 @@ int astcenc_main(
 	{
 		if (!is_null)
 		{
-			bool store_error = store_ncimage(image_decomp_out.get(), output_filename.c_str(),
-			                                  cli_config.y_flip);
-			if (store_error)
+			bool is_store_error;
+			if (is_ldr_exposure_output)
+			{
+				is_store_error = store_ldr_exposures(*image_decomp_out, output_filename, cli_config);
+			}
+			else
+			{
+				is_store_error = store_ncimage(image_decomp_out.get(), output_filename.c_str(),
+				                              cli_config.y_flip);
+			}
+
+			if (is_store_error)
 			{
 				print_error("ERROR: Failed to write output image %s\n", output_filename.c_str());
 				return 1;

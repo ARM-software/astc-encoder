@@ -29,6 +29,9 @@ header from the same release to avoid compatibility issues.
     using the specified error color for the format in use for the bad blocks.
     The command line tool will write the image, emit a warning, and exit with
     code 2 for these failures. Functional errors continue to use exit code 1.
+  * **CLI Change:** Writing to an LDR output file format, such as PNG, when
+    testing HDR input is now supported. The tool will output multiple files,
+    one for each active integer f-stop exposure level.
   * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
     command line tool variants. Implementation provides "AVX-256", which uses
     an enhanced version of the AVX2 backend operating on 256-bit vectors, and
