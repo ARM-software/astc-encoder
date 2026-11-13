@@ -269,21 +269,24 @@ static void kmeans_update(
 /**
  * @brief Compute bit-mismatch for partitioning in 2-partition mode.
  *
- * @param a   The texel assignment bitvector for the block.
- * @param b   The texel assignment bitvector for the partition table.
+ * @param a             The texel assignment bitvector for the block.
+ * @param b             The texel assignment bitvector for the partition table.
+ * @param texel_count   The number of sampled texels.
  *
  * @return    The number of bit mismatches.
  */
 static inline uint8_t partition_mismatch2(
 	const uint64_t a[2],
-	const uint64_t b[2]
+	const uint64_t b[2],
+	unsigned int texel_count
 ) {
-	int v1 = std::popcount(a[0] ^ b[0]) + std::popcount(a[1] ^ b[1]);
-	int v2 = std::popcount(a[0] ^ b[1]) + std::popcount(a[1] ^ b[0]);
+	// Both bitmap pairs assign every sampled texel exactly once, with unused bits zero. Their
+	// second masks are complements within the sample, so the two corresponding XORs have equal
+	// popcounts, so we only need to calculate the first one. Swapping partition labels changes the
+	// mismatch count to texel_count - mismatch
+	unsigned int mismatch = std::popcount(a[0] ^ b[0]);
 
-	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
-	// position, and again when present in the wrong partition
-	return static_cast<uint8_t>(astc::min(v1, v2) / 2);
+	return static_cast<uint8_t>(astc::min(mismatch, texel_count - mismatch));
 }
 
 /**
@@ -298,33 +301,23 @@ static inline uint8_t partition_mismatch3(
 	const uint64_t a[3],
 	const uint64_t b[3]
 ) {
-	int p00 = std::popcount(a[0] ^ b[0]);
-	int p01 = std::popcount(a[0] ^ b[1]);
-	int p02 = std::popcount(a[0] ^ b[2]);
+	// Both bitmap triples assign every sampled texel exactly once, with unused bits zero. Their
+	// third masks are complements of the first two combined within the sample, so we only need to
+	// compare two masks for each partition label permutation. OR their XORs to count each
+	// mismatched texel once, then take the minimum popcount across the six permutations
+	uint64_t p00 = a[0] ^ b[0];
+	uint64_t p01 = a[0] ^ b[1];
+	uint64_t p02 = a[0] ^ b[2];
 
-	int p10 = std::popcount(a[1] ^ b[0]);
-	int p11 = std::popcount(a[1] ^ b[1]);
-	int p12 = std::popcount(a[1] ^ b[2]);
+	uint64_t p10 = a[1] ^ b[0];
+	uint64_t p11 = a[1] ^ b[1];
+	uint64_t p12 = a[1] ^ b[2];
 
-	int p20 = std::popcount(a[2] ^ b[0]);
-	int p21 = std::popcount(a[2] ^ b[1]);
-	int p22 = std::popcount(a[2] ^ b[2]);
+	int v0 = astc::min(std::popcount(p00 | p11), std::popcount(p00 | p12));
+	int v1 = astc::min(std::popcount(p01 | p10), std::popcount(p01 | p12));
+	int v2 = astc::min(std::popcount(p02 | p10), std::popcount(p02 | p11));
 
-	int s0 = p11 + p22;
-	int s1 = p12 + p21;
-	int v0 = astc::min(s0, s1) + p00;
-
-	int s2 = p10 + p22;
-	int s3 = p12 + p20;
-	int v1 = astc::min(s2, s3) + p01;
-
-	int s4 = p10 + p21;
-	int s5 = p11 + p20;
-	int v2 = astc::min(s4, s5) + p02;
-
-	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
-	// position, and again when present in the wrong partition
-	return static_cast<uint8_t>(astc::min(v0, v1, v2) / 2);
+	return static_cast<uint8_t>(astc::min(v0, v1, v2));
 }
 
 /**
@@ -397,9 +390,10 @@ static void count_partition_mismatch_bits(
 
 	if (partition_count == 2)
 	{
+		unsigned int texel_count = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
 		for (unsigned int i = 0; i < active_count; i++)
 		{
-			mismatch_counts[i] = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
+			mismatch_counts[i] = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i], texel_count);
 			assert(mismatch_counts[i] < BLOCK_MAX_KMEANS_TEXELS);
 			assert(mismatch_counts[i] < bsd.texel_count);
 		}
