@@ -2019,9 +2019,18 @@ uint8_t pack_color_endpoints(
 			}
 		}
 
-		if (quant_level < QUANT_256)
 		{
-			if (try_quantize_rgb_blue_contract(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level))
+			// At full precision, only blue-contract endpoints that need ordering adjustments
+			bool is_blue_contract_allowed = quant_level < QUANT_256;
+			if (!is_blue_contract_allowed)
+			{
+				vint4 color0i = float_to_int_rtn(color0_ldr);
+				vint4 color1i = float_to_int_rtn(color1_ldr);
+				is_blue_contract_allowed = hadd_rgb_s(color0i) > hadd_rgb_s(color1i);
+			}
+
+			if (is_blue_contract_allowed &&
+			    try_quantize_rgb_blue_contract(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level))
 			{
 				vint4 color0_unpack;
 				vint4 color1_unpack;
@@ -2093,9 +2102,18 @@ uint8_t pack_color_endpoints(
 			}
 		}
 
-		if (quant_level < QUANT_256)
 		{
-			if (try_quantize_rgba_blue_contract(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level))
+			// At full precision, only blue-contract endpoints that need ordering adjustments
+			bool is_blue_contract_allowed = quant_level < QUANT_256;
+			if (!is_blue_contract_allowed)
+			{
+				vint4 color0i = float_to_int_rtn(color0_ldr);
+				vint4 color1i = float_to_int_rtn(color1_ldr);
+				is_blue_contract_allowed = hadd_rgb_s(color0i) > hadd_rgb_s(color1i);
+			}
+
+			if (is_blue_contract_allowed &&
+			    try_quantize_rgba_blue_contract(color0_ldr, color1_ldr, color0_out2, color1_out2, quant_level))
 			{
 				vint4 color0_unpack;
 				vint4 color1_unpack;
