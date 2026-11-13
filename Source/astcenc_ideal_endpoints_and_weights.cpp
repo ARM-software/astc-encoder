@@ -1284,6 +1284,8 @@ static void recompute_ideal_colors_ra(
 		float scale = astc::clamp1f(rmin / astc::max(rmax, 1e-10f));
 		if (constant.lane<0>())
 		{
+			// Equal weights need a constant RGB color at the partition mean
+			rmax = avg.lane<0>();
 			scale = 1.0f;
 		}
 		else if (full_mask.lane<0>() && fit0.lane<0>() < fit1.lane<0>())
@@ -1457,7 +1459,7 @@ void recompute_ideal_colors_1plane(
 			ep.endpt0[i] = select(ep.endpt0[i], avg, notnan_mask);
 			ep.endpt1[i] = select(ep.endpt1[i], avg, notnan_mask);
 
-			rgbs_vectors[i] = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
+			rgbs_vectors[i] = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
 		}
 		else
 		{
@@ -1741,7 +1743,7 @@ void recompute_ideal_colors_2planes(
 
 		if (plane2_component == 3)
 		{
-			rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
+			rgbs_vector = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
 		}
 	}
 	else
