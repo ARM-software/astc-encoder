@@ -232,20 +232,20 @@ static void compute_ideal_colors_and_weights_2_comp(
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-	float error_weight;
+	vfloat4 color_weight;
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
 
 	if (component1 == 0 && component2 == 1)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<0, 1>()) / 2.0f;
+		color_weight = blk.channel_weight.swz<0, 1>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
 	}
 	else if (component1 == 0 && component2 == 2)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<0, 2>()) / 2.0f;
+		color_weight = blk.channel_weight.swz<0, 2>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
@@ -254,7 +254,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	{
 		assert(component1 == 1 && component2 == 2);
 
-		error_weight = hadd_s(blk.channel_weight.swz<1, 2>()) / 2.0f;
+		color_weight = blk.channel_weight.swz<1, 2>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
@@ -263,7 +263,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	compute_avgs_and_dirs_2_comp(pi, blk, component1, component2, pms);
 
 	bool is_constant_wes { true };
-	float partition0_len_sq { 0.0f };
+	float partition0_error_scale { 0.0f };
 
 	vmask4 comp1_mask = vint4::lane_id() == vint4(component1);
 	vmask4 comp2_mask = vint4::lane_id() == vint4(component2);
@@ -299,17 +299,19 @@ static void compute_ideal_colors_and_weights_2_comp(
 			highparam = 1e-7f;
 		}
 
+		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float length_squared = length * length;
+		float error_weight = dot_s(line.b * line.b, color_weight);
+		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
 		if (i == 0)
 		{
-			partition0_len_sq = length_squared;
+			partition0_error_scale = error_scale;
 		}
 		else
 		{
-			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
+			is_constant_wes = is_constant_wes && (error_scale == partition0_error_scale);
 		}
 
 		for (unsigned int j = 0; j < partition_texel_count; j++)
@@ -319,7 +321,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 			idx = astc::clamp1f(idx);
 
 			ei.weights[tix] = idx;
-			ei.weight_error_scale[tix] = length_squared * error_weight;
+			ei.weight_error_scale[tix] = error_scale;
 			assert(!astc::isnan(ei.weight_error_scale[tix]));
 		}
 
@@ -367,27 +369,27 @@ static void compute_ideal_colors_and_weights_3_comp(
 	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
-	float error_weight;
+	vfloat4 color_weight;
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
 	const float* data_vb = nullptr;
 	if (omitted_component == 0)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>());
+		color_weight = blk.channel_weight.swz<1, 2, 3>();
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
 	}
 	else if (omitted_component == 1)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>());
+		color_weight = blk.channel_weight.swz<0, 2, 3>();
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
 	}
 	else if (omitted_component == 2)
 	{
-		error_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>());
+		color_weight = blk.channel_weight.swz<0, 1, 3>();
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
 		data_vb = blk.data_a;
@@ -396,13 +398,11 @@ static void compute_ideal_colors_and_weights_3_comp(
 	{
 		assert(omitted_component == 3);
 
-		error_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>());
+		color_weight = blk.channel_weight.swz<0, 1, 2>();
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
 		data_vb = blk.data_b;
 	}
-
-	error_weight = error_weight * (1.0f / 3.0f);
 
 	if (omitted_component == 3)
 	{
@@ -414,7 +414,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	}
 
 	bool is_constant_wes { true };
-	float partition0_len_sq { 0.0f };
+	float partition0_error_scale { 0.0f };
 
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
@@ -447,17 +447,19 @@ static void compute_ideal_colors_and_weights_3_comp(
 			highparam = 1e-7f;
 		}
 
+		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float length_squared = length * length;
+		float error_weight = dot_s(line.b * line.b, color_weight);
+		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
 		if (i == 0)
 		{
-			partition0_len_sq = length_squared;
+			partition0_error_scale = error_scale;
 		}
 		else
 		{
-			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
+			is_constant_wes = is_constant_wes && (error_scale == partition0_error_scale);
 		}
 
 		for (unsigned int j = 0; j < partition_texel_count; j++)
@@ -467,7 +469,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 			idx = astc::clamp1f(idx);
 
 			ei.weights[tix] = idx;
-			ei.weight_error_scale[tix] = length_squared * error_weight;
+			ei.weight_error_scale[tix] = error_scale;
 			assert(!astc::isnan(ei.weight_error_scale[tix]));
 		}
 
@@ -524,8 +526,6 @@ static void compute_ideal_colors_and_weights_4_comp(
 	endpoints_and_weights& ei,
 	partition_metrics rgb_metrics[BLOCK_MAX_PARTITIONS]
 ) {
-	const float error_weight = hadd_s(blk.channel_weight) / 4.0f;
-
 	unsigned int partition_count = pi.partition_count;
 
 	unsigned int texel_count = blk.texel_count;
@@ -537,7 +537,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 	compute_avgs_and_dirs_4_comp(pi, blk, pms, rgb_metrics);
 
 	bool is_constant_wes { true };
-	float partition0_len_sq { 0.0f };
+	float partition0_error_scale { 0.0f };
 
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
@@ -570,17 +570,19 @@ static void compute_ideal_colors_and_weights_4_comp(
 			highparam = 1e-7f;
 		}
 
+		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float length_squared = length * length;
+		float error_weight = dot_s(line.b * line.b, blk.channel_weight);
+		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
 		if (i == 0)
 		{
-			partition0_len_sq = length_squared;
+			partition0_error_scale = error_scale;
 		}
 		else
 		{
-			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
+			is_constant_wes = is_constant_wes && (error_scale == partition0_error_scale);
 		}
 
 		ei.ep.endpt0[i] = line.a + line.b * lowparam;
@@ -593,7 +595,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 			idx = astc::clamp1f(idx);
 
 			ei.weights[tix] = idx;
-			ei.weight_error_scale[tix] = length_squared * error_weight;
+			ei.weight_error_scale[tix] = error_scale;
 			assert(!astc::isnan(ei.weight_error_scale[tix]));
 		}
 	}
