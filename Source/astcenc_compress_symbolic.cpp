@@ -693,7 +693,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_1plane(
-			    blk, pi, di, workscb.weights,
+			    blk, pi, di, workscb.weights, partition_format_specifiers[i],
 			    workep, rgbs_colors, rgbo_colors);
 
 			// Quantize the chosen color, tracking if worth trying the mod value
@@ -1088,6 +1088,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			recompute_ideal_colors_2planes(
 			    blk, bsd, di,
 			    workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
+			    partition_format_specifiers[i][0],
 			    workep, rgbs_color, rgbo_color, plane2_component);
 
 			// Quantize the chosen color
