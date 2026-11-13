@@ -1487,10 +1487,14 @@ static void quantize_hdr_rgb(
 		d0_fval = astc::clamp(d0_fval, -65535.0f, 65535.0f);
 		d1_fval = astc::clamp(d1_fval, -65535.0f, 65535.0f);
 
-		int d0_intval = astc::flt2int_rtn(d0_fval * mode_scale);
-		int d1_intval = astc::flt2int_rtn(d1_fval * mode_scale);
 
-		if (abs(d0_intval) >= d_intcutoff || abs(d1_intval) >= d_intcutoff)
+		// Round signed deltas to nearest, with halfway cases rounding upward
+		int d0_intval = static_cast<int>(astc::flt_rd(d0_fval * mode_scale + 0.5f));
+		int d1_intval = static_cast<int>(astc::flt_rd(d1_fval * mode_scale + 0.5f));
+
+		// The negative limit is inclusive; the positive limit is exclusive
+		if ((d0_intval < -d_intcutoff) || (d0_intval >= d_intcutoff) ||
+		    (d1_intval < -d_intcutoff) || (d1_intval >= d_intcutoff))
 		{
 			continue;
 		}
