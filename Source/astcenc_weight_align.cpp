@@ -382,13 +382,16 @@ void compute_angular_endpoints_1plane(
 	float (&low_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values1;
 	float (&high_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values1;
 
+	// Modes above the angular cutoff use fixed bounds and do not need a search
+	unsigned int max_angular_quant = astc::min(max_weight_quant, TUNE_MAX_ANGULAR_QUANT);
+
 	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
 	                                                : bsd.decimation_mode_count_selected;
 	promise(max_decimation_modes > 0);
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.is_ref_1plane(static_cast<quant_method>(max_weight_quant)))
+		if (!dm.is_ref_1plane(static_cast<quant_method>(max_angular_quant)))
 		{
 			continue;
 		}
@@ -453,11 +456,14 @@ void compute_angular_endpoints_2planes(
 	float (&low_values2)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values2;
 	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values2;
 
+	// Modes above the angular cutoff use fixed bounds and do not need a search
+	unsigned int max_angular_quant = astc::min(max_weight_quant, TUNE_MAX_ANGULAR_QUANT);
+
 	promise(bsd.decimation_mode_count_selected > 0);
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.is_ref_2plane(static_cast<quant_method>(max_weight_quant)))
+		if (!dm.is_ref_2plane(static_cast<quant_method>(max_angular_quant)))
 		{
 			continue;
 		}
