@@ -162,11 +162,8 @@ static void compute_ideal_colors_and_weights_1_comp(
 			highvalue = astc::max(value, highvalue);
 		}
 
-		if (highvalue <= lowvalue)
-		{
-			lowvalue = 0.0f;
-			highvalue = 1e-7f;
-		}
+		// Constant components are excluded before selecting the second weight plane
+		assert(highvalue > lowvalue);
 
 		float length = highvalue - lowvalue;
 		float length_squared = length * length;
