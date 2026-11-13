@@ -818,6 +818,12 @@ static float compress_symbolic_block_for_partition_1plane(
 				}
 			}
 
+			// The unchanged first-pass candidate was already scored before weight refinement
+			if ((l == 0) && !adjustments)
+			{
+				break;
+			}
+
 			// Post-realign test
 			float errorval = compute_difference(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
@@ -1150,6 +1156,12 @@ static float compress_symbolic_block_for_partition_2planes(
 			{
 				adjustments = realign_weights_undecimated_1partition(
 					config.profile, bsd, blk, workscb);
+			}
+
+			// The unchanged first-pass candidate was already scored before weight refinement
+			if ((l == 0) && !adjustments)
+			{
+				break;
 			}
 
 			// Post-realign test
