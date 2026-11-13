@@ -2194,6 +2194,10 @@ uint8_t pack_color_endpoints(
 		break;
 
 	case FMT_LUMINANCE_ALPHA:
+		// Preferring delta can be suboptimal, but comparing against direct encoding adds cost for
+		// negligible image quality gains. QUANT_16 L/A endpoint examples:
+		//   Input: (153,153), (153,170); Direct: (153,153), (153,170); Delta: (153,153), (152,165)
+		//   Input: (153,153), (170,153); Direct: (153,153), (170,153); Delta: (153,153), (165,152)
 		if (quant_level <= 18)
 		{
 			if (try_quantize_luminance_alpha_delta(color0_ldr, color1_ldr, output, quant_level))
