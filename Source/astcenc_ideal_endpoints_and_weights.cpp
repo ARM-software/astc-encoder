@@ -277,6 +277,10 @@ static void compute_ideal_colors_and_weights_2_comp(
 		}
 
 		line2 line { pms[i].avg, normalize_safe(dir, unit2()) };
+		float error_weight = dot_s(line.b * line.b, color_weight);
+
+		// Fit weights in the channel error metric while preserving the endpoint range
+		vfloat4 proj_dir = line.b * color_weight / error_weight;
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
@@ -286,7 +290,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 			unsigned int tix = pi.texels_of_partition[i][j];
 			vfloat4 point = vfloat2(data_vr[tix], data_vg[tix]);
 			float param = dot_s(point - line.a, line.b);
-			ei.weights[tix] = param;
+			ei.weights[tix] = dot_s(point - line.a, proj_dir);
 
 			lowparam = astc::min(param, lowparam);
 			highparam = astc::max(param, highparam);
@@ -301,7 +305,6 @@ static void compute_ideal_colors_and_weights_2_comp(
 
 		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float error_weight = dot_s(line.b * line.b, color_weight);
 		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
@@ -425,6 +428,10 @@ static void compute_ideal_colors_and_weights_3_comp(
 		}
 
 		line3 line { pms[i].avg, normalize_safe(dir, unit3()) };
+		float error_weight = dot_s(line.b * line.b, color_weight);
+
+		// Fit weights in the channel error metric while preserving the endpoint range
+		vfloat4 proj_dir = line.b * color_weight / error_weight;
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
@@ -434,7 +441,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 			unsigned int tix = pi.texels_of_partition[i][j];
 			vfloat4 point = vfloat3(data_vr[tix], data_vg[tix], data_vb[tix]);
 			float param = dot3_s(point - line.a, line.b);
-			ei.weights[tix] = param;
+			ei.weights[tix] = dot_s(point - line.a, proj_dir);
 
 			lowparam = astc::min(param, lowparam);
 			highparam = astc::max(param, highparam);
@@ -449,7 +456,6 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float error_weight = dot_s(line.b * line.b, color_weight);
 		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
@@ -548,6 +554,10 @@ static void compute_ideal_colors_and_weights_4_comp(
 		}
 
 		line4 line { pms[i].avg, normalize_safe(dir, unit4()) };
+		float error_weight = dot_s(line.b * line.b, blk.channel_weight);
+
+		// Fit weights in the channel error metric while preserving the endpoint range
+		vfloat4 proj_dir = line.b * blk.channel_weight / error_weight;
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
@@ -557,7 +567,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 			unsigned int tix = pi.texels_of_partition[i][j];
 			vfloat4 point = blk.texel(tix);
 			float param = dot_s(point - line.a, line.b);
-			ei.weights[tix] = param;
+			ei.weights[tix] = dot_s(point - line.a, proj_dir);
 
 			lowparam = astc::min(param, lowparam);
 			highparam = astc::max(param, highparam);
@@ -572,7 +582,6 @@ static void compute_ideal_colors_and_weights_4_comp(
 
 		// Weight error depends on both the endpoint distance and the fitted direction
 		float length = highparam - lowparam;
-		float error_weight = dot_s(line.b * line.b, blk.channel_weight);
 		float error_scale = length * length * error_weight;
 		float scale = 1.0f / length;
 
