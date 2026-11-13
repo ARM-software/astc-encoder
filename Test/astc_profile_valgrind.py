@@ -16,10 +16,9 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-This script is a wrapper around Valgrind that will capture a callgrind profile,
-and then use gprof2dot and dot to produce an annotated call graph image. The
-command line options following the script options are passed through to astcenc
-unchanged.
+This script is a wrapper around Valgrind that will capture a callgrind profile, and then use
+gprof2dot and dot to produce an annotated call graph image. The command line options following the
+script options are passed through to astcenc unchanged.
 
 This script requires the following tools available on the PATH:
 
@@ -38,6 +37,9 @@ import re
 import subprocess as sp
 import sys
 
+from testlib.cli import add_codec_arguments
+from testlib.profile import PROFILE_ERRORS, report_error, resolve_binary
+
 
 def rank_hot_functions(lines: list[str]) -> str:
     '''
@@ -50,15 +52,14 @@ def rank_hot_functions(lines: list[str]) -> str:
         The report ranking the hot functions.
     '''
     # Parse pattern for useful callgrind lines
-    parse_pattern = re.compile(
-        r'^\s*([0-9,]+)\s+\([ 0-9.]+%\)\s+Source/(\S+):(\S+)\(.*\).*$'
-    )
+    parse_pattern = re.compile(r'^\s*([0-9,]+)\s+\([ 0-9.]+%\)\s+Source/(\S+):(\S+)\(.*\).*$')
 
     function_cost: dict[str, float] = defaultdict(float)
 
     for line in lines:
         line = line.strip()
         match = parse_pattern.match(line)
+
         if not match:
             continue
 
@@ -82,6 +83,7 @@ def rank_hot_functions(lines: list[str]) -> str:
 
     report: list[str] = []
     total_reported = 0.0
+
     for func, func_cost in function_table:
         func_percent = (func_cost / total_cost) * 100.0
 
@@ -98,8 +100,7 @@ def rank_hot_functions(lines: list[str]) -> str:
     return '\n'.join(report)
 
 
-def run_pass(binary: str, arguments: list[str], output: str,
-             show_cli: bool) -> None:
+def run_pass(binary: str, arguments: list[str], output: str, show_cli: bool) -> None:
     '''
     Run Valgrind on a single binary.
 
@@ -124,10 +125,7 @@ def run_pass(binary: str, arguments: list[str], output: str,
     sp.run(args, check=True)
 
     # Run callgrind analysis
-    args = [
-        'callgrind_annotate',
-        'callgrind.txt'
-    ]
+    args = ['callgrind_annotate', 'callgrind.txt']
 
     ret = sp.run(args, stdout=sp.PIPE, check=True, encoding='utf-8')
     lines = ret.stdout.splitlines()
@@ -144,6 +142,7 @@ def run_pass(binary: str, arguments: list[str], output: str,
 
     # Write the visual call graph
     entry_func = 'main'
+
     if not show_cli:
         entry_func = 'compress_block(' \
             'astcenc_contexti const&, ' \
@@ -161,11 +160,7 @@ def run_pass(binary: str, arguments: list[str], output: str,
 
     sp.run(args, check=True, text=True)
 
-    args = [
-        'dot',
-        '-Tpng', 'out.dot',
-        '-o', f'{output}.png'
-    ]
+    args = ['dot', '-Tpng', 'out.dot', '-o', f'{output}.png']
 
     sp.run(args, check=True, text=True)
 
@@ -189,10 +184,7 @@ def parse_command_line() -> argparse.Namespace:
     parser.add_argument('--output', default='perf',
                         help='output file base name (default: %(default)s)')
 
-    parser.add_argument('binary', help='the astcenc binary to profile')
-
-    parser.add_argument('arguments', nargs=argparse.REMAINDER,
-                        help='arguments passed through to the binary')
+    add_codec_arguments(parser)
 
     args = parser.parse_args()
 
@@ -210,7 +202,13 @@ def main() -> int:
         int: The process return code.
     '''
     args = parse_command_line()
-    run_pass(args.binary, args.arguments, args.output, args.show_cli)
+
+    try:
+        binary = resolve_binary(args.binary)
+        run_pass(binary, args.arguments, args.output, args.show_cli)
+    except PROFILE_ERRORS as error:
+        return report_error(error)
+
     return 0
 
 

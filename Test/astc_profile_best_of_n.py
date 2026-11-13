@@ -18,83 +18,29 @@
 '''
 Utility script to compare the best performance of two astcenc binaries.
 
-The binaries are run in alternating order and the best reported processing
-time for each binary is retained. The command line options following the
-script options are passed through to astcenc unchanged.
+The binaries are run in alternating order and the best reported processing time for each binary is
+retained. The command line options following the script options are passed through to astcenc
+unchanged.
 '''
-
-# Pylint reports duplicate-code at module scope, so it cannot be suppressed
-# only on parse_command_line(). Keep the command-line interface local and
-# aligned with astc_profile_ttest.py.
-# pylint: disable=duplicate-code
 
 import argparse
 import sys
 
+from testlib.cli import parse_comparison_args
 from testlib.profile import profile_binaries
 from testlib.profile import PROFILE_ERRORS
 from testlib.profile import report_error
 
 
-def confidence_value(value: str) -> float:
-    '''
-    Parse and validate a confidence level argument.
-
-    This option is accepted for command-line compatibility with
-    astc_profile_ttest.py, but is not otherwise used.
-
-    Args:
-        value: The confidence level string.
-
-    Return:
-        The parsed confidence level.
-
-    Raises:
-        ArgumentTypeError: The confidence level is outside the valid range.
-    '''
-    result = float(value)
-    if not 0.0 < result < 1.0:
-        raise argparse.ArgumentTypeError('Must be between 0 and 1')
-    return result
-
-
 def parse_command_line() -> argparse.Namespace:
     '''
-    Parse the command line.
+    Parse the binary comparison command line.
 
     Return:
-        The parsed command-line arguments.
+        The binary paths, codec arguments, and validated sampling settings.
     '''
-    parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('binary_a', help='the first astcenc binary')
-
-    parser.add_argument('binary_b', help='the second astcenc binary')
-
-    parser.add_argument('arguments', nargs=argparse.REMAINDER,
-                        help='arguments passed through to both binaries')
-
-    parser.add_argument('--runs', type=int, default=10,
-                        help='number of measured pairs (default: %(default)s)')
-
-    parser.add_argument('--warmups', type=int, default=1,
-                        help='number of warm-up pairs (default: %(default)s)')
-
-    parser.add_argument('--confidence', type=confidence_value, default=0.95,
-                        help='accepted for compatibility; otherwise ignored')
-
-    args = parser.parse_args()
-
-    if args.runs < 1:
-        parser.error('--runs must be at least 1')
-
-    if args.warmups < 0:
-        parser.error('--warmups cannot be negative')
-
-    if not args.arguments:
-        parser.error('no astcenc arguments specified')
-
-    return args
+    return parse_comparison_args(__doc__, is_ttest=False)
 
 
 def main() -> int:
@@ -122,6 +68,7 @@ def main() -> int:
 
     if best_a == best_b:
         print('Result: equal best processing time')
+
         return 0
 
     if best_a < best_b:
@@ -134,8 +81,7 @@ def main() -> int:
         slower_time = best_a
 
     reduction = (slower_time - faster_time) / slower_time * 100.0
-    print(f'Result: {winner} is faster '
-          f'({reduction:.2f}% lower best processing time)')
+    print(f'Result: {winner} is faster ({reduction:.2f}% lower best processing time)')
 
     return 0
 

@@ -16,30 +16,26 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-The functional test runner is a set of tests that validate that the astcenc
-cmd line tool interface is correctly handled, under both valid and invalid
-usage scenarios. These tests do not directly validate the correctness of the
-core codec library, and only the options accessible via the cmd line tool
-will be exercised.
+The functional test runner is a set of tests that validate that the astcenc cmd line tool interface
+is correctly handled, under both valid and invalid usage scenarios. These tests do not directly
+validate the correctness of the core codec library, and only the options accessible via the cmd line
+tool will be exercised.
 
-Python PIL does not support enough image formats so, due to the need to
-validate pixel colors in test images for both LDR and HDR images, these tests
-rely on an HDRI-enabled build of ImageMagick being available on the system
+Python PIL does not support enough image formats so, due to the need to validate pixel colors in
+test images for both LDR and HDR images, these tests rely on an HDRI-enabled build of ImageMagick
+being available on the system
 path. To test if the version of ImageMagick on your system is HDRI-enabled run:
 
-    convert --version (Linux or macOS)
-    magick convert --version (Windows)
+    convert --version (Linux or macOS) magick convert --version (Windows)
 
 ... and check that the string 'HDRI' is present in the listed features.
 
-Test Tiles
-==========
+Test Tiles ==========
 
-Some of these tests use small test images with defined colors. These test tiles
-are 8x8 texels in size, built up from 4x4 texel blocks of solid color. When
-compressing with the 4x4 ASTC block size, each 4x4 block can be represented
-exactly, so we can test for specific colors in tests even though the format is
-notionally lossy.
+Some of these tests use small test images with defined colors. These test tiles are 8x8 texels in
+size, built up from 4x4 texel blocks of solid color. When compressing with the 4x4 ASTC block size,
+each 4x4 block can be represented exactly, so we can test for specific colors in tests even though
+the format is notionally lossy.
 
 * See ASTCENC_TEST_PATTERN_LDR for the LDR test pattern colors.
 * See ASTCENC_TEST_PATTERN_HDR for the HDR test pattern colors.
@@ -88,7 +84,7 @@ ASTCENC_TEST_PATTERN_LDR = {
     'TL': (0.00, 0.00, 0.00, 1.00),
     'TR': (1.00, 0.00, 0.00, 1.00),
     'BL': (1.00, 1.00, 1.00, 1.00),
-    'BR': (0.25, 0.75, 0.00, 0.87)
+    'BR': (0.25, 0.75, 0.00, 0.87),
 }
 
 # HDR test pattern
@@ -96,7 +92,7 @@ ASTCENC_TEST_PATTERN_HDR = {
     'TL': (0.00, 0.00, 0.00, 1.00),
     'TR': (8.00, 0.00, 0.00, 1.00),
     'BL': (3.98, 3.98, 3.98, 1.00),
-    'BR': (0.25, 0.75, 0.00, 0.87)
+    'BR': (0.25, 0.75, 0.00, 0.87),
 }
 
 LDR_RGB_PSNR_PATTERN = re.compile(r'\s*PSNR \(LDR-RGB\): (.*) dB')
@@ -148,6 +144,7 @@ class CLITestBase(unittest.TestCase):
             The path to the test image file on disk.
         '''
         script_dir = Path(__file__).parent
+
         return script_dir / 'Data' / image
 
     @staticmethod
@@ -166,16 +163,16 @@ class CLITestBase(unittest.TestCase):
         file_exts = {
             'LDR': {
                 'input': 'png',
-                'comp': 'astc'
+                'comp': 'astc',
             },
             'LDRS': {
                 'input': 'png',
-                'comp': 'astc'
+                'comp': 'astc',
             },
             'HDR': {
                 'input': 'exr',
-                'comp': 'astc'
-            }
+                'comp': 'astc',
+            },
         }
 
         assert profile in file_exts
@@ -183,29 +180,30 @@ class CLITestBase(unittest.TestCase):
 
         script_dir = Path(__file__).parent
         file_name = f'{profile}-{image}-1x1.{file_exts[profile][mode]}'
+
         return script_dir / 'Data' / file_name
 
     def get_tmp_image_path(self, profile: str, mode: str) -> Path:
         '''
         Get the path of a temporary output image on disk.
 
-        Temporary files are automatically cleaned up when the test tearDown
-        occurs.
+        Temporary files are automatically cleaned up when the test tearDown occurs.
 
         Args:
-            profile: The color profile. 'EXP' means explicit which means
-                the 'mode' parameter is interpreted as a literal file
-                extension not a symbolic mode.
+            profile: The color profile. 'EXP' means explicit which means the 'mode' parameter is
+                interpreted as a literal file extension not a symbolic mode.
             mode: The type of image to load.
 
         Return:
             The path to the test image file on disk.
         '''
+
         # Handle explicit mode
         if profile == 'EXP':
             file_handle, path = tempfile.mkstemp(mode, dir=self.tmp_dir.name)
             os.close(file_handle)
             os.remove(path)
+
             return Path(path)
 
         # Handle symbolic modes
@@ -213,18 +211,18 @@ class CLITestBase(unittest.TestCase):
             'LDR': {
                 'comp': '.astc',
                 'decomp': '.png',
-                'bad': '.foo'
+                'bad': '.foo',
             },
             'LDRS': {
                 'comp': '.astc',
                 'decomp': '.png',
-                'bad': '.foo'
+                'bad': '.foo',
             },
             'HDR': {
                 'comp': '.astc',
                 'decomp': '.exr',
-                'bad': '.foo'
-            }
+                'bad': '.foo',
+            },
         }
 
         assert profile in file_exts
@@ -234,6 +232,7 @@ class CLITestBase(unittest.TestCase):
         file_handle, path = tempfile.mkstemp(suffix, dir=self.tmp_dir.name)
         os.close(file_handle)
         os.remove(path)
+
         return Path(path)
 
 
@@ -252,8 +251,8 @@ class CLIPTest(CLITestBase):
         '''
         Utility function to compare two images.
 
-        Note that this comparison tests only decoded color values; file
-        metadata is ignored, and encoding methods are not compared.
+        Note that this comparison tests only decoded color values; file metadata is ignored, and
+        encoding methods are not compared.
 
         Args:
             image1: Path to the first image.
@@ -288,6 +287,7 @@ class CLIPTest(CLITestBase):
         dat1 = numpy.array(img1)
         dat2 = numpy.array(img2)
         sad = numpy.sum(numpy.abs(dat1 - dat2))
+
         return sad == 0
 
     def get_channel_rmse(self, image1: Path, image2: Path) -> list[float]:
@@ -328,6 +328,7 @@ class CLIPTest(CLITestBase):
 
         rmse_channels = []
         img_channels = zip(img1.split(), img2.split())
+
         for img1_channel, img2_channel in img_channels:
             texel_count = numpy.prod(img1_channel.size)
             diff = numpy.array(img1_channel) - numpy.array(img2_channel)
@@ -351,7 +352,7 @@ class CLIPTest(CLITestBase):
         '''
         modes = {
             'LDR': ASTCENC_TEST_PATTERN_LDR,
-            'HDR': ASTCENC_TEST_PATTERN_HDR
+            'HDR': ASTCENC_TEST_PATTERN_HDR,
         }
 
         return modes[mode][corners]
@@ -368,8 +369,8 @@ class CLIPTest(CLITestBase):
             color1: The reference color to compare with.
             color2: The new color to compare.
             threshold: The allowed deviation from reference (ratio).
-            swizzle: The swizzle string (4 characters from the set rgba01), to
-                be applied to the reference color.
+            swizzle: The swizzle string (4 characters from the set rgba01), to be applied to the
+                reference color.
         '''
         # pylint: disable=invalid-name, consider-using-generator
 
@@ -383,16 +384,19 @@ class CLIPTest(CLITestBase):
             # Static remaps for literal zero and 1
             remap_index = {
                 '0': len(color1),
-                '1': len(color1) + 1
+                '1': len(color1) + 1,
             }
 
             # Dynamic remaps for channels that exist in reference
             if len(color1) >= 1:
                 remap_index['r'] = 0
+
             if len(color1) >= 2:
                 remap_index['g'] = 1
+
             if len(color1) >= 3:
                 remap_index['b'] = 2
+
             if len(color1) >= 4:
                 remap_index['a'] = 3
 
@@ -403,29 +407,24 @@ class CLIPTest(CLITestBase):
             max_delta = ref_channel * threshold
             self.assertAlmostEqual(ref_channel, new_channel, delta=max_delta)
 
-    def exec(self, cmd: list[str | Path],
-             pattern: Optional[re.Pattern] = None) -> str:
+    def exec(self, cmd: list[str | Path], pattern: Optional[re.Pattern] = None) -> str:
         '''
         Execute a positive test.
 
-        Will trigger a test failure if the subprocess return code is any value
-        other than zero.
+        Will trigger a test failure if the subprocess return code is any value other than zero.
 
         Args:
             cmd: The cmd to execute.
-            pattern: A regex pattern to search for, must contain a single group
-                which will be returned to the caller. The test will fail if no
-                pattern match is found.
+            pattern: A regex pattern to search for, must contain a single group which will be
+                returned to the caller. The test will fail if no pattern match is found.
 
         Return:
-            The stdout output of the child process if no pattern, or the first
-            group match from the pattern when applied to stdout output of the
-            child process.
+            The stdout output of the child process if no pattern, or the first group match from the
+            pattern when applied to stdout output of the child process.
         '''
         try:
             cmd_str = [str(x) for x in cmd]
-            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE,
-                            text=True, check=True)
+            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE, text=True, check=True)
             rcode = result.returncode
             rstdout = result.stdout
             rstderr = result.stderr
@@ -457,6 +456,7 @@ class CLIPTest(CLITestBase):
         if pattern:
             if match := pattern.search(rstdout):
                 return match.group(1)
+
             self.assertIsNotNone(match)
 
         return rstdout
@@ -615,12 +615,12 @@ class CLIPTest(CLITestBase):
         '''
         Test SSIM channel labels, identity scores, and HDR exposure reporting.
         '''
+
         for profile, mode in (('LDR', '-tl'), ('LDRS', '-ts')):
             with self.subTest(mode=mode):
                 image_in = self.get_ref_image_path(profile, 'input', 'A')
                 image_out = self.get_tmp_image_path('LDR', 'decomp')
-                cmd = [self.binary, mode, image_in, image_out,
-                       '6x6', '-exhaustive', '-j', '1']
+                cmd = [self.binary, mode, image_in, image_out, '6x6', '-exhaustive', '-j', '1']
                 stdout = self.exec(cmd)
                 self.assertRegex(stdout, r'SSIM \(LDR-RGB\):\s+1\.0000')
                 self.assertRegex(stdout, r'SSIM \(LDR-RGBA\):\s+1\.0000')
@@ -633,9 +633,37 @@ class CLIPTest(CLITestBase):
                 cmd = [self.binary, mode, image_in, image_out,
                        '6x6', '-exhaustive', '-mpsnr', '-2', '2', '-j', '1']
                 stdout = self.exec(cmd)
-                self.assertRegex(stdout, r'mSSIM \(RGB\):\s+1\.0000 '
-                                         r'\(fstops -2 to \+2\)')
+                self.assertRegex(stdout, r'mSSIM \(RGB\):\s+1\.0000 \(fstops -2 to \+2\)')
                 self.assertNotIn('SSIM (LDR-', stdout)
+
+    def assert_hdr_auto_exposure(self, pixels: bytes, low: int, high: int) -> None:
+        '''
+        Check automatic metric exposure and the effect of an explicit override.
+
+        Args:
+            pixels: Two RGBE pixels defining the HDR input.
+            low: The expected automatic lower exposure stop.
+            high: The expected automatic upper exposure stop.
+        '''
+        image_in = self.get_tmp_image_path('EXP', '.hdr')
+        image_in.write_bytes(b'#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X 2\n' + pixels)
+        image_out = self.get_tmp_image_path('EXP', '.ktx')
+        cmd = [self.binary, '-th', image_in, image_out, '4x4', '-fastest', '-j', '1']
+
+        # Both HDR metrics must use the range selected from the input exposure
+        stdout = self.exec(cmd)
+        pattern = r'm(?:PSNR|SSIM) \(RGB\):.*\(fstops ([+-]\d+) to ([+-]\d+)\)'
+        ranges = re.findall(pattern, stdout)
+        expected = (f'{low:+d}', f'{high:+d}')
+        self.assertEqual(ranges, [expected, expected])
+        decoded = image_out.read_bytes()
+
+        # Explicit limits change scoring without changing the decoded output
+        stdout = self.exec(cmd + ['-mpsnr', '-12', '12'])
+        ranges = re.findall(pattern, stdout)
+        self.assertEqual(ranges, [('-12', '+12'), ('-12', '+12')])
+        overridden = image_out.read_bytes()
+        self.assertEqual(overridden, decoded)
 
     def test_hdr_auto_exposure(self) -> None:
         '''
@@ -646,7 +674,6 @@ class CLIPTest(CLITestBase):
         bright = bytes((128, 128, 128, 133))  # Linear RGB = 16
         very_bright = bytes((128, 128, 128, 144))  # Linear RGB = 32768
         very_dim = bytes((128, 128, 128, 109))  # Linear RGB = 2^-20
-
         cases = (
             ('grey', grey + grey, -4, 0),
             ('scaled', bright + bright, -8, -4),
@@ -659,37 +686,18 @@ class CLIPTest(CLITestBase):
 
         for name, pixels, low, high in cases:
             with self.subTest(case=name):
-                image_in = self.get_tmp_image_path('EXP', '.hdr')
-                image_in.write_bytes(
-                    b'#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X 2\n'
-                    + pixels)
-                image_out = self.get_tmp_image_path('EXP', '.ktx')
-                cmd = [self.binary, '-th', image_in, image_out,
-                       '4x4', '-fastest', '-j', '1']
-                stdout = self.exec(cmd)
-                ranges = re.findall(
-                    r'm(?:PSNR|SSIM) \(RGB\):.*'
-                    r'\(fstops ([+-]\d+) to ([+-]\d+)\)', stdout)
-                expected = (f'{low:+d}', f'{high:+d}')
-                self.assertEqual(ranges, [expected, expected])
-                decoded = image_out.read_bytes()
+                self.assert_hdr_auto_exposure(pixels, low, high)
 
-                # Explicit limits bypass automatic range selection
-                stdout = self.exec(cmd + ['-mpsnr', '-12', '12'])
-                ranges = re.findall(
-                    r'm(?:PSNR|SSIM) \(RGB\):.*'
-                    r'\(fstops ([+-]\d+) to ([+-]\d+)\)', stdout)
-                self.assertEqual(ranges, [('-12', '+12'), ('-12', '+12')])
-                self.assertEqual(image_out.read_bytes(), decoded)
-
-    def test_hdr_ldr_exposures(self) -> None:
+    def make_hdr_exposure_image(self) -> Path:
         '''
-        Test exposure names, HDR highlights, linear alpha, and LDR file types.
+        Write an HDR fixture containing dim and bright blocks with linear alpha.
+
+        Return:
+            The path to the floating-point KTX fixture.
         '''
         src = self.get_tmp_image_path('EXP', '.ktx')
 
         # Solid blocks isolate exposure mapping from compression error
-        # Highlights exceed 1.0, while alpha stays at 0.5 to check scaling
         data = numpy.full((4, 8, 4), 0.25, dtype='<f4')
         data[:, 4:, :3] = 4.0
         data[:, :, 3] = 0.5
@@ -699,51 +707,95 @@ class CLIPTest(CLITestBase):
         payload = struct.pack('<I', data.nbytes) + data.tobytes()
         src.write_bytes(header + payload)
 
-        # Exposure suffixes show signs only for nonzero f-stops
+        return src
+
+    def assert_hdr_exposure_pixels(self, path: Path, mode: str, fstop: int) -> None:
+        '''
+        Check the gamma-mapped RGB and linear alpha in one LDR exposure image.
+
+        Args:
+            path: The exposure image to inspect.
+            mode: The codec profile used for compression.
+            fstop: The exposure stop applied when writing the image.
+        '''
+        with Image.open(path) as image:
+            self.assertEqual(image.size, (8, 4))
+            rgba = image.convert('RGBA')
+
+            for x, value in ((0, 0.25), (4, 4.0)):
+                # LDR compression clips HDR highlights before exposure is applied
+                if mode in ('-tl', '-ts'):
+                    value = min(value, 1.0)
+
+                gamma = (value * 2**fstop)**(1/2.2)
+                rgb = round(min(gamma, 1) * 255)
+                pixel = rgba.getpixel((x, 0))
+                assert isinstance(pixel, tuple)
+
+                for channel in pixel[:3]:
+                    self.assertAlmostEqual(channel, rgb, delta=1)
+
+                self.assertAlmostEqual(pixel[3], 128, delta=1)
+
+    def assert_hdr_preview_metrics(self, src: Path, mode: str, args: list[str],
+                                   preview_log: str) -> None:
+        '''
+        Check that writing an LDR preview preserves floating-point HDR quality metrics.
+
+        Args:
+            src: The HDR input image.
+            mode: The HDR compression profile.
+            args: The compression settings shared by both output types.
+            preview_log: The codec output from writing the LDR preview.
+        '''
+        hdr_out = self.get_tmp_image_path('EXP', '.ktx')
+        cmd = [self.binary, mode, src, hdr_out] + args
+        hdr_log = self.exec(cmd)
+        pattern = r'm(?:PSNR|SSIM) \(RGB\):[^\n]+'
+        scores = re.findall(pattern, preview_log)
+        hdr_scores = re.findall(pattern, hdr_log)
+        self.assertEqual(scores, hdr_scores)
+
+    def assert_hdr_ldr_exposures(self, src: Path, mode: str, ext: str) -> None:
+        '''
+        Check exposure filenames, pixels, and metrics for one output format and profile.
+
+        Args:
+            src: The HDR input image.
+            mode: The compression profile.
+            ext: The LDR output file extension.
+        '''
+        dst = self.get_tmp_image_path('EXP', ext)
+        args = ['4x4', '-fastest', '-mpsnr', '-3', '1', '-j', '1']
+        cmd = [self.binary, mode, src, dst] + args
+        stdout = self.exec(cmd)
+        is_written = dst.exists()
+        self.assertFalse(is_written)
+
+        # Exposure suffixes show signs only for nonzero stops
         suffixes = ('-3', '-2', '-1', '0', '+1')
+        expected = {f'{dst.stem}_{suffix}{ext}' for suffix in suffixes}
+        paths = dst.parent.glob(f'{dst.stem}_*{ext}')
+        actual = {path.name for path in paths}
+        self.assertEqual(actual, expected)
+
+        for fstop, suffix in zip(range(-3, 2), suffixes):
+            exposure = dst.with_name(f'{dst.stem}_{suffix}{ext}')
+            self.assert_hdr_exposure_pixels(exposure, mode, fstop)
+
+        if (mode in ('-th', '-tH')) and (ext == '.png'):
+            self.assert_hdr_preview_metrics(src, mode, args, stdout)
+
+    def test_hdr_ldr_exposures(self) -> None:
+        '''
+        Test exposure names, HDR highlights, linear alpha, and LDR file types.
+        '''
+        src = self.make_hdr_exposure_image()
 
         for mode in ('-tl', '-ts', '-th', '-tH'):
             for ext in ('.png', '.PNG', '.bmp', '.tga'):
                 with self.subTest(mode=mode, extension=ext):
-                    dst = self.get_tmp_image_path('EXP', ext)
-                    args = ['4x4', '-fastest', '-mpsnr', '-3', '1', '-j', '1']
-                    cmd = [self.binary, mode, src, dst] + args
-                    stdout = self.exec(cmd)
-                    self.assertFalse(dst.exists())
-                    expected = {f'{dst.stem}_{s}{ext}' for s in suffixes}
-                    paths = dst.parent.glob(f'{dst.stem}_*{ext}')
-                    actual = {p.name for p in paths}
-                    self.assertEqual(actual, expected)
-
-                    # Check gamma-mapped RGB and unchanged linear alpha
-                    for fstop, suffix in zip(range(-3, 2), suffixes):
-                        exposure = dst.with_name(f'{dst.stem}_{suffix}{ext}')
-                        with Image.open(exposure) as image:
-                            self.assertEqual(image.size, (8, 4))
-                            rgba = image.convert('RGBA')
-                            for x, value in ((0, 0.25), (4, 4.0)):
-                                # LDR compression clips HDR highlights first
-                                if mode in ('-tl', '-ts'):
-                                    value = min(value, 1.0)
-
-                                gamma = (value * 2**fstop)**(1/2.2)
-                                rgb = round(min(gamma, 1) * 255)
-                                pixel = rgba.getpixel((x, 0))
-                                assert isinstance(pixel, tuple)
-                                for chan in pixel[:3]:
-                                    self.assertAlmostEqual(chan, rgb, delta=1)
-
-                                self.assertAlmostEqual(pixel[3], 128, delta=1)
-
-                    # Preview output must preserve floating-point HDR metrics
-                    if (mode in ('-th', '-tH')) and (ext == '.png'):
-                        hdr_out = self.get_tmp_image_path('EXP', '.ktx')
-                        cmd = [self.binary, mode, src, hdr_out] + args
-                        hdr_log = self.exec(cmd)
-                        pattern = r'm(?:PSNR|SSIM) \(RGB\):[^\n]+'
-                        scores = re.findall(pattern, stdout)
-                        hdr_scores = re.findall(pattern, hdr_log)
-                        self.assertEqual(scores, hdr_scores)
+                    self.assert_hdr_ldr_exposures(src, mode, ext)
 
     def test_hdr_ldr_container_exposures(self) -> None:
         '''
@@ -751,6 +803,7 @@ class CLIPTest(CLITestBase):
         '''
         src = self.get_ref_image_path('HDR', 'input', 'A')
         args = ['4x4', '-fastest', '-j', '1']
+
         for mode in ('-tl', '-ts'):
             for ext in ('.dds', '.ktx', ''):
                 with self.subTest(mode=mode, extension=ext):
@@ -760,6 +813,7 @@ class CLIPTest(CLITestBase):
                     self.assertFalse(dst.exists())
                     exposure = dst.with_name('preview_0' + ext)
                     self.assertTrue(exposure.is_file())
+
                     if not ext:
                         # The container loader needs an extension
                         path = self.get_tmp_image_path('EXP', '.ktx')
@@ -786,8 +840,7 @@ class CLIPTest(CLITestBase):
         cmd = [self.binary, '-th', src, dst, '4x4', '-fastest', '-j', '1']
         stdout = self.exec(cmd)
         self.assertRegex(stdout, r'mPSNR \(RGB\):.*\(fstops -4 to \+0\)')
-        expected = {f'preview.with.dots_{s}.png'
-                    for s in ('-4', '-3', '-2', '-1', '0')}
+        expected = {f'preview.with.dots_{s}.png' for s in ('-4', '-3', '-2', '-1', '0')}
         paths = dst.parent.glob('preview.with.dots*.png')
         actual = {p.name for p in paths}
         self.assertEqual(actual, expected)
@@ -806,10 +859,7 @@ class CLIPTest(CLITestBase):
 
         for block_size in block_sizes:
             with self.subTest(block_size=block_size):
-                cmd = [
-                    self.binary, '-tl',
-                    image_in, image_out, block_size, '-exhaustive'
-                ]
+                cmd = [self.binary, '-tl', image_in, image_out, block_size, '-exhaustive']
 
                 self.exec(cmd)
                 color_in = tli.Image(image_in).get_colors((0, 0))
@@ -832,10 +882,7 @@ class CLIPTest(CLITestBase):
 
         for block_size in block_sizes:
             with self.subTest(block_size=block_size):
-                cmd = [
-                    self.binary, '-tl',
-                    image_in, image_out, block_size, '-exhaustive'
-                ]
+                cmd = [self.binary, '-tl', image_in, image_out, block_size, '-exhaustive']
 
                 self.exec(cmd)
                 color_in = tli.Image(image_in).get_colors((0, 0))
@@ -846,8 +893,7 @@ class CLIPTest(CLITestBase):
         '''
         Test all valid presets are accepted
         '''
-        presets = ['-fastest', '-fast', '-medium',
-                   '-thorough', '-verythorough', '-exhaustive']
+        presets = ['-fastest', '-fast', '-medium', '-thorough', '-verythorough', '-exhaustive']
 
         image_in = self.get_ref_image_path('LDR', 'input', 'A')
         image_out = self.get_tmp_image_path('LDR', 'decomp')
@@ -879,8 +925,8 @@ class CLIPTest(CLITestBase):
                     color_in = tli.Image(image_in).get_colors((7, 7))
                     color_out = tli.Image(image_out).get_colors((7, 7))
 
-                    # Catch exception and add fallback for tga handling
-                    # having unstable origin in ImageMagick
+                    # Catch exception and add fallback for tga handling having unstable origin in
+                    # ImageMagick
                     try:
                         self.assertColorSame(color_in, color_out)
                         continue
@@ -1017,9 +1063,9 @@ class CLIPTest(CLITestBase):
         cmd.append('-normal')
         test_db = float(self.exec(cmd, LDR_RGB_PSNR_PATTERN))
 
-        # Note that this test simply asserts that the '-normal_psnr' is
-        # connected and affects the output. We don't test it does something
-        # useful; that it outside the scope of this test case.
+        # Note that this test simply asserts that the '-normal_psnr' is connected and affects the
+        # output. We don't test it does something useful; that it outside the scope of this test
+        # case.
         self.assertNotEqual(ref_db, test_db)
 
     def test_compress_normal_percep(self) -> None:
@@ -1039,9 +1085,9 @@ class CLIPTest(CLITestBase):
         cmd.append('-perceptual')
         test_db = float(self.exec(cmd, LDR_RGB_PSNR_PATTERN))
 
-        # Note that this test simply asserts that the '-normal -percep' is
-        # connected and affects the output. We don't test it does something
-        # useful; that it outside the scope of this test case.
+        # Note that this test simply asserts that the '-normal -percep' is connected and affects the
+        # output. We don't test it does something useful; that it outside the scope of this test
+        # case.
         self.assertNotEqual(ref_db, test_db)
 
     def test_compress_esw(self) -> None:
@@ -1134,10 +1180,7 @@ class CLIPTest(CLITestBase):
         # Decompress a non-flipped image
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
-        cmd = [
-            self.binary, '-dl',
-            image_comp,
-            image_dec]
+        cmd = [self.binary, '-dl', image_comp, image_dec]
 
         self.exec(cmd)
 
@@ -1182,10 +1225,8 @@ class CLIPTest(CLITestBase):
                     actual = self.get_tmp_image_path('EXP', '.astc')
                     common = ['4x4', '-fastest', '-j', '1'] + extra
                     self.exec([self.binary, '-cl', cropped, expected] + common)
-                    self.exec([self.binary, '-cl', source, actual] +
-                              common + crop_args)
-                    self.assertEqual(
-                        actual.read_bytes(), expected.read_bytes())
+                    self.exec([self.binary, '-cl', source, actual] + common + crop_args)
+                    self.assertEqual(actual.read_bytes(), expected.read_bytes())
 
     def test_roundtrip_crop(self) -> None:
         '''
@@ -1219,23 +1260,22 @@ class CLIPTest(CLITestBase):
         '''
         source = self.get_tmp_image_path('EXP', '.png')
         cropped = self.get_tmp_image_path('EXP', '.png')
+
         for z in range(4):
             values = numpy.arange(9 * 8 * 4, dtype=numpy.uint16)
-            pixels = ((values * 31 + z * 43) % 256).astype(
-                numpy.uint8).reshape(8, 9, 4)
+            pixels = ((values * 31 + z * 43) % 256).astype(numpy.uint8).reshape(8, 9, 4)
             image = Image.fromarray(pixels)
             image.save(source.with_stem(f'{source.stem}_{z}'))
+
             if 1 <= z < 3:
-                image.crop((2, 1, 7, 7)).save(
-                    cropped.with_stem(f'{cropped.stem}_{z - 1}'))
+                image.crop((2, 1, 7, 7)).save(cropped.with_stem(f'{cropped.stem}_{z - 1}'))
 
         for extra in ([], ['-yflip']):
             with self.subTest(options=extra):
                 expected = self.get_tmp_image_path('EXP', '.astc')
                 actual = self.get_tmp_image_path('EXP', '.astc')
                 common = ['3x3x3', '-fastest', '-j', '1'] + extra
-                self.exec([self.binary, '-cl', cropped, expected] +
-                          common + ['-zdim', '2'])
+                self.exec([self.binary, '-cl', cropped, expected] + common + ['-zdim', '2'])
                 self.exec([self.binary, '-cl', source, actual] + common + [
                     '-zdim', '4', '--croporigin', '2x1x1', '--cropsize',
                     '5x6x2'])
@@ -1256,6 +1296,7 @@ class CLIPTest(CLITestBase):
         '''
         Crop options are ignored during decompression.
         '''
+
         for option in ('--croporigin', '--cropsize'):
             self.exec([
                 self.binary, '-dl',
@@ -1269,20 +1310,14 @@ class CLIPTest(CLITestBase):
         # Compress a non-flipped image
         image_comp = self.get_tmp_image_path('LDR', 'comp')
 
-        cmd = [
-            self.binary, '-cl',
-            './Test/Data/Tiles/ldr.png',
-            image_comp, '4x4', '-fast']
+        cmd = [self.binary, '-cl', './Test/Data/Tiles/ldr.png', image_comp, '4x4', '-fast']
 
         self.exec(cmd)
 
         # Decompress a flipped image
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
-        cmd = [
-            self.binary, '-dl',
-            image_comp,
-            image_dec, '-yflip']
+        cmd = [self.binary, '-dl', image_comp, image_dec, '-yflip']
 
         self.exec(cmd)
 
@@ -1300,10 +1335,7 @@ class CLIPTest(CLITestBase):
         # Compress and decompressed a flipped LDR image
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
-        cmd = [
-            self.binary, '-tl',
-            './Test/Data/Tiles/ldr.png',
-            image_dec, '4x4', '-fast', '-yflip']
+        cmd = [self.binary, '-tl', './Test/Data/Tiles/ldr.png', image_dec, '4x4', '-fast', '-yflip']
 
         self.exec(cmd)
 
@@ -1323,19 +1355,16 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_base = self.get_channel_rmse(input_path, image_dec)
 
-        # Note: Using -cw can result in a worse result than not using -cw,
-        # with regressions in RMSE for the high-weighted channel. This is
-        # particularly an issue in synthetic images, as they are more likely to
-        # hit corner cases in the heuristics. It happens to 'work' for the
-        # selected test image and these settings, but might start to fail in
-        # future due to compressor changes.
+        # Note: Using -cw can result in a worse result than not using -cw, with regressions in RMSE
+        #     for the high-weighted channel. This is particularly an issue in synthetic images, as
+        #     they are more likely to hit corner cases in the heuristics. It happens to 'work' for
+        #     the selected test image and these settings, but might start to fail in future due to
+        #     compressor changes.
 
         # Test each channel with a high weight
         for ch_idx, ch_name in ((0, 'R'), (1, 'G'), (2, 'B'), (3, 'A')):
@@ -1354,9 +1383,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1376,9 +1403,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1398,9 +1423,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1420,9 +1443,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1442,9 +1463,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1463,9 +1482,7 @@ class CLIPTest(CLITestBase):
         input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1484,9 +1501,7 @@ class CLIPTest(CLITestBase):
         input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1506,9 +1521,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1528,9 +1541,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1550,9 +1561,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1572,9 +1581,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1594,9 +1601,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1616,9 +1621,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1638,9 +1641,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         self.exec(cmd)
         rmse_ref = sum(self.get_channel_rmse(input_path, image_dec))
@@ -1648,10 +1649,9 @@ class CLIPTest(CLITestBase):
         cmd += ['-4partitioncandidatelimit', '1']
         self.exec(cmd)
 
-        # RMSE should get worse (higher) if we reduce search space
-        # Don't check this here, as 4 partitions not used in any Small image
-        # even for -exhaustive, BUT cmd line option must be accepted and
-        # not error ...
+        # RMSE should get worse (higher) if we reduce search space Don't check this here, as 4
+        # partitions not used in any Small image even for -exhaustive, BUT cmd line option must be
+        # accepted and not error ...
         del rmse_ref
         # self.assertGreater(rmse_test, rmse_ref)
 
@@ -1660,6 +1660,7 @@ class CLIPTest(CLITestBase):
         '''
         Test codec thread count.
         '''
+
         if self.skip_thread_count:
             self.skipTest('Thread timing disabled by --skip-thread-count')
 
@@ -1667,9 +1668,7 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
 
         start = time.time()
         self.exec(cmd)
@@ -1691,17 +1690,14 @@ class CLIPTest(CLITestBase):
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
-        cmd = [
-            self.binary, '-tl',
-            input_path, image_dec, '4x4', '-medium']
+        cmd = [self.binary, '-tl', input_path, image_dec, '4x4', '-medium']
         stdout = self.exec(cmd)
 
         cmd += ['-silent']
         stdout_silent = self.exec(cmd)
 
-        # Check that stdout is shorter in silent mode. Note that this doesn't
-        # check that it is as silent as it should be, just that silent is wired
-        # somewhere ...
+        # Check that stdout is shorter in silent mode. Note that this doesn't check that it is as
+        # silent as it should be, just that silent is wired somewhere ...
         self.assertLess(len(stdout_silent), len(stdout))
 
     def test_image_quality_stability(self) -> None:
@@ -1718,18 +1714,11 @@ class CLIPTest(CLITestBase):
         self.exec(cmd)
 
         # Compute the first image using a file-based round-trip
-        cmd = [
-            self.binary, '-cl',
-            input_path, image2_comp, '4x4', '-medium',
-            '-decode_unorm8'
-        ]
+        cmd = [self.binary, '-cl', input_path, image2_comp, '4x4', '-medium', '-decode_unorm8']
 
         self.exec(cmd)
 
-        cmd = [
-            self.binary, '-dl',
-            image2_comp, image2_dec
-        ]
+        cmd = [self.binary, '-dl', image2_comp, image2_dec]
 
         self.exec(cmd)
 
@@ -1743,13 +1732,12 @@ class CLINTest(CLITestBase):
     '''
     Command line interface negative tests.
 
-    These tests are designed to test that bad inputs to the cmd line are
-    handled cleanly and that errors are correctly thrown.
+    These tests are designed to test that bad inputs to the cmd line are handled cleanly and that
+    errors are correctly thrown.
 
-    Note that many tests are mutations of a valid positive test cmd line,
-    to ensure that the base cmd line is valid before it is mutated many
-    of these tests include a *positive test* to ensure that the starting point
-    is actually a valid cmd line (otherwise we could be throwing an
+    Note that many tests are mutations of a valid positive test cmd line, to ensure that the base
+    cmd line is valid before it is mutated many of these tests include a *positive test* to ensure
+    that the starting point is actually a valid cmd line (otherwise we could be throwing an
     arbitrary error).
     '''
     # pylint: disable=too-many-public-methods
@@ -1767,13 +1755,12 @@ class CLINTest(CLITestBase):
 
         Args:
             cmd (list(str)): The cmd to execute.
-            expect_pass (bool): True if this cmd is actually expected to
-                pass, which is used to validate commands before mutating them.
+            expect_pass (bool): True if this cmd is actually expected to pass, which is used to
+                validate commands before mutating them.
         '''
         try:
             cmd_str = [str(x) for x in cmd]
-            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE,
-                            text=True, check=True)
+            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE, text=True, check=True)
             rcode = result.returncode
             rstdout = result.stdout
             rstderr = result.stderr
@@ -1800,6 +1787,7 @@ class CLINTest(CLITestBase):
             self.assertEqual(rcode, 0, 'Exec did not pass as expected')
             self.assertNotIn('ERROR', rstdout)
             self.assertNotIn('ERROR', rstderr)
+
             return
 
         # If we got a negative that's always bad (signal of some kind)
@@ -1807,8 +1795,8 @@ class CLINTest(CLITestBase):
             msg = f'Exec died with signal {signal.Signals(-rcode).name}'
             self.assertGreaterEqual(rcode, 0, msg)
 
-        # Otherwise just assert that we got an error log, and some positive
-        # return code value was returned
+        # Otherwise just assert that we got an error log, and some positive return code value was
+        # returned
         self.assertIn('ERROR', rstderr)
         self.assertGreater(rcode, 0, 'Exec did not fail as expected')
 
@@ -1816,9 +1804,8 @@ class CLINTest(CLITestBase):
         '''
         Execute a negative test with cmd line argument omission.
 
-        These tests aim to prove that the cmd fails if arguments are
-        missing. However the passed cmd MUST be a valid cmd which
-        passes if no argument are omitted (this is checked, to ensure that
+        These tests aim to prove that the cmd fails if arguments are missing. However the passed cmd
+        MUST be a valid cmd which passes if no argument are omitted (this is checked, to ensure that
         the test case is a valid test).
 
         Test will automatically fail if:
@@ -1832,6 +1819,7 @@ class CLINTest(CLITestBase):
         '''
         # Run the cmd, incrementally omitting arguments
         cmd_len = len(cmd)
+
         for omit_index in range(omit_from, cmd_len + 1):
             omit = cmd_len - omit_index
             with self.subTest(omit=omit):
@@ -1943,6 +1931,7 @@ class CLINTest(CLITestBase):
         self.exec(cmd, True)
 
         block_index = cmd.index('4x4')
+
         for bad_size in bad_sizes:
             with self.subTest(block_size=bad_size):
                 cmd[block_index] = bad_size
@@ -2081,6 +2070,7 @@ class CLINTest(CLITestBase):
         self.exec(cmd, True)
 
         block_index = cmd.index('4x4')
+
         for bad_size in bad_sizes:
             with self.subTest(block_size=bad_size):
                 cmd[block_index] = bad_size
@@ -2376,6 +2366,7 @@ class CLINTest(CLITestBase):
 
         # Create swizzles with all invalid printable ascii codes
         good = ['r', 'g', 'b', 'a', '0', '1']
+
         for channel in string.printable:
             if channel not in good:
                 bad_swizzles.append(channel * 4)
@@ -2389,6 +2380,7 @@ class CLINTest(CLITestBase):
             '-esw', 'rgba']
 
         block_index = cmd.index('rgba')
+
         for bad_swizzle in bad_swizzles:
             with self.subTest(swizzle=bad_swizzle):
                 cmd[block_index] = bad_swizzle
@@ -2420,6 +2412,7 @@ class CLINTest(CLITestBase):
 
         # Create swizzles with all invalid printable ascii codes
         good = ['r', 'g', 'b', 'a']
+
         for channel in string.printable:
             if channel not in good:
                 bad_swizzles.append(channel * 4)
@@ -2433,6 +2426,7 @@ class CLINTest(CLITestBase):
             '-ssw', 'rgba']
 
         block_index = cmd.index('rgba')
+
         for bad_swizzle in bad_swizzles:
             with self.subTest(swizzle=bad_swizzle):
                 cmd[block_index] = bad_swizzle
@@ -2466,6 +2460,7 @@ class CLINTest(CLITestBase):
 
         # Create swizzles with all invalid printable ascii codes
         good = ['r', 'g', 'b', 'a', 'z', '0', '1']
+
         for channel in string.printable:
             if channel not in good:
                 bad_swizzles.append(channel * 4)
@@ -2478,6 +2473,7 @@ class CLINTest(CLITestBase):
             '-dsw', 'rgba']
 
         block_index = cmd.index('rgba')
+
         for bad_swizzle in bad_swizzles:
             with self.subTest(swizzle=bad_swizzle):
                 cmd[block_index] = bad_swizzle
@@ -2517,8 +2513,7 @@ class CLINTest(CLITestBase):
             self.binary, '-cl', self.get_image_path('Tiles/ldr.png'),
             self.get_tmp_image_path('LDR', 'comp'),
             '4x4', '-fastest', '-j', '1']
-        self.exec(base + ['--croporigin', '7x7', '--cropsize', '1x1'],
-                  expect_pass=True)
+        self.exec(base + ['--croporigin', '7x7', '--cropsize', '1x1'], expect_pass=True)
         max_size = str(numpy.iinfo(numpy.uintp).max)
 
         cases = [
@@ -2558,8 +2553,7 @@ class CLINTest(CLITestBase):
             '3x3x3', '-fastest', '-j', '1', '-zdim', '2']
 
         self.exec(base, expect_pass=True)
-        self.exec(base + ['--croporigin', '7x7x1', '--cropsize', '1x1x1'],
-                  expect_pass=True)
+        self.exec(base + ['--croporigin', '7x7x1', '--cropsize', '1x1x1'], expect_pass=True)
 
         max_size = str(numpy.iinfo(numpy.uintp).max)
 
@@ -2570,13 +2564,9 @@ class CLINTest(CLITestBase):
             ['--croporigin', '0x0x0', '--cropsize', '4x4']
         ]
 
-        cases += [
-            ['--croporigin', value] for value in ('8x0x0', '0x8x0', '0x0x2')
-        ]
+        cases += [['--croporigin', value] for value in ('8x0x0', '0x8x0', '0x0x2')]
 
-        cases += [
-            ['--cropsize', value] for value in ('9x1x1', '1x9x1', '1x1x3')
-        ]
+        cases += [['--cropsize', value] for value in ('9x1x1', '1x9x1', '1x1x3')]
 
         cases += [
             ['--croporigin', '1x1x1', '--cropsize', value] for value in
@@ -2598,6 +2588,7 @@ class CLINTest(CLITestBase):
 
         # Invalid limits must fail before writing any exposure files
         cases = ((-13, 0), (0, 13), (2, 1), (-2147483648, 2147483647))
+
         for low, high in cases:
             with self.subTest(low=low, high=high):
                 args = ['-mpsnr', str(low), str(high), '-j', '1']
@@ -2647,11 +2638,10 @@ class CLINTest(CLITestBase):
         '''
         Test -dl with an astc file with a data size that will fail alloc.
 
-        Note this test will cause ASAN to error because ASAN itself cannot cope
-        with OOM issues. ASAN documentation says you can run with environment
-        ASAN_OPTIONS=allocator_may_return_null=1, but this doesn't seem to work
-        for allocations made with C++ new[]. This test will need to be disabled
-        when ASAN is used.
+        Note this test will cause ASAN to error because ASAN itself cannot cope with OOM issues.
+        ASAN documentation says you can run with environment
+        ASAN_OPTIONS=allocator_may_return_null=1, but this doesn't seem to work for allocations made
+        with C++ new[]. This test will need to be disabled when ASAN is used.
         '''
         # Build a valid cmd with a bad image file
         cmd = [
@@ -2708,6 +2698,7 @@ class CLINTest(CLITestBase):
                 with self.subTest(mode=mode, threads=threads):
                     is_hdr = mode in ('-dh', '-dH')
                     extension = 'png'
+
                     if is_hdr:
                         extension = 'ktx'
 
@@ -2715,11 +2706,11 @@ class CLINTest(CLITestBase):
                     image_out = Path(self.tmp_dir.name) / image_name
                     cmd = [str(self.binary), mode, str(image_in),
                            str(image_out), '-j', str(threads)]
-                    result = sp.run(cmd, capture_output=True, text=True,
-                                    check=False)
+                    result = sp.run(cmd, capture_output=True, text=True, check=False)
                     self.assertEqual(result.returncode, 2, result.stderr)
                     self.assertIn('WARNING:', result.stderr)
                     self.assertNotIn('ERROR:', result.stderr)
+
                     if is_hdr:
                         # Floating-point KTX preserves NaN error texels
                         self.assertGreater(image_out.stat().st_size, 8 * 8 * 6)
@@ -2727,17 +2718,13 @@ class CLINTest(CLITestBase):
                         with Image.open(image_out) as image:
                             self.assertEqual(image.size, (8, 8))
                             pixels = image.convert('RGBA')
-                            self.assertEqual(pixels.getpixel((0, 0)),
-                                             (255, 0, 255, 255))
-                            self.assertEqual(pixels.getpixel((4, 0)),
-                                             (0, 0, 0, 255))
-                            self.assertEqual(pixels.getpixel((7, 7)),
-                                             (255, 0, 255, 255))
+                            self.assertEqual(pixels.getpixel((0, 0)), (255, 0, 255, 255))
+                            self.assertEqual(pixels.getpixel((4, 0)), (0, 0, 0, 255))
+                            self.assertEqual(pixels.getpixel((7, 7)), (255, 0, 255, 255))
 
         # A failure to write the image must retain the ordinary error exit code
         image_out = Path(self.tmp_dir.name) / 'missing' / 'output.png'
-        cmd = [str(self.binary), '-dl', str(image_in), str(image_out),
-               '-j', '12']
+        cmd = [str(self.binary), '-dl', str(image_in), str(image_out), '-j', '12']
         result = sp.run(cmd, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn('ERROR:', result.stderr)
@@ -2747,14 +2734,13 @@ class CLINTest(CLITestBase):
         '''
         Test HDR encodings warn and write error colors when decoded as LDR.
         '''
+
         for mode in ('-dl', '-ds'):
             with self.subTest(mode=mode):
                 image_in = self.get_image_path('HDR-A-1x1.astc')
                 image_out = Path(self.tmp_dir.name) / f'{mode}.png'
-                cmd = [str(self.binary), mode, str(image_in), str(image_out),
-                       '-j', '12']
-                result = sp.run(cmd, capture_output=True, text=True,
-                                check=False)
+                cmd = [str(self.binary), mode, str(image_in), str(image_out), '-j', '12']
+                result = sp.run(cmd, capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn('WARNING:', result.stderr)
                 self.assertNotIn('ERROR:', result.stderr)
@@ -2772,8 +2758,7 @@ def main() -> int:
     '''
     parser = argparse.ArgumentParser()
 
-    coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2',
-              'avx256', 'avx512']
+    coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512']
     parser.add_argument('--encoder', dest='encoder', default='avx2',
                         choices=coders, help='test encoder variant')
     parser.add_argument('--binary', type=Path,
@@ -2784,8 +2769,10 @@ def main() -> int:
     args = parser.parse_known_args()
 
     binary = args[0].binary
+
     if binary is not None:
         binary = binary.resolve()
+
         if not binary.is_file():
             parser.error(f'Binary does not exist or is not a file: {binary}')
 
@@ -2798,6 +2785,7 @@ def main() -> int:
     sys.argv[1:] = args[1]
 
     results = unittest.main(exit=False)
+
     return 0 if results.result.wasSuccessful() else 1
 
 
