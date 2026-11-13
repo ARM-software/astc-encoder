@@ -1514,6 +1514,14 @@ void recompute_ideal_colors_1plane(
 		// Calculations specific to mode #7, the HDR RGB-scale mode - skip if known LDR
 		if (blk.rgb_lns[0] || blk.alpha_lns[0])
 		{
+			// Constant weights cannot determine the shared RGB offset; use the partition mean
+			if (wmin1 >= wmax1 * 0.999f)
+			{
+				vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
+				rgbo_vectors[i] = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 0.0f);
+				continue;
+			}
+
 			vfloat4 weight_weight_sum = vfloat4(weight_weight_sum_s) * color_weight;
 			float psum = right_sum_s * hadd_rgb_s(color_weight);
 
@@ -1832,6 +1840,21 @@ void recompute_ideal_colors_2planes(
 	// Calculations specific to mode #7, the HDR RGB-scale mode - skip if known LDR
 	if (blk.rgb_lns[0] || blk.alpha_lns[0])
 	{
+		// Alpha variation cannot constrain the shared RGB offset
+		bool is_constant_rgb = wmin1 >= wmax1 * 0.999f;
+		if (plane2_component != 3)
+		{
+			is_constant_rgb = is_constant_rgb && (wmin2 >= wmax2 * 0.999f);
+		}
+
+		// Constant weights cannot determine the shared RGB offset; use the block mean
+		if (is_constant_rgb)
+		{
+			vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
+			rgbo_vector = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 0.0f);
+			return;
+		}
+
 		weight_weight_sum = weight_weight_sum * color_weight;
 		float psum = hadd_rgb_s(select(right1_sum, right2_sum, p2_mask));
 
