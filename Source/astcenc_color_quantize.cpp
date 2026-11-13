@@ -790,13 +790,6 @@ static void quantize_luminance(
 	float lum0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
 	float lum1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
-	if (lum0 > lum1)
-	{
-		float avg = (lum0 + lum1) * 0.5f;
-		lum0 = avg;
-		lum1 = avg;
-	}
-
 	output[0] = quant_color(quant_level, astc::flt2int_rtn(lum0), lum0);
 	output[1] = quant_color(quant_level, astc::flt2int_rtn(lum1), lum1);
 }
