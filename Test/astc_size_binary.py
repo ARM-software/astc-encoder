@@ -16,20 +16,17 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-This script is a wrapper around the Linux and macOS 'size' utility to extract
-information about binary section sizes, and optionally compare the section
-sizes of two binaries.
+This script is a wrapper around the Linux and macOS 'size' utility to extract information about
+binary section sizes, and optionally compare the section sizes of two binaries.
 
-Section sizes are reported for code (.text), read-only data (.rodata), and zero
-initialized data (.bss) sections. All other sections are ignored.
+Section sizes are reported for code (.text), read-only data (.rodata), and zero initialized data
+(.bss) sections. All other sections are ignored.
 
 A typical report comparing the size of two binaries looks like this:
 
                Code   RO Data   ZI Data
-      Ref    411298    374560    128576
-      New    560530     89552     31744
-    Abs D    149232   -285008    -96832
-    Rel D    36.28%   -76.09%   -75.31%
+      Ref    411298    374560    128576 New    560530     89552     31744
+    Abs D    149232   -285008    -96832 Rel D    36.28%   -76.09%   -75.31%
 '''
 
 import argparse
@@ -53,11 +50,14 @@ def run_size_linux(binary: str) -> tuple[int, int, int]:
         CalledProcessException: The size subprocess failed.
     '''
     args = ['size', '--format=sysv', binary]
-    result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
-                    check=True, text=True)
+    result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE, check=True, text=True)
 
     data = {}
-    patterns = {'Code': '.text', 'RO': '.rodata', 'ZI': '.bss'}
+    patterns = {
+        'Code': '.text',
+        'RO': '.rodata',
+        'ZI': '.bss',
+    }
 
     for line in result.stdout.splitlines():
         for key, value in patterns.items():
@@ -82,8 +82,7 @@ def run_size_macos(binary: str) -> tuple[int, int, int]:
         CalledProcessException: The size subprocess failed.
     '''
     args = ['size', '-m', binary]
-    result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
-                    check=True, text=True)
+    result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE, check=True, text=True)
 
     size_code = 0
     size_ro = 0
@@ -133,8 +132,7 @@ def parse_command_line() -> argparse.Namespace:
     '''
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('bin', type=argparse.FileType('r'),
-                        help='the binary to size')
+    parser.add_argument('bin', type=argparse.FileType('r'), help='the binary to size')
 
     parser.add_argument('ref_bin', nargs='?', type=argparse.FileType('r'),
                         help='the reference binary to compare against')

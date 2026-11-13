@@ -15,18 +15,18 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-These classes provide an abstraction around the astcenc command line tool,
-allowing the rest of the image test suite to ignore changes in the command line
-interface.
+These classes provide an abstraction around the astcenc command line tool, allowing the rest of the
+image test suite to ignore changes in the command line interface.
 
-Currently this module supports the latest 2.x branch onwards; the 1.x branch
-is no longer supported.
+Currently this module supports the latest 2.x branch onwards; the 1.x branch is no longer supported.
 
-TODO:
-* Refactor more heavily now that we have dropped 1.x encoder support, given
-  that all the compressors are the same now ...
+The base class handles execution and metric aggregation. Concrete wrappers select binary paths
+and metric patterns for the supported versions.
 '''
 
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+import math
 import os
 from pathlib import Path
 import re
@@ -35,24 +35,94 @@ import sys
 from typing import Optional
 
 from .testset import TestImage
+from .timing import is_timing_stable
 
 
-RunResult = tuple[float, float, float, float, float]
-
-
-class EncoderBase:
+@dataclass(frozen=True)
+class RunOptions:
     '''
-    A wrapper around the astcenc binary, abstracting the command line so that
-    the rest of the test suite does not need to worry about changes to the
-    command line interface over versions.
+    Settings shared by image compression runs.
 
-    This is an abstract base class providing some generic helper functionality
-    used by concrete instantiations of subclasses.
+    Attributes:
+        repeats: The maximum number of measured runs, at least one.
+        keep_output: Whether to preserve decompressed output images.
+        threads: The codec thread count, or None for automatic selection.
+        confidence: The timing confidence level as a fraction in (0, 1).
+        precision: The allowed interval half-width as a fraction of the mean.
+    '''
+    repeats: int = 1
+    keep_output: bool = False
+    threads: int | None = None
+    confidence: float = 0.95
+    precision: float = 0.01
+
+    def __post_init__(self) -> None:
+        '''
+        Validate the repeat limit and timing thresholds.
+
+        Raises:
+            ValueError: A run count or timing threshold is outside its valid range.
+        '''
+
+        if self.repeats < 1:
+            raise ValueError('The repeat limit must be at least one')
+
+        if not 0.0 < self.confidence < 1.0:
+            raise ValueError('Confidence must be between zero and one, exclusive')
+
+        if (not math.isfinite(self.precision)) or (self.precision <= 0.0):
+            raise ValueError('Precision must be a finite positive fraction')
+
+
+@dataclass(frozen=True)
+class RunResult:
+    '''
+    Image quality and performance metrics from encoder runs.
+
+    Attributes:
+        psnr: The PSNR or mPSNR score in dB.
+        ssim: The SSIM or mSSIM score, or zero if not reported.
+        total_time: The total elapsed time in seconds.
+        coding_time: The compression time in seconds.
+        coding_rate: The compression throughput in MT/s.
+    '''
+    psnr: float
+    ssim: float
+    total_time: float
+    coding_time: float
+    coding_rate: float
+
+    def best_of(self, other: 'RunResult') -> 'RunResult':
+        '''
+        Keep the best value of each metric across two results.
+
+        Args:
+            other: The result to merge with this result.
+
+        Return:
+            The highest quality scores and rate, and the lowest elapsed times.
+        '''
+
+        return RunResult(
+            psnr=max(self.psnr, other.psnr),
+            ssim=max(self.ssim, other.ssim),
+            total_time=min(self.total_time, other.total_time),
+            coding_time=min(self.coding_time, other.coding_time),
+            coding_rate=max(self.coding_rate, other.coding_rate))
+
+
+class EncoderBase(ABC):
+    '''
+    A wrapper around the astcenc binary, abstracting the command line so that the rest of the test
+    suite does not need to worry about changes to the command line interface over versions.
+
+    This is an abstract base class providing some generic helper functionality used by concrete
+    instantiations of subclasses.
 
     Attributes:
         name: The encoder name to use in reports.
-        variant: The encoder SIMD variant being tested.
         binary_path: The encoder binary path.
+        last_run_count: The number of samples collected by the latest test.
 
     Class attributes:
         version: Encoder version or branch.
@@ -65,19 +135,19 @@ class EncoderBase:
     remap_color_switches: dict[str, str] = {}
     remap_output_types: dict[str, str] = {}
 
-    def __init__(self, name: str, variant: str, binary_path: Path):
+    def __init__(self, name: str, binary_path: Path):
         '''
         Create a new encoder instance.
 
         Args:
             name: The name of the encoder.
-            variant: The SIMD variant of the encoder.
             binary_path: The path to the binary on the file system.
         '''
         self.name = name
-        self.variant = variant
         self.binary_path = binary_path
+        self.last_run_count = 0
 
+    @abstractmethod
     def build_cli(self, image: TestImage, block_size: str = '6x6',
                   preset: str = '-thorough', keep_output: bool = True,
                   threads: Optional[int] = None) -> list[str]:
@@ -88,15 +158,13 @@ class EncoderBase:
             image: The test image to compress.
             block_size: The block size to use.
             preset: The quality preset to use.
-            keep_output: Should the test preserve output images? This is a hint
-                and may be ignored if astcenc version used can't do it.
+            keep_output: Should the test preserve output images? This is a hint and may be ignored
+                if astcenc version used can't do it.
             threads: The thread count to use.
 
         Return:
             The command line arguments for this encoder version.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
 
     def execute(self, command: list[str]) -> list[str]:
         '''
@@ -109,8 +177,7 @@ class EncoderBase:
             The output log (stdout) split into lines.
         '''
         try:
-            result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
-                            check=True, text=True)
+            result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE, check=True, text=True)
 
         except (OSError, sp.CalledProcessError):
             print(f'  + {" ".join(command)}')
@@ -127,8 +194,7 @@ class EncoderBase:
             output: The astcenc compression output log.
 
         Return:
-            Tuple containing PSNR in dB, SSIM, total time in seconds, coding
-            time in seconds, and coding rate in MT/s.
+            The quality scores, elapsed times, and coding throughput.
         '''
         # Regex patterns. provided by this particular subclass
         pattern_psnr = self.get_psnr_pattern(image)
@@ -171,14 +237,16 @@ class EncoderBase:
         assert coding_time is not None, f'Missing coding time {stdout}'
         assert coding_rate is not None, f'Missing coding rate {stdout}'
 
-        return (psnr, ssim, total_time, coding_time, coding_rate)
+        return RunResult(psnr=psnr, ssim=ssim, total_time=total_time,
+                         coding_time=coding_time, coding_rate=coding_rate)
 
+    @abstractmethod
     def get_psnr_pattern(self, image: TestImage) -> re.Pattern:
         '''
         Get the regex pattern to match the image quality metric.
 
-        Note that, although this function is called PSNR, for some images we
-        may choose to match another metric (e.g. mPSNR for HDR images).
+        Note that, although this function is called PSNR, for some images we may choose to match
+        another metric (e.g. mPSNR for HDR images).
 
         Args:
             image: The test image that was compressed.
@@ -186,10 +254,8 @@ class EncoderBase:
         Return:
             The regex pattern.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
-        return re.compile('^(?!x)x$')
 
+    @abstractmethod
     def get_ssim_pattern(self, image: TestImage) -> re.Pattern:
         '''
         Get the regex pattern to match SSIM or mSSIM for the image.
@@ -202,10 +268,8 @@ class EncoderBase:
         Return:
             The regex pattern.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
-        return re.compile('^(?!x)x$')
 
+    @abstractmethod
     def get_total_time_pattern(self) -> re.Pattern:
         '''
         Get the regex pattern to match the total compression time.
@@ -213,10 +277,8 @@ class EncoderBase:
         Return:
             The regex pattern.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
-        return re.compile('^(?!x)x$')
 
+    @abstractmethod
     def get_coding_time_pattern(self) -> re.Pattern:
         '''
         Get the regex pattern to match the coding compression time.
@@ -224,10 +286,8 @@ class EncoderBase:
         Return:
             The regex pattern.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
-        return re.compile('^(?!x)x$')
 
+    @abstractmethod
     def get_coding_rate_pattern(self) -> re.Pattern:
         '''
         Get the regex pattern to match the coding rate.
@@ -235,60 +295,49 @@ class EncoderBase:
         Return:
             The regex pattern.
         '''
-        # pylint: disable=unused-argument,redundant-returns-doc
-        assert False, 'Missing subclass implementation'
-        return re.compile('^(?!x)x$')
 
     def run_test(self, image: TestImage, block_size: str, preset: str,
-                 repeats: int, keep_output: bool = True,
-                 threads: Optional[int] = None) -> RunResult:
+                 options: RunOptions) -> RunResult:
         '''
-        Run the test N times.
+        Run until the timing precision target or repeat limit is reached.
 
         Args:
             image: The test image to compress.
             block_size: The block size to use.
             preset: The quality-performance preset to use.
-            repeats: The number of test runs.
-            keep_output: Should the test preserve output images?
-            threads: The thread count to use.
+            options: The repeat limit, codec settings, and timing thresholds.
 
         Return:
-            Tuple containing PSNR in dB, SSIM, total time in seconds, coding
-            time in seconds, and coding rate in MT/s.
+            The best value of each quality and performance metric across measured runs.
         '''
-        # pylint: disable=assignment-from-no-return
-        command = self.build_cli(image, block_size, preset, keep_output,
-                                 threads)
+        # Keep codec arguments fixed across repeated measurements
+        command = self.build_cli(image, block_size, preset, options.keep_output, options.threads)
 
-        # Execute test runs keeping best results
-        best_psnr = 0.0
-        # SSIM can be negative, so start from its lower bound
-        best_ssim = -1.0
-        best_total_time = sys.float_info.max
-        best_coding_time = sys.float_info.max
-        best_coding_rate = 0.0
+        # Accumulate each metric independently; SSIM can be negative
+        best = RunResult(psnr=0.0, ssim=-1.0, total_time=sys.float_info.max,
+                         coding_time=sys.float_info.max, coding_rate=0.0)
+        times = []
+        self.last_run_count = 0
 
-        for _ in range(0, repeats):
+        for _ in range(options.repeats):
             output = self.execute(command)
             result = self.parse_output(image, output)
+            best = best.best_of(result)
 
-            # Keep the highest quality scores, lowest times, and highest rate
-            best_psnr = max(best_psnr, result[0])
-            best_ssim = max(best_ssim, result[1])
-            best_total_time = min(best_total_time, result[2])
-            best_coding_time = min(best_coding_time, result[3])
-            best_coding_rate = max(best_coding_rate, result[4])
+            # Check this build's timing precision independently of the CSV
+            times.append(result.coding_time)
+            self.last_run_count = len(times)
 
-        return (best_psnr, best_ssim, best_total_time, best_coding_time,
-                best_coding_rate)
+            if is_timing_stable(times, options.confidence, options.precision):
+                break
+
+        return best
 
 
 class Encoder2x(EncoderBase):
     '''
-    This class wraps the latest astcenc interface, supported from the 2.0
-    release or later, which broke argument compatibility with the earlier
-    1.x series.
+    This class wraps the latest astcenc interface, supported from the 2.0 release or later, which
+    broke argument compatibility with the earlier 1.x series.
     '''
     version = 'main'
 
@@ -296,14 +345,14 @@ class Encoder2x(EncoderBase):
         'ldr': '-tl',
         'ldrs': '-ts',
         'hdr': '-th',
-        'hdra': '-tH'
+        'hdra': '-tH',
     }
 
     remap_output_types = {
         'ldr': '.png',
         'ldrs': '.png',
         'hdr': '.exr',
-        'hdra': '.exr'
+        'hdra': '.exr',
     }
 
     def __init__(self, variant: str, binary_path: Optional[Path] = None):
@@ -315,7 +364,7 @@ class Encoder2x(EncoderBase):
             ext = '.exe' if os.name == 'nt' else ''
             binary_path = Path('./') / 'bin' / f'{binary}{post}{ext}'
 
-        super().__init__(name, variant, binary_path)
+        super().__init__(name, binary_path)
 
     def build_cli(self, image, block_size='6x6', preset='-thorough',
                   keep_output=True, threads=None):
@@ -324,15 +373,7 @@ class Encoder2x(EncoderBase):
         src_path = image.file_path
 
         if keep_output:
-            extension = self.remap_output_types[image.color_profile]
-
-            dst_file = f'{image.file_path_out.stem}{extension}'
-
-            dst_dir = image.file_path_out.parent
-            dst_dir = dst_dir / self.name / preset[1:] / block_size
-            dst_dir.mkdir(parents=True, exist_ok=True)
-
-            dst_path = str(dst_dir / dst_file)
+            dst_path = str(self.get_output_path(image, block_size, preset))
 
         else:
             if sys.platform == 'win32':
@@ -358,6 +399,26 @@ class Encoder2x(EncoderBase):
 
         return command
 
+    def get_output_path(self, image: TestImage, block_size: str, preset: str) -> Path:
+        '''
+        Choose an output path and create its parent directory for retained test images.
+
+        Args:
+            image: The source image metadata.
+            block_size: The ASTC block size.
+            preset: The quality preset including its leading dash.
+
+        Return:
+            The output path grouped by image set, format, encoder, preset, and block size.
+        '''
+        root = Path(__file__).parent.parent / 'TestOutput'
+        base = root / image.test_set / image.test_format / image.file_path.stem
+        directory = base.parent / self.name / preset[1:] / block_size
+        directory.mkdir(parents=True, exist_ok=True)
+        extension = self.remap_output_types[image.color_profile]
+
+        return directory / f'{base.stem}{extension}'
+
     def get_psnr_pattern(self, image: TestImage) -> re.Pattern:
         # HDR profile
         if image.color_profile == 'hdr':
@@ -380,6 +441,7 @@ class Encoder2x(EncoderBase):
         Return:
             The regex pattern.
         '''
+
         if image.color_profile in ('hdr', 'hdra'):
             label = 'mSSIM (RGB)'
         elif image.color_format == 'rgba':
@@ -387,8 +449,7 @@ class Encoder2x(EncoderBase):
         else:
             label = 'SSIM (LDR-RGB)'
 
-        return re.compile(
-            rf'\s*{re.escape(label)}:\s*([-+0-9.eE]+)(?:\s|$)')
+        return re.compile(rf'\s*{re.escape(label)}:\s*([-+0-9.eE]+)(?:\s|$)')
 
     def get_total_time_pattern(self) -> re.Pattern:
         return re.compile(r'\s*Total time:\s*([0-9.]*) s')
@@ -411,8 +472,6 @@ class Encoder2xRel(Encoder2x):
         binary = 'astcenc'
         post = f'-{variant}' if variant != 'universal' else ''
         ext = '.exe' if os.name == 'nt' else ''
-        binary_path = (
-            Path('./') / 'Binaries' / version / f'{binary}{post}{ext}'
-        )
+        binary_path = Path('./') / 'Binaries' / version / f'{binary}{post}{ext}'
 
         super().__init__(variant, binary_path)

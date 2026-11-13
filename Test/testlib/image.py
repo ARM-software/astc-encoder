@@ -15,11 +15,10 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-An Image provides a wrapper around an image file on the filesystem which allows
-queries to be made against that image via a Python API.
+An Image provides a wrapper around an image file on the filesystem which allows queries to be made
+against that image via a Python API.
 
-ImageMagick is used to provide some of the heavy lifting, as it supports more
-file formats than PIL.
+ImageMagick is used to provide some of the heavy lifting, as it supports more file formats than PIL.
 '''
 
 import os
@@ -31,13 +30,60 @@ Color = tuple[float, float, float, float]
 CONVERT_BINARY = ['convert']
 
 
+# ImageMagick emits names for some exact colors instead of channel tuples
+NAMED_COLORS: dict[str, Color] = {
+    'black': (0.0, 0.0, 0.0, 1.0),
+    'white': (1.0, 1.0, 1.0, 1.0),
+    'red': (1.0, 0.0, 0.0, 1.0),
+    'blue': (0.0, 0.0, 1.0, 1.0),
+}
+
+
+def decode_color(raw_color: str) -> Color:
+    '''
+    Decode an ImageMagick named color or RGB/RGBA channel tuple.
+
+    Args:
+        raw_color: The pixel value emitted by ImageMagick.
+
+    Return:
+        The normalized RGBA channels, with opaque alpha when none is reported.
+
+    Raises:
+        AssertionError: The color representation is not supported.
+    '''
+
+    if raw_color in NAMED_COLORS:
+        return NAMED_COLORS[raw_color]
+
+    kind, _, channels = raw_color.partition('(')
+    assert kind in ('rgb', 'rgba', 'srgb', 'srgba'), f'Unknown color format {raw_color}'
+    assert channels.endswith(')'), f'Invalid color tuple {raw_color}'
+    values = channels[:-1].split(',')
+    color = [0.0] * 4
+
+    # RGB percentages and byte values use different scales; alpha is already normalized
+    for index, value in enumerate(values):
+        if index >= 3:
+            color[index] = float(value)
+        elif value.endswith('%'):
+            color[index] = float(value[:-1]) / 100.0
+        else:
+            color[index] = float(value) / 255.0
+
+    if kind in ('rgb', 'srgb'):
+        color[3] = 1.0
+
+    return (color[0], color[1], color[2], color[3])
+
+
 class Image:
     '''
     Wrapper around an image on the file system.
     '''
 
     # No support for KTX yet because ImageMagick doesn't support it
-    SUPPORTED_LDR = ['bmp', 'jpg', 'png', 'tga']
+    SUPPORTED_LDR = ['bmp', 'dds', 'jpg', 'png', 'tga']
     SUPPORTED_HDR = ['exr', 'hdr']
 
     @classmethod
@@ -76,8 +122,8 @@ class Image:
             coord: An image coordinate to sample.
 
         Return:
-            The sampled color. Colors are returned as float values between 0.0
-            and 1.0 for LDR, and float values which may exceed 1.0 for HDR.
+            The sampled color. Colors are returned as float values between 0.0 and 1.0 for LDR, and
+            float values which may exceed 1.0 for HDR.
         '''
         x = coord[0]
         y = coord[1]
@@ -88,114 +134,22 @@ class Image:
         # Ensure convert factors in format origin if needed
         command.append('-auto-orient')
 
-        command += [
-            '-format', '%%[pixel:p{%u,%u}]' % (x, y),
-            'info:'
-        ]
+        command += ['-format', '%%[pixel:p{%u,%u}]' % (x, y), 'info:']
 
         if os.name == 'nt':
             command.insert(0, 'magick')
 
-        result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
-                        check=True, text=True)
+        result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE, check=True, text=True)
 
-        raw_color = result.stdout.strip()
-
-        # Decode ImageMagick's annoying named color outputs. Note that this
-        # only handles 'known' cases triggered by our test images, we don't
-        # support the entire ImageMagick named color table.
-        if raw_color == 'black':
-            color = [0.0, 0.0, 0.0, 1.0]
-
-        elif raw_color == 'white':
-            color = [1.0, 1.0, 1.0, 1.0]
-
-        elif raw_color == 'red':
-            color = [1.0, 0.0, 0.0, 1.0]
-
-        elif raw_color == 'blue':
-            color = [0.0, 0.0, 1.0, 1.0]
-
-        # Decode ImageMagick's format tuples
-        elif raw_color.startswith('srgba'):
-            raw_color = raw_color[6:]
-            raw_color = raw_color[:-1]
-
-            channel_str = raw_color.split(',')
-            channel_flt = [0.0] * 4
-
-            for i, channel in enumerate(channel_str):
-                if (i < 3) and channel.endswith('%'):
-                    channel_flt[i] = float(channel[:-1]) / 100.0
-                elif (i < 3) and not channel.endswith('%'):
-                    channel_flt[i] = float(channel) / 255.0
-                else:
-                    channel_flt[i] = float(channel)
-
-            color = channel_flt
-
-        elif raw_color.startswith('srgb'):
-            raw_color = raw_color[5:]
-            raw_color = raw_color[:-1]
-
-            channel_str = raw_color.split(',')
-            channel_flt = [0.0] * 4
-
-            for i, channel in enumerate(channel_str):
-                if (i < 3) and channel.endswith('%'):
-                    channel_flt[i] = float(channel[:-1]) / 100.0
-                if (i < 3) and not channel.endswith('%'):
-                    channel_flt[i] = float(channel) / 255.0
-
-            channel_flt[3] = 1.0
-
-            color = channel_flt
-
-        elif raw_color.startswith('rgba'):
-            raw_color = raw_color[5:]
-            raw_color = raw_color[:-1]
-
-            channel_str = raw_color.split(',')
-            channel_flt = [0.0] * 4
-
-            for i, channel in enumerate(channel_str):
-                if (i < 3) and channel.endswith('%'):
-                    channel_flt[i] = float(channel[:-1]) / 100.0
-                elif (i < 3) and not channel.endswith('%'):
-                    channel_flt[i] = float(channel) / 255.0
-                else:
-                    channel_flt[i] = float(channel)
-
-            color = channel_flt
-
-        elif raw_color.startswith('rgb'):
-            raw_color = raw_color[4:]
-            raw_color = raw_color[:-1]
-
-            channel_str = raw_color.split(',')
-            channel_flt = [0.0] * 4
-
-            for i, channel in enumerate(channel_str):
-                if (i < 3) and channel.endswith('%'):
-                    channel_flt[i] = float(channel[:-1]) / 100.0
-                if (i < 3) and not channel.endswith('%'):
-                    channel_flt[i] = float(channel) / 255.0
-
-            channel_flt[3] = 1.0
-
-            color = channel_flt
-
-        else:
-            assert False, f'Unknown color format {raw_color} at {x}, {y}'
+        color = list(decode_color(result.stdout.strip()))
+        suffix = self.file_path.suffix.lower()
 
         # ImageMagick decodes DDS as BGRA not RGBA; manually correct
-        if self.file_path.suffix == 'dds':
-            tmp = color[0]
-            color[0] = color[2]
-            color[2] = tmp
+        if suffix == '.dds':
+            color[0], color[2] = color[2], color[0]
 
-        # ImageMagick decodes EXR with premultiplied alpha; manually correct
-        if self.file_path.suffix == 'exr':
+        # EXR samples are premultiplied; fully transparent pixels cannot be unpremultiplied
+        if (suffix == '.exr') and (color[3] != 0.0):
             color[0] /= color[3]
             color[1] /= color[3]
             color[2] /= color[3]

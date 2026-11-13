@@ -16,8 +16,8 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-This script is a utility to download test images that are available online,
-avoiding the need to duplicate them in the repository.
+This script is a utility to download test images that are available online, avoiding the need to
+duplicate them in the repository.
 '''
 
 from pathlib import Path
@@ -33,14 +33,33 @@ TEST_IMAGE_DIR = Path('Test/Images')
 
 NORMAL_MAP_STRENGTH = 8.0
 
-# Alpha image for each RGB image in the non-correlated alpha set. This is a
-# stable derangement, so every source is used exactly once and never with its
-# matching RGB image.
+# Alpha image for each RGB image in the non-correlated alpha set. This is a stable derangement, so
+# every source is used exactly once and never with its matching RGB image.
 KODAK_NCA_MAP = {
-    1: 2, 2: 23, 3: 17, 4: 10, 5: 19, 6: 5,
-    7: 15, 8: 3, 9: 18, 10: 1, 11: 12, 12: 16,
-    13: 9, 14: 21, 15: 14, 16: 13, 17: 6, 18: 8,
-    19: 7, 20: 11, 21: 22, 22: 24, 23: 20, 24: 4
+    1: 2,
+    2: 23,
+    3: 17,
+    4: 10,
+    5: 19,
+    6: 5,
+    7: 15,
+    8: 3,
+    9: 18,
+    10: 1,
+    11: 12,
+    12: 16,
+    13: 9,
+    14: 21,
+    15: 14,
+    16: 13,
+    17: 6,
+    18: 8,
+    19: 7,
+    20: 11,
+    21: 22,
+    22: 24,
+    23: 20,
+    24: 4,
 }
 
 
@@ -115,8 +134,7 @@ def make_normal_map(image: Image.Image) -> Image.Image:
     normal_y = -gradient_y * NORMAL_MAP_STRENGTH
     normal_z = numpy.ones_like(height)
 
-    length = numpy.sqrt(
-        normal_x * normal_x + normal_y * normal_y + normal_z * normal_z)
+    length = numpy.sqrt(normal_x * normal_x + normal_y * normal_y + normal_z * normal_z)
 
     normal = numpy.stack((normal_x, normal_y, normal_z), axis=2)
     normal /= length[:, :, numpy.newaxis]
@@ -184,8 +202,7 @@ def retrieve_kodak_set():
     '''
     Download the public domain Kodak image set.
 
-    To make test set mosaics easier to build we rotate images to make
-    everything landscape.
+    To make test set mosaics easier to build we rotate images to make everything landscape.
     '''
     test_set = 'Kodak'
 
@@ -231,10 +248,7 @@ def retrieve_kodak_set():
     make_montage(src_dir, dst_path, images)
 
     # Make a large non-correlated alpha montage
-    alpha_images = [
-        src_dir / f'ldr-rgb-kodak{KODAK_NCA_MAP[i]:02}.png'
-        for i in range(1, 25)
-    ]
+    alpha_images = [src_dir / f'ldr-rgb-kodak{KODAK_NCA_MAP[i]:02}.png' for i in range(1, 25)]
     dst_path = dst_dir / 'ldr-rgba-montage+nca.png'
     make_montage(src_dir, dst_path, alpha_images)
 

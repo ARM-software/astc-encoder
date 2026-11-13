@@ -15,12 +15,11 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-A TestSet is a single suite of related images used for testing, comprised of a
-list of TestImage instances stored on the file system.
+A TestSet is a single suite of related images used for testing, comprised of a list of TestImage
+instances stored on the file system.
 
-Images are stored on the file system in a structured layout that encodes
-important metadata about each image, such as color profile and data encoding,
-as part of the directory and file names used.
+Images are stored on the file system in a structured layout that encodes important metadata about
+each image, such as color profile and data encoding, as part of the directory and file names used.
 
 The directory hierarchy convention used is:
 
@@ -53,7 +52,6 @@ class TestImage:
 
     Attributes:
         file_path: The path of the file on disk.
-        file_path_out: The path of the output file on disk.
         test_format: The test format group.
         file_name: The test file name.
         color_profile: The image compression color profile.
@@ -76,7 +74,7 @@ class TestImage:
 
     FLAGS = {
         '3': '3D image',
-        'a': 'Alpha scaled image'
+        'a': 'Alpha scaled image',
     }
 
     def __init__(self, file_path: Path):
@@ -90,6 +88,7 @@ class TestImage:
             TestImageException: The image is not found or path is malformed.
         '''
         self.file_path = file_path.resolve()
+
         if not self.file_path.exists():
             raise TestImageException(f'Image does not exist ({file_path})')
 
@@ -107,13 +106,6 @@ class TestImage:
         self.is_3d = '3' in flags
         self.is_alpha_scaled = 'a' in flags
 
-        # Output file path, with file stored without extension
-        # TODO: Move this elsewhere as it assumes the directory structure
-        root_dir = Path(__file__).parent.parent
-        self.file_path_out = \
-            root_dir / 'TestOutput' / \
-            self.test_set / self.test_format / file_path.stem
-
     def _decode_color_profile(self, file_name: str) -> str:
         '''
         Utility function to decode color profile from file name.
@@ -128,10 +120,12 @@ class TestImage:
             TestImageException: File path is malformed.
         '''
         parts = file_name.split('-')
+
         if len(parts) < 3:
             raise TestImageException(f'Malformed file name ({file_name})')
 
         profile = parts[0]
+
         if profile not in self.PROFILES:
             raise TestImageException(f'Unknown color profile ({profile})')
 
@@ -151,10 +145,12 @@ class TestImage:
             TestImageException: File path is malformed.
         '''
         parts = file_name.split('-')
+
         if len(parts) < 3:
             raise TestImageException(f'Malformed file name ({self.file_name})')
 
         cformat = parts[1]
+
         if cformat not in self.FORMATS:
             raise TestImageException(f'Unknown color format ({cformat})')
 
@@ -174,6 +170,7 @@ class TestImage:
             TestImageException: File path is malformed.
         '''
         parts = file_name.split('-')
+
         if len(parts) < 3:
             raise TestImageException(f'Malformed file name ({self.file_name})')
 
@@ -201,6 +198,7 @@ class TestImage:
 
         # ... else decode the flags field
         raw_flags = parts[3]
+
         for flag in raw_flags:
             if flag in flags:
                 raise TestImageException(f'Duplicate flag ({flag})')
@@ -215,9 +213,8 @@ class TestImage:
 
 class TestSet:
     '''
-    A suite of related images used for testing, comprised of a list of
-    TestImage instances. TestImages are discovered by reading images from a
-    directory in the filesystem.
+    A suite of related images used for testing, comprised of a list of TestImage instances.
+    TestImages are discovered by reading images from a directory in the filesystem.
 
     Attributes:
         name: The name of the test set.
@@ -252,6 +249,7 @@ class TestSet:
 
                 # Only select image files
                 ext = file_path.suffix
+
                 if ext not in TestImage.TEST_EXTS:
                     continue
 

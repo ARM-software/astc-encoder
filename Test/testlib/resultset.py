@@ -15,12 +15,11 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-A ResultSet stores a set of results about the performance of a TestSet. Each
-set keeps result Records for each image and block size tested, storing the
-PSNR, SSIM, and coding time.
+A ResultSet stores a set of results about the performance of a TestSet. Each set keeps result
+Records for each image and block size tested, storing the PSNR, SSIM, and coding time.
 
-ResultSets are often backed by a CSV file on disk, and a ResultSet can be
-compared against a set of reference results created by an earlier test run.
+ResultSets are often backed by a CSV file on disk, and a ResultSet can be compared against a set of
+reference results created by an earlier test run.
 '''
 
 from __future__ import annotations
@@ -31,6 +30,12 @@ from pathlib import Path
 from typing import Optional
 
 import numpy
+
+
+# Require bit-exact reference quality scores
+RESULT_THRESHOLD_WARN = -0.00
+RESULT_THRESHOLD_FAIL = -0.00
+RESULT_THRESHOLD_3D_FAIL = -0.00
 
 
 @enum.unique
@@ -64,9 +69,9 @@ class Record:
         coding_rate: The coding rate.
         status: The test result status.
         psnr_rel: The relative image quality (diff PSNR dB, >= 0 good)
+        ssim_rel: The SSIM difference from the reference (>= 0 good).
         total_time_rel: The relative total time vs ref (scale, <1 fast).
         coding_time_rel: The relative coding time vs ref (scale, <1 fast).
-        coding_rate_rel: The relative coding rate vs ref (scale, <1 fast).
     '''
 
     def __init__(self, block_size: str, name: str, psnr: float,
@@ -94,18 +99,9 @@ class Record:
         self.status = ResultStatus.NOT_RUN
 
         self.psnr_rel: Optional[float] = None
+        self.ssim_rel: Optional[float] = None
         self.total_time_rel: Optional[float] = None
         self.coding_time_rel: Optional[float] = None
-        self.coding_rate_rel: Optional[float] = None
-
-    def set_status(self, result: ResultStatus) -> None:
-        '''
-        Set the result status.
-
-        Args:
-            result: The test result status to set.
-        '''
-        self.status = result
 
     def set_relative_to_reference(self, reference: Record) -> None:
         '''
@@ -115,6 +111,7 @@ class Record:
             reference: The reference result to compare against.
         '''
         self.psnr_rel = self.psnr - reference.psnr
+        self.ssim_rel = self.ssim - reference.ssim
 
         try:
             self.total_time_rel = reference.total_time / self.total_time
@@ -125,6 +122,30 @@ class Record:
             self.coding_time_rel = reference.coding_time / self.coding_time
         except ZeroDivisionError:
             self.coding_time_rel = float('NaN')
+
+    def compare_to(self, reference: Record, is_3d: bool) -> None:
+        '''
+        Calculate relative metrics and classify quality against the reference.
+
+        Args:
+            reference: The reference metrics for the same image and block size.
+            is_3d: Whether the image uses the 3D quality threshold.
+        '''
+        self.set_relative_to_reference(reference)
+        assert self.psnr_rel is not None
+
+        # Timing differences do not influence the quality pass/fail decision
+        fail_threshold = RESULT_THRESHOLD_FAIL
+
+        if is_3d:
+            fail_threshold = RESULT_THRESHOLD_3D_FAIL
+
+        if self.psnr_rel < fail_threshold:
+            self.status = ResultStatus.FAIL
+        elif self.psnr_rel < RESULT_THRESHOLD_WARN:
+            self.status = ResultStatus.WARN
+        else:
+            self.status = ResultStatus.PASS
 
 
 class ResultSet:
@@ -168,9 +189,9 @@ class ResultSet:
         Raise:
             KeyError: No match could be found.
         '''
+
         for record in self.records:
-            if record.block_size == other.block_size and \
-               record.name == other.name:
+            if record.block_size == other.block_size and record.name == other.name:
                 return record
 
         raise KeyError()
@@ -202,6 +223,7 @@ class ResultSet:
         with open(file_path, 'w', encoding='utf=8', newline='') as handle:
             writer = csv.writer(handle)
             self._save_header(writer)
+
             for record in self.records:
                 self._save_record(writer, record)
 
@@ -209,15 +231,17 @@ class ResultSet:
         '''
         Update a CSV only for new records or changed PSNR values.
 
-        Compare PSNR at the four decimal places stored in the CSV. Preserve
-        existing records, including timing and SSIM, when PSNR is unchanged.
-        Retain untested records, and leave unchanged files untouched.
+        Compare PSNR at the four decimal places stored in the CSV. Preserve existing records,
+        including timing and SSIM, when PSNR is unchanged. Retain untested records, and leave
+        unchanged files untouched.
 
         Args:
             file_path: The output file path.
         '''
+
         if not file_path.exists():
             self.save_to_file(file_path)
+
             return
 
         existing = ResultSet(self.test_set_name)
@@ -228,14 +252,17 @@ class ResultSet:
         }
 
         is_changed = False
+
         for record in self.records:
             key = (record.block_size, record.name)
             index = indices.get(key)
+
             if index is None:
                 indices[key] = len(existing.records)
                 existing.add_record(record)
             else:
                 previous = existing.records[index]
+
                 if f'{previous.psnr:0.4f}' == f'{record.psnr:0.4f}':
                     continue
 
@@ -365,6 +392,7 @@ class ResultSummary:
         Args:
             record (Record): The Record to add.
         '''
+
         # Record pass/fail status
         if record.status == ResultStatus.PASS:
             self.passes += 1
@@ -399,6 +427,7 @@ class ResultSummary:
         Return:
             The worst test result.
         '''
+
         if self.fails:
             return ResultStatus.FAIL
 

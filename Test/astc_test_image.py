@@ -16,313 +16,57 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-The image test runner is used for image quality and performance testing.
+Run image quality and performance tests using reusable image selection and execution helpers.
 
-It is designed to process directories of arbitrary test images, using the
-directory structure and path naming conventions to self-describe how each image
-is to be compressed. Some built-in test sets are provided in the ./Test/Images
-directory, and others can be downloaded by running the astc_test_image_dl
-script.
-
-Attributes:
-    RESULT_THRESHOLD_WARN: The result threshold (dB) for getting a WARN.
-    RESULT_THRESHOLD_FAIL: The result threshold (dB) for getting a FAIL.
-    TEST_BLOCK_SIZES: The block sizes we can test. This is a subset of the
-        block sizes supported by ASTC, simply to keep test run times
-        manageable.
+Images are discovered under Test/Images using their directory and filename metadata. Results are
+written as CSV files, optionally compared against references from an earlier encoder build.
 '''
 
 import argparse
+from dataclasses import dataclass
+import math
 from pathlib import Path
 import re
 import sys
-from typing import Optional
 
 import testlib.encoder as te
-from testlib.testset import TestImage, TestSet
-from testlib.resultset import Record, ResultSet, ResultStatus
-
-# Require bit exact with reference scores
-RESULT_THRESHOLD_WARN = -0.00
-RESULT_THRESHOLD_FAIL = -0.00
-RESULT_THRESHOLD_3D_FAIL = -0.00
-
-TEST_BLOCK_SIZES = [
-    '4x4', '5x5', '6x6', '8x8', '12x12', '3x3x3', '6x6x6'
-]
-
-TEST_QUALITIES = [
-    'fastest', 'fast', 'medium', 'thorough', 'verythorough', 'exhaustive'
-]
+from testlib.encoder import RunOptions
+from testlib.resultset import ResultSet, ResultStatus
+from testlib.runner import run_test_set
+from testlib.selection import TEST_BLOCK_SIZES, TEST_QUALITIES, select_test_cases
+from testlib.testset import TestSet
 
 
-def is_3d(block_size: str) -> bool:
+TEST_ENCODERS = ('none', 'native', 'universal', 'neon', 'sve_256', 'sve_128',
+                 'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512')
+# AVX-512 variants stay opt-in so CI can probe host support before running them
+ENCODER_GROUPS = {
+    'all-aarch64': ('neon', 'sve_256', 'sve_128'),
+    'all-x86': ('sse2', 'sse4.1', 'avx2'),
+}
+PROFILES = ('ldr', 'ldrs', 'hdr')
+FORMATS = ('l', 'xy', 'rgb', 'rgba')
+
+
+@dataclass(frozen=True)
+class EncoderTarget:
     '''
-    Is the given block size a 3D block type?
+    An encoder and its result file naming settings.
 
-    Args:
-        block_size: The block size.
-
-    Return:
-        True if the block size if 3D, False if 2D.
+    Attributes:
+        encoder: The encoder to run.
+        name: The output CSV name prefix.
+        out_dir: The directory receiving result CSVs.
+        reference_name: The reference CSV name prefix, or None when rebuilding references.
     '''
-    return block_size.count('x') == 2
+    encoder: te.EncoderBase
+    name: str
+    out_dir: Path
+    reference_name: str | None
 
 
-def select_test_cases(test_set: TestSet, block_sizes: list[str],
-                      qualities: list[str], pairwise: bool = False) \
-                      -> list[tuple[TestImage, str, str]]:
-    '''
-    Select image, block size, and quality combinations to test.
-
-    Pairwise selection groups images by color profile and format, then covers
-    every feasible pair of image group, block size, and quality. Every image
-    with a compatible block size is tested at least once. Ties are resolved in
-    input order to keep selection deterministic.
-
-    Args:
-        test_set: The test set to run.
-        block_sizes: The block sizes to run.
-        qualities: The quality levels to run.
-        pairwise: Select pairwise coverage instead of all combinations?
-
-    Return:
-        The selected image, block size, and quality tuples.
-    '''
-    cases = [
-        (image, block_size, quality)
-        for block_size in block_sizes
-        for image in test_set.tests
-        if is_3d(block_size) == image.is_3d
-        for quality in qualities
-    ]
-
-    if not pairwise:
-        return cases
-
-    coverage = [
-        {
-            ('image', str(image.file_path), ''),
-            ('format-block', (image.color_profile, image.color_format),
-             block_size),
-            ('format-quality', (image.color_profile, image.color_format),
-             quality),
-            ('block-quality', block_size, quality)
-        }
-        for image, block_size, quality in cases
-    ]
-
-    uncovered = set().union(*coverage)
-    selected = set()
-
-    while uncovered:
-        index = max(range(len(cases)),
-                    key=lambda i: len(coverage[i] & uncovered))
-        selected.add(index)
-        uncovered.difference_update(coverage[index])
-
-    return [case for index, case in enumerate(cases) if index in selected]
-
-
-def determine_result(image: TestImage, reference: Record,
-                     result: Record) -> ResultStatus:
-    '''
-    Determine a test result against a reference and thresholds.
-
-    Args:
-        image: The image being compressed.
-        reference: The reference result to compare against.
-        result: The test result.
-
-    Return:
-        The result code.
-    '''
-    psnr_diff = result.psnr - reference.psnr
-
-    if (psnr_diff < RESULT_THRESHOLD_FAIL) and (not image.is_3d):
-        return ResultStatus.FAIL
-
-    if (psnr_diff < RESULT_THRESHOLD_3D_FAIL) and image.is_3d:
-        return ResultStatus.FAIL
-
-    if psnr_diff < RESULT_THRESHOLD_WARN:
-        return ResultStatus.WARN
-
-    return ResultStatus.PASS
-
-
-def format_solo_result(image: TestImage, result: Record) -> str:
-    '''
-    Format a metrics string for a single (no compare) result.
-
-    Args:
-        image: The image being tested.
-        result: The test result.
-
-    Return:
-        The metrics report.
-    '''
-    del image  # Unused
-
-    name = f'{result.block_size:>5} {result.name}'
-    psnr = f'{result.psnr:2.3f} dB'
-    ssim = f'{result.ssim:.3f}'
-    total_time = f'{result.total_time:.3f} s'
-    coding_time = f'{result.coding_time:.3f} s'
-    coding_rate = f'{result.coding_rate:.3f} MT/s'
-
-    fields = (
-        f'{name:<32}',
-        f'{psnr:>11}',
-        f'{ssim:>5}',
-        f'{total_time:>9}',
-        f'{coding_time:>9}',
-        f'{coding_rate:>11}',
-    )
-
-    return ' | '.join(fields)
-
-
-def format_compare_result(image: TestImage, reference: Record,
-                          result: Record) -> str:
-    '''
-    Format a metrics string for a comparison result.
-
-    Args:
-        image: The image being tested.
-        reference: The reference result to compare against.
-        result: The test result.
-
-    Return:
-        The metrics report.
-    '''
-    psnr_diff = result.psnr - reference.psnr
-    ssim_diff = result.ssim - reference.ssim
-
-    try:
-        total_time_rel = reference.total_time / result.total_time
-    except ZeroDivisionError:
-        total_time_rel = float('NaN')
-
-    try:
-        coding_time_rel = reference.coding_time / result.coding_time
-    except ZeroDivisionError:
-        coding_time_rel = float('NaN')
-
-    name = f'{result.block_size:>5} {result.name}'
-    psnr = f'{result.psnr:2.3f} dB ({psnr_diff:1.3f} dB)'
-    ssim = f'{result.ssim:.3f} ({ssim_diff:+.3f})'
-    total_time = f'{result.total_time:.3f} s ({total_time_rel:1.2f}x)'
-    coding_time = f'{result.coding_time:.3f} s ({coding_time_rel:1.2f}x)'
-    coding_rate = f'{result.coding_rate:.3f} MT/s'
-    result_status = determine_result(image, reference, result)
-
-    fields = (
-        f'{name:<32}',
-        f'{psnr:>22}',
-        f'{ssim:>14}',
-        f'{total_time:>15}',
-        f'{coding_time:>15}',
-        f'{coding_rate:>11}',
-        f'{coding_rate:>11}',
-        result_status.name
-    )
-
-    return ' | '.join(fields)
-
-
-def run_test_image(encoder: te.EncoderBase, reference: Optional[ResultSet],
-                   image: TestImage, quality: str, block_size: str,
-                   repeats: int, keep_output: bool,
-                   threads: Optional[int]) -> tuple[Record, str]:
-    '''
-    Execute one test image in the test set.
-
-    Args:
-        encoder: The encoder to test.
-        reference: The reference test results to compare against.
-        image: The single image to test.
-        quality: The quality level to test.
-        block_size: The block size to test.
-        repeats: The number of test repeats to run.
-        keep_output: Should the test preserve output images?
-        threads (int or None): The thread count to use, or None to use
-            automatic thread count based on core count of host machine.
-
-    Return:
-        The test results, passed as a test record and a formatted log line
-        to emit.
-    '''
-    res = encoder.run_test(
-        image, block_size, f'-{quality}', repeats,
-        keep_output, threads)
-
-    record = Record(block_size, image.file_name, *res)
-
-    if reference:
-        record_ref = reference.get_matching_record(record)
-        record.set_status(determine_result(image, record_ref, record))
-        record.set_relative_to_reference(record_ref)
-
-        report = format_compare_result(image, record_ref, record)
-    else:
-        report = format_solo_result(image, record)
-
-    return (record, report)
-
-
-def run_test_set(encoder: te.EncoderBase, reference: Optional[ResultSet],
-                 test_set: TestSet, quality: str,
-                 test_cases: list[tuple[TestImage, str]],
-                 repeats: int, keep_output: bool,
-                 threads: Optional[int]) -> ResultSet:
-    '''
-    Execute all tests in the test set.
-
-    Args:
-        encoder: The encoder to test.
-        reference: The reference test results to compare against.
-        test_set: The set of images to test.
-        quality: The quality level to test.
-        test_cases: The image and block size pairs to test.
-        repeats: The number of test repeats to run.
-        keep_output: Should the test preserve output images?
-        threads (int or None): The thread count to use, or None to use
-            automatic thread count based on core count of host machine.
-
-    Return:
-        The test results.
-    '''
-    result_set = ResultSet(test_set.name)
-
-    current_test_index = 0
-    max_test_index = len(test_cases)
-
-    title = f'Test Set: {test_set.name} / Encoder: {encoder.name} -{quality}'
-    print(title)
-    print('=' * len(title))
-
-    for image, block_size in test_cases:
-        current_test_index += 1
-
-        progress = f'{current_test_index}/{max_test_index}'
-        msg = f'Running {progress} {block_size} {image.file_name} ... '
-        print(msg, end='', flush=True)
-
-        record, report = run_test_image(
-            encoder, reference, image, quality, block_size,
-            repeats, keep_output, threads)
-
-        result_set.add_record(record)
-
-        print(f'\r[{current_test_index:>3}] {report}')
-
-    return result_set
-
-
-def get_encoder_params(encoder_name: str, reference_name: str,
-                       test_set_name: str) \
-                       -> tuple[te.EncoderBase, str, str, str]:
+def get_encoder_params(encoder_name: str, reference_name: str | None,
+                       test_set_name: str) -> EncoderTarget:
     '''
     Get the encoder and image set parameters for a test run.
 
@@ -332,11 +76,8 @@ def get_encoder_params(encoder_name: str, reference_name: str,
         test_set_name: The test image set.
 
     Return:
-        The test parameters for the requested encoder and test set. An instance
-        of the encoder wrapper class, the output data name, the output result
-        directory, and the reference to use.
+        The encoder and its output and reference naming settings.
     '''
-    used_reference_name: Optional[str] = None
     encoder: te.EncoderBase
 
     if encoder_name.startswith('ref'):
@@ -348,22 +89,29 @@ def get_encoder_params(encoder_name: str, reference_name: str,
             name = f'reference-{version}-{simd}'
             out_dir = f'Test/Images/{test_set_name}'
 
-            return (encoder, name, out_dir, reference_name)
+            return EncoderTarget(encoder=encoder, name=name, out_dir=Path(out_dir),
+                                 reference_name=reference_name)
 
         # Latest main
         if version == 'main':
             encoder = te.Encoder2x(simd)
             name = f'reference-{version}-{simd}'
             out_dir = f'Test/Images/{test_set_name}'
-            return (encoder, name, out_dir, reference_name)
+
+            return EncoderTarget(encoder=encoder, name=name, out_dir=Path(out_dir),
+                                 reference_name=reference_name)
 
         assert False, f'Encoder {encoder_name} not recognized'
 
     encoder = te.Encoder2x(encoder_name)
     name = f'develop-{encoder_name}'
     out_dir = f'TestOutput/{test_set_name}'
-    used_reference_name = reference_name.replace('ref', 'reference')
-    return (encoder, name, out_dir, used_reference_name)
+
+    if reference_name is not None:
+        reference_name = reference_name.replace('ref', 'reference')
+
+    return EncoderTarget(encoder=encoder, name=name, out_dir=Path(out_dir),
+                         reference_name=reference_name)
 
 
 def find_reference_encoders(test_dir: Path) -> list[str]:
@@ -377,51 +125,28 @@ def find_reference_encoders(test_dir: Path) -> list[str]:
         The sorted, unique reference encoder names.
     '''
     quality_pattern = '|'.join(TEST_QUALITIES)
-    result_pattern = re.compile(
-        rf'astc_reference-(.+)_(?:{quality_pattern})_results\.csv')
+    result_pattern = re.compile(rf'astc_reference-(.+)_(?:{quality_pattern})_results\.csv')
     reference_encoders = set()
 
     for result_file in test_dir.rglob('astc_reference-*_results.csv'):
         match = result_pattern.fullmatch(result_file.name)
+
         if match and result_file.is_file():
             reference_encoders.add(f'ref-{match.group(1)}')
 
     return sorted(reference_encoders)
 
 
-def parse_command_line():
+def add_selection_arguments(parser: argparse.ArgumentParser, test_dir: Path) -> None:
     '''
-    Parse the command line.
+    Add encoder, image, and coverage selection arguments.
 
-    Return:
-        Namespace: The parsed command line container.
+    Args:
+        parser: The argument parser receiving these options.
+        test_dir: The root directory containing image test sets.
     '''
-    parser = argparse.ArgumentParser()
-    test_dir = Path(__file__).parent / 'Images'
-
-    # All reference encoders
-    reference_encoders = ['rebuild'] + find_reference_encoders(test_dir)
-
-    # All test encoders
-    test_encoders = [
-        'none', 'native', 'universal',
-        'neon', 'sve_256', 'sve_128',
-        'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512'
-    ]
-
-    test_encoders_arm64 = [
-        'neon', 'sve_256', 'sve_128'
-    ]
-
-    # Keep AVX-512 variants opt-in so CI can probe host support before running
-    # the AVX-512 tests explicitly
-    test_encoders_x86 = [
-        'sse2', 'sse4.1', 'avx2'
-    ]
-
-    encoder_choices = list(test_encoders)
-    encoder_choices.append('all-aarch64')
-    encoder_choices.append('all-x86')
+    # Encoder aliases and stored references define the available comparison targets
+    reference_encoders = ['rebuild', *find_reference_encoders(test_dir)]
 
     parser.add_argument('--encoder', dest='encoders', default='avx2',
                         help='test encoder variant or '
@@ -431,17 +156,15 @@ def parse_command_line():
                         choices=reference_encoders,
                         help='reference encoder variant')
 
-    profile_choices = ['ldr', 'ldrs', 'hdr', 'all']
+    # Image filters apply before the test plan is constructed
     parser.add_argument('--color-profile', dest='profiles', default='all',
-                        choices=profile_choices, help='test color profile')
+                        choices=[*PROFILES, 'all'], help='test color profile')
 
-    format_choices = ['l', 'xy', 'rgb', 'rgba', 'all']
     parser.add_argument('--color-format', dest='formats', default='all',
-                        choices=format_choices, help='test color format')
+                        choices=[*FORMATS, 'all'], help='test color format')
 
-    block_size_choices = list(TEST_BLOCK_SIZES) + ['all']
     parser.add_argument('--block-size', dest='block_sizes', action='append',
-                        choices=block_size_choices, help='test block size')
+                        choices=[*TEST_BLOCK_SIZES, 'all'], help='test block size')
 
     test_set_choices = [x.name for x in test_dir.iterdir() if x.is_dir()]
     test_set_choices.sort()
@@ -452,6 +175,7 @@ def parse_command_line():
     parser.add_argument('--test-image', dest='test_image', default=None,
                         help='select a specific test image from the test set')
 
+    # Coverage selection spans all requested qualities
     quality_choices = list(TEST_QUALITIES)
     quality_choices.append('all')
     quality_choices.append('all+')
@@ -465,121 +189,191 @@ def parse_command_line():
     parser.add_argument('--quality-update', action='store_true',
                         help='only update records with PSNR changes')
 
+
+def add_run_arguments(parser: argparse.ArgumentParser) -> None:
+    '''
+    Add execution and timing precision arguments.
+
+    Args:
+        parser: The argument parser receiving these options.
+    '''
     parser.add_argument('--repeats', dest='repeats', default=1,
-                        type=int, help='test repeat count')
+                        type=int, help='maximum test repeats; stop early when '
+                                       'the timing confidence interval meets '
+                                       'the requested precision')
+
+    parser.add_argument('--confidence', type=float, default=95.0,
+                        help='timing confidence level in percent '
+                             '(default: %(default)s)')
+
+    parser.add_argument('--precision', type=float, default=1.0,
+                        help='allowed timing confidence interval half-width '
+                             'as a percent of the mean (default: %(default)s)')
 
     parser.add_argument('--keep-output', dest='keep_output', default=False,
                         action='store_true', help='keep image output')
 
-    parser.add_argument('-j', dest='threads', default=None,
-                        type=int, help='encoder thread count')
+    parser.add_argument('-j', dest='threads', default=None, type=int, help='encoder thread count')
 
-    args = parser.parse_args()
 
-    # Allow new reference encoders before their result CSVs have been generated
-    if args.encoders not in encoder_choices:
-        pattern = r'ref-(?:main|[0-9]+\.[^-]+)-(.+)'
-        match = re.fullmatch(pattern, args.encoders)
-        if (match is None) or (match.group(1) not in test_encoders):
-            parser.error(f'--encoder: invalid choice: {args.encoders!r}')
+def expand_all(value: str, choices: tuple[str, ...] | list[str]) -> list[str]:
+    '''
+    Expand an all selection into a fresh list of supported values.
 
-    # Turn things into canonical format lists
-    if args.encoders == 'all-aarch64':
-        args.encoders = test_encoders_arm64
-    elif args.encoders == 'all-x86':
-        args.encoders = test_encoders_x86
-    else:
-        args.encoders = [args.encoders]
+    Args:
+        value: The selected value, or all.
+        choices: The values included by all.
+
+    Return:
+        The selected values without sharing mutable defaults.
+    '''
+
+    if value == 'all':
+        return list(choices)
+
+    return [value]
+
+
+def normalize_selection(args: argparse.Namespace, test_dir: Path) -> None:
+    '''
+    Convert selection aliases into explicit lists without modifying shared constants.
+
+    Args:
+        args: The parsed arguments to normalize.
+        test_dir: The root directory containing image test sets.
+    '''
+    # Copy shared selections so repeated parses cannot change later defaults
+    args.encoders = list(ENCODER_GROUPS.get(args.encoders, (args.encoders,)))
 
     if (args.test_qual is not None) and ('all+' in args.test_qual):
-        args.test_qual = TEST_QUALITIES
-
+        args.test_qual = list(TEST_QUALITIES)
     elif (args.test_qual is None) or ('all' in args.test_qual):
-        args.test_qual = TEST_QUALITIES
-        args.test_qual.remove('verythorough')
-        args.test_qual.remove('exhaustive')
+        args.test_qual = list(TEST_QUALITIES[:-2])
 
     if not args.block_sizes or ('all' in args.block_sizes):
-        args.block_sizes = TEST_BLOCK_SIZES
+        args.block_sizes = list(TEST_BLOCK_SIZES)
 
-    if args.test_sets == 'all':
-        args.test_sets = test_set_choices[:-1]
-    else:
-        args.test_sets = [args.test_sets]
-
-    if args.profiles == 'all':
-        args.profiles = profile_choices[:-1]
-    else:
-        args.profiles = [args.profiles]
-
-    if args.formats == 'all':
-        args.formats = format_choices[:-1]
-    else:
-        args.formats = [args.formats]
+    test_sets = sorted(path.name for path in test_dir.iterdir() if path.is_dir())
+    args.test_sets = expand_all(args.test_sets, test_sets)
+    args.profiles = expand_all(args.profiles, PROFILES)
+    args.formats = expand_all(args.formats, FORMATS)
 
     if args.reference == 'rebuild':
         args.reference = None
 
+
+def parse_command_line(argv: list[str] | None = None) -> argparse.Namespace:
+    '''
+    Parse and normalize the image test command line.
+
+    Args:
+        argv: The command-line arguments, or None to read the process arguments.
+
+    Return:
+        The normalized selections and validated run options.
+    '''
+    parser = argparse.ArgumentParser()
+    test_dir = Path(__file__).parent / 'Images'
+    add_selection_arguments(parser, test_dir)
+    add_run_arguments(parser)
+    args = parser.parse_args(argv)
+
+    # Keep validation errors in the units accepted by the command line
+    if args.repeats < 1:
+        parser.error('--repeats must be at least one')
+
+    if not 0.0 < args.confidence < 100.0:
+        parser.error('--confidence must be between 0 and 100, exclusive')
+
+    if (not math.isfinite(args.precision)) or (args.precision <= 0.0):
+        parser.error('--precision must be a finite positive percentage')
+
+    # Allow new reference encoders before their result CSVs have been generated
+    if args.encoders not in (*TEST_ENCODERS, *ENCODER_GROUPS):
+        pattern = r'ref-(?:main|[0-9]+\.[^-]+)-(.+)'
+        match = re.fullmatch(pattern, args.encoders)
+
+        if (match is None) or (match.group(1) not in TEST_ENCODERS):
+            parser.error(f'--encoder: invalid choice: {args.encoders!r}')
+
+    # Shared execution code uses fractions rather than CLI percentages
+    args.run_options = RunOptions(repeats=args.repeats, keep_output=args.keep_output,
+                                  threads=args.threads, confidence=args.confidence / 100.0,
+                                  precision=args.precision / 100.0)
+
+    normalize_selection(args, test_dir)
+
     return args
+
+
+def run_configuration(args: argparse.Namespace, quality: str, test_set_name: str,
+                      encoder_name: str) -> ResultStatus:
+    '''
+    Run one encoder, test set, and quality preset and save its result CSV.
+
+    Args:
+        args: The normalized image selections and run settings.
+        quality: The quality preset to run.
+        test_set_name: The image test set to load.
+        encoder_name: The encoder variant to run.
+
+    Return:
+        The worst comparison status, or NOT_RUN when no reference is supplied.
+    '''
+    target = get_encoder_params(encoder_name, args.reference, test_set_name)
+    test_dir = Path('Test/Images') / test_set_name
+
+    # Reference CSVs provide comparison data without influencing sampling
+    reference = None
+
+    if target.reference_name:
+        ref_csv = test_dir / f'astc_{target.reference_name}_{quality}_results.csv'
+        reference = ResultSet(test_set_name)
+        reference.load_from_file(ref_csv)
+
+    test_set = TestSet(test_set_name, test_dir, args.profiles, args.formats, args.test_image)
+
+    # Select across all requested qualities before grouping to preserve pairwise coverage
+    cases = select_test_cases(test_set, args.block_sizes, args.test_qual, args.pairwise)
+    cases = [case for case in cases if case.quality == quality]
+
+    results = run_test_set(target.encoder, test_set, quality, cases, args.run_options, reference)
+
+    # Quality-only updates retain stored timing data for unchanged scores
+    test_csv = target.out_dir / f'astc_{target.name}_{quality}_results.csv'
+
+    if args.quality_update:
+        results.save_quality_changes(test_csv)
+    else:
+        results.save_to_file(test_csv)
+
+    if reference is not None:
+        summary = results.get_results_summary()
+        print(summary)
+
+        return summary.get_worst_result()
+
+    return ResultStatus.NOT_RUN
 
 
 def main() -> int:
     '''
-    The main function.
+    Run the selected configurations and report the overall quality status.
 
     Return:
-        int: The process return code.
+        One if a quality comparison fails, otherwise zero.
     '''
-    # Parse command lines
     args = parse_command_line()
-
     test_set_count = 0
     worst_result = ResultStatus.NOT_RUN
 
+    # Preserve the quality, image-set, and encoder ordering used by existing reports
     for quality in args.test_qual:
         for test_set_name in args.test_sets:
             for encoder_name in args.encoders:
-                (encoder, name, out_dir, reference_name) = \
-                    get_encoder_params(
-                        encoder_name, args.reference, test_set_name)
-
-                test_dir = f'Test/Images/{test_set_name}'
-                test_csv = f'{out_dir}/astc_{name}_{quality}_results.csv'
-
-                reference = None
-                if reference_name:
-                    ref_csv = f'astc_{reference_name}_{quality}_results.csv'
-                    ref_csv = f'{test_dir}/{ref_csv}'
-                    reference = ResultSet(test_set_name)
-                    reference.load_from_file(Path(ref_csv))
-
+                status = run_configuration(args, quality, test_set_name, encoder_name)
                 test_set_count += 1
-                test_set = TestSet(
-                    test_set_name, Path(test_dir),
-                    args.profiles, args.formats, args.test_image)
-                test_cases = [
-                    (image, block_size)
-                    for image, block_size, test_quality in select_test_cases(
-                        test_set, args.block_sizes, args.test_qual,
-                        args.pairwise)
-                    if test_quality == quality
-                ]
-
-                result_set = run_test_set(
-                    encoder, reference, test_set, quality,
-                    test_cases, args.repeats,
-                    args.keep_output, args.threads)
-
-                if args.quality_update:
-                    result_set.save_quality_changes(Path(test_csv))
-                else:
-                    result_set.save_to_file(Path(test_csv))
-
-                if reference_name:
-                    summary = result_set.get_results_summary()
-                    this_result = summary.get_worst_result()
-                    worst_result = max(this_result, worst_result)
-                    print(summary)
+                worst_result = max(status, worst_result)
 
         if (test_set_count > 1) and (worst_result != ResultStatus.NOT_RUN):
             print(f'OVERALL STATUS: {worst_result.name}')

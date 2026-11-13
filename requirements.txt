@@ -1,4 +1,5 @@
 # Image tests and statistical analysis
+matplotlib
 numpy
 Pillow
 scipy
