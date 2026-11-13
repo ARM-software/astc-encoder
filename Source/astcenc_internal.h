@@ -2073,21 +2073,24 @@ unsigned int compute_ideal_endpoint_formats(
  * @brief For a given 1 plane weight set recompute the endpoint colors.
  *
  * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
- * recompute the ideal colors for a specific weight set.
+ * recompute the ideal colors for a specific weight set. The general refit only computes auxiliary
+ * scale and offset models required by the selected endpoint formats.
  *
  * @param         blk                  The image block color data to compress.
  * @param         pi                   The partition info for the current trial.
  * @param         di                   The weight grid decimation table.
  * @param         dec_weights_uquant   The quantized weight set.
+ * @param         formats              The endpoint format selected for each partition.
  * @param[in,out] ep                   The color endpoints (modified in place).
- * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
- * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
+ * @param[out]    rgbs_vectors         The RGB+scale vectors for selected LDR scale formats.
+ * @param[out]    rgbo_vectors         The RGB+offset vectors for the selected HDR offset format.
  */
 void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
 	const decimation_info& di,
 	const uint8_t* dec_weights_uquant,
+	const uint8_t* formats,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]);
@@ -2096,16 +2099,18 @@ void recompute_ideal_colors_1plane(
  * @brief For a given 2 plane weight set recompute the endpoint colors.
  *
  * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
- * recompute the ideal colors for a specific weight set.
+ * recompute the ideal colors for a specific weight set. The general refit only computes auxiliary
+ * scale and offset models required by the selected endpoint formats.
  *
  * @param         blk                         The image block color data to compress.
  * @param         bsd                         The block_size descriptor.
  * @param         di                          The weight grid decimation table.
  * @param         dec_weights_uquant_plane1   The quantized weight set for plane 1.
  * @param         dec_weights_uquant_plane2   The quantized weight set for plane 2.
+ * @param         format                      The selected endpoint format.
  * @param[in,out] ep                          The color endpoints (modified in place).
- * @param[out]    rgbs_vector                 The RGB+scale color for LDR blocks.
- * @param[out]    rgbo_vector                 The RGB+offset color for HDR blocks.
+ * @param[out]    rgbs_vector                 The RGB+scale color for selected LDR scale formats.
+ * @param[out]    rgbo_vector                 The RGB+offset color for the selected HDR offset format.
  * @param         plane2_component            The component assigned to plane 2.
  */
 void recompute_ideal_colors_2planes(
@@ -2114,6 +2119,7 @@ void recompute_ideal_colors_2planes(
 	const decimation_info& di,
 	const uint8_t* dec_weights_uquant_plane1,
 	const uint8_t* dec_weights_uquant_plane2,
+	int format,
 	endpoints& ep,
 	vfloat4& rgbs_vector,
 	vfloat4& rgbo_vector,

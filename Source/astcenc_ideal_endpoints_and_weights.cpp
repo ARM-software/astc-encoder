@@ -1311,6 +1311,7 @@ void recompute_ideal_colors_1plane(
 	const partition_info& pi,
 	const decimation_info& di,
 	const uint8_t* dec_weights_uquant,
+	const uint8_t* formats,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
@@ -1370,6 +1371,11 @@ void recompute_ideal_colors_1plane(
 
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
+		bool is_rgbs = (formats[i] == FMT_RGB_SCALE) || (formats[i] == FMT_RGB_SCALE_ALPHA);
+		bool is_rgbo = formats[i] == FMT_HDR_RGB_SCALE;
+		rgbs_vectors[i] = vfloat4::zero();
+		rgbo_vectors[i] = vfloat4::zero();
+
 		unsigned int texel_count = pi.partition_texel_count[i];
 		const uint8_t *texel_indexes = pi.texels_of_partition[i];
 
@@ -1388,7 +1394,11 @@ void recompute_ideal_colors_1plane(
 		// Compute weighted color sums and the mean RGB direction for RGB-scale fitting
 		rgba_sum = rgba_sum * blk.channel_weight;
 		vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
-		vfloat4 scale_dir = normalize((rgba_sum / rgba_weight_sum).swz<0, 1, 2>());
+		vfloat4 scale_dir = vfloat4::zero();
+		if (is_rgbs)
+		{
+			scale_dir = normalize((rgba_sum / rgba_weight_sum).swz<0, 1, 2>());
+		}
 
 		float scale_max = 0.0f;
 		float scale_min = 1e10f;
@@ -1414,10 +1424,13 @@ void recompute_ideal_colors_1plane(
 			wmin1 = astc::min(idx0, wmin1);
 			wmax1 = astc::max(idx0, wmax1);
 
-			// Record the observed range along the RGB-scale direction
-			float scale = dot3_s(scale_dir, rgba);
-			scale_min = astc::min(scale, scale_min);
-			scale_max = astc::max(scale, scale_max);
+			if (is_rgbs)
+			{
+				// Record the observed range only for RGB-scale encoding
+				float scale = dot3_s(scale_dir, rgba);
+				scale_min = astc::min(scale, scale_min);
+				scale_max = astc::max(scale, scale_max);
+			}
 
 			// Accumulate sum(w), sum(w*w), and sum(w*c) for the endpoint solve
 			weight_sum_s += idx0;
@@ -1435,26 +1448,14 @@ void recompute_ideal_colors_1plane(
 		float middle_sum_s = weight_sum_s - right_sum_s;
 		float weight_weight_sum_s = weight_sum_s + 1e-17f;
 
-		// Apply the color and RGB-scale weights to their respective matrix terms
+		// Apply channel error weights to the color normal equations
 		vfloat4 left_sum   = vfloat4(left_sum_s) * color_weight;
 		vfloat4 middle_sum = vfloat4(middle_sum_s) * color_weight;
 		vfloat4 right_sum  = vfloat4(right_sum_s) * color_weight;
-		vfloat4 lmrs_sum   = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
 		// The color right-hand sides are sum(w*c) and sum((1-w)*c)
 		color_vec_y = color_vec_y * color_weight;
 		vfloat4 color_vec_x = rgba_sum - color_vec_y;
-
-		// Fit shared RGB magnitudes using the channel-weighted color sums
-		vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
-
-		// Initialize RGB-scale endpoints from the observed projected RGB range
-		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
-		scalediv = astc::clamp1f(scalediv);
-
-		vfloat4 sds = scale_dir * scale_max;
-
-		rgbs_vectors[i] = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
@@ -1464,26 +1465,17 @@ void recompute_ideal_colors_1plane(
 			vmask4 notnan_mask = avg == avg;
 			ep.endpt0[i] = select(ep.endpt0[i], avg, notnan_mask);
 			ep.endpt1[i] = select(ep.endpt1[i], avg, notnan_mask);
-
-			rgbs_vectors[i] = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
 		}
 		else
 		{
-			// Compute determinants and reciprocals for the color and RGB-scale systems
+			// Compute the determinant and reciprocal for the color system
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
-
-			float ls_det1  = (lmrs_sum.lane<0>() * lmrs_sum.lane<2>()) - (lmrs_sum.lane<1>() * lmrs_sum.lane<1>());
-			float ls_rdet1 = 1.0f / ls_det1;
 
 			// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
 			vfloat4 color_mss1 = (left_sum * left_sum)
 			                   + (2.0f * middle_sum * middle_sum)
 			                   + (right_sum * right_sum);
-
-			float ls_mss1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<0>())
-			              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
-			              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
 
 			// Solve the 2x2 system for both endpoints
 			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
@@ -1497,22 +1489,57 @@ void recompute_ideal_colors_1plane(
 			// Keep the incoming endpoints when the analytic fit is invalid
 			ep.endpt0[i] = select(ep.endpt0[i], ep0, full_mask);
 			ep.endpt1[i] = select(ep.endpt1[i], ep1, full_mask);
+		}
 
-			// Solve the same system for endpoint magnitudes along the RGB-scale direction
-			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>() - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
-			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>() - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
+		if (is_rgbs)
+		{
+			vfloat4 lmrs_sum = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
-			// Keep the default scale endpoints unless the analytic fit is valid and increasing
-			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
+			// Fit shared RGB magnitudes using the channel-weighted color sums
+			vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
+
+			// Initialize RGB-scale endpoints from the observed projected RGB range
+			float scalediv = scale_min / astc::max(scale_max, 1e-10f);
+			scalediv = astc::clamp1f(scalediv);
+
+			vfloat4 sds = scale_dir * scale_max;
+
+			rgbs_vectors[i] = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
+
+			if (wmin1 >= wmax1 * 0.999f)
 			{
-				float scalediv2 = scale_ep0 / scale_ep1;
-				vfloat4 sdsm = scale_dir * scale_ep1;
-				rgbs_vectors[i] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+				vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
+				rgbs_vectors[i] = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
+			}
+			else
+			{
+				float ls_det1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<2>())
+				              - (lmrs_sum.lane<1>() * lmrs_sum.lane<1>());
+				float ls_rdet1 = 1.0f / ls_det1;
+
+				float ls_mss1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<0>())
+				              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
+				              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
+
+				// Solve the same system for endpoint magnitudes along the RGB-scale direction
+				float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
+				                  - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
+				float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>()
+				                  - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
+
+				// Keep the default scale endpoints unless the analytic fit is valid and increasing
+				if ((fabsf(ls_det1) > (ls_mss1 * 1e-4f)) && (scale_ep0 == scale_ep0) &&
+				    (scale_ep1 == scale_ep1) && (scale_ep0 < scale_ep1))
+				{
+					float scalediv2 = scale_ep0 / scale_ep1;
+					vfloat4 sdsm = scale_dir * scale_ep1;
+					rgbs_vectors[i] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+				}
 			}
 		}
 
-		// Calculations specific to mode #7, the HDR RGB-scale mode - skip if known LDR
-		if (blk.rgb_lns[0] || blk.alpha_lns[0])
+		// Fit RGB-offset endpoints only for the selected HDR RGB-offset format
+		if (is_rgbo)
 		{
 			// Constant weights cannot determine the shared RGB offset; use the partition mean
 			if (wmin1 >= wmax1 * 0.999f)
@@ -1555,6 +1582,7 @@ void recompute_ideal_colors_2planes(
 	const decimation_info& di,
 	const uint8_t* dec_weights_uquant_plane1,
 	const uint8_t* dec_weights_uquant_plane2,
+	int format,
 	endpoints& ep,
 	vfloat4& rgbs_vector,
 	vfloat4& rgbo_vector,
@@ -1583,6 +1611,11 @@ void recompute_ideal_colors_2planes(
 		                          ep, &rgbs_vector);
 		return;
 	}
+
+	bool is_rgbs = (format == FMT_RGB_SCALE) || (format == FMT_RGB_SCALE_ALPHA);
+	bool is_rgbo = format == FMT_HDR_RGB_SCALE;
+	rgbs_vector = vfloat4::zero();
+	rgbo_vector = vfloat4::zero();
 
 	unsigned int weight_count = di.weight_count;
 	unsigned int total_texel_count = blk.texel_count;
@@ -1648,7 +1681,11 @@ void recompute_ideal_colors_2planes(
 
 	unsigned int texel_count = bsd.texel_count;
 	vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
-	vfloat4 scale_dir = normalize(blk.data_mean.swz<0, 1, 2>());
+	vfloat4 scale_dir = vfloat4::zero();
+	if (is_rgbs)
+	{
+		scale_dir = normalize(blk.data_mean.swz<0, 1, 2>());
+	}
 
 	float scale_max = 0.0f;
 	float scale_min = 1e10f;
@@ -1685,9 +1722,12 @@ void recompute_ideal_colors_2planes(
 		wmin1 = astc::min(idx0, wmin1);
 		wmax1 = astc::max(idx0, wmax1);
 
-		float scale = dot3_s(scale_dir, rgba);
-		scale_min = astc::min(scale, scale_min);
-		scale_max = astc::max(scale, scale_max);
+		if (is_rgbs)
+		{
+			float scale = dot3_s(scale_dir, rgba);
+			scale_min = astc::min(scale, scale_min);
+			scale_max = astc::max(scale, scale_max);
+		}
 
 		left1_sum_s   += om_idx0 * om_idx0;
 		middle1_sum_s += om_idx0 * idx0;
@@ -1725,24 +1765,6 @@ void recompute_ideal_colors_2planes(
 	color_vec_x = color_vec_x * color_weight;
 	color_vec_y = color_vec_y * color_weight;
 
-	// Fit shared RGB magnitudes using each channel's weight plane and error weight
-	vfloat4 dir_squared = scale_dir * scale_dir;
-	vfloat4 left_sum = select(left1_sum, left2_sum, p2_mask);
-	vfloat4 middle_sum = select(middle1_sum, middle2_sum, p2_mask);
-	vfloat4 right_sum = select(right1_sum, right2_sum, p2_mask);
-	vfloat4 lmrs_sum = vfloat3(dot3_s(dir_squared, left_sum),
-	                           dot3_s(dir_squared, middle_sum),
-	                           dot3_s(dir_squared, right_sum));
-	vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
-
-	// Initialize the luminance and scale vectors with a reasonable default
-	float scalediv = scale_min / astc::max(scale_max, 1e-10f);
-	scalediv = astc::clamp1f(scalediv);
-
-	vfloat4 sds = scale_dir * scale_max;
-
-	rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
-
 	if (wmin1 >= wmax1 * 0.999f)
 	{
 		// Use the partition's average color for both endpoints when all weights are equal
@@ -1754,11 +1776,6 @@ void recompute_ideal_colors_2planes(
 
 		ep.endpt0[0] = select(ep.endpt0[0], avg, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], avg, full_mask);
-
-		if (plane2_component == 3)
-		{
-			rgbs_vector = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
-		}
 	}
 	else
 	{
@@ -1814,31 +1831,59 @@ void recompute_ideal_colors_2planes(
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
 	}
 
-	// A varying RGB plane can constrain the scale even when the other plane is constant
-	if ((plane2_component != 3) || (wmin1 < wmax1 * 0.999f))
+	if (is_rgbs)
 	{
-		float ls_det = lmrs_sum.lane<0>() * lmrs_sum.lane<2>() - lmrs_sum.lane<1>() * lmrs_sum.lane<1>();
-		float ls_rdet = 1.0f / ls_det;
-		float ls_mss = lmrs_sum.lane<0>() * lmrs_sum.lane<0>()
-		             + 2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>()
-		             + lmrs_sum.lane<2>() * lmrs_sum.lane<2>();
+		// Fit shared RGB magnitudes using each channel's weight plane and error weight
+		vfloat4 dir_squared = scale_dir * scale_dir;
+		vfloat4 left_sum = select(left1_sum, left2_sum, p2_mask);
+		vfloat4 middle_sum = select(middle1_sum, middle2_sum, p2_mask);
+		vfloat4 right_sum = select(right1_sum, right2_sum, p2_mask);
+		vfloat4 lmrs_sum = vfloat3(dot3_s(dir_squared, left_sum),
+		                           dot3_s(dir_squared, middle_sum),
+		                           dot3_s(dir_squared, right_sum));
+		vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
 
-		float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
-		                  - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet;
-		float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>()
-		                  - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet;
+		// Initialize the luminance and scale vectors with a reasonable default
+		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
+		scalediv = astc::clamp1f(scalediv);
 
-		if ((fabsf(ls_det) > ls_mss * 1e-4f) && (scale_ep0 == scale_ep0) &&
-		    (scale_ep1 == scale_ep1) && (scale_ep0 < scale_ep1))
+		vfloat4 sds = scale_dir * scale_max;
+
+		rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
+
+		if ((plane2_component == 3) && (wmin1 >= wmax1 * 0.999f))
 		{
-			float scalediv2 = scale_ep0 / scale_ep1;
-			vfloat4 sdsm = scale_dir * scale_ep1;
-			rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+			vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
+			rgbs_vector = vfloat4(avg.lane<0>(), avg.lane<1>(), avg.lane<2>(), 1.0f);
+		}
+
+		// A varying RGB plane can constrain the scale even when the other plane is constant
+		if ((plane2_component != 3) || (wmin1 < wmax1 * 0.999f))
+		{
+			float ls_det = lmrs_sum.lane<0>() * lmrs_sum.lane<2>()
+			             - lmrs_sum.lane<1>() * lmrs_sum.lane<1>();
+			float ls_rdet = 1.0f / ls_det;
+			float ls_mss = lmrs_sum.lane<0>() * lmrs_sum.lane<0>()
+			             + 2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>()
+			             + lmrs_sum.lane<2>() * lmrs_sum.lane<2>();
+
+			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
+			                  - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet;
+			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>()
+			                  - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet;
+
+			if ((fabsf(ls_det) > ls_mss * 1e-4f) && (scale_ep0 == scale_ep0) &&
+			    (scale_ep1 == scale_ep1) && (scale_ep0 < scale_ep1))
+			{
+				float scalediv2 = scale_ep0 / scale_ep1;
+				vfloat4 sdsm = scale_dir * scale_ep1;
+				rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+			}
 		}
 	}
 
-	// Calculations specific to mode #7, the HDR RGB-scale mode - skip if known LDR
-	if (blk.rgb_lns[0] || blk.alpha_lns[0])
+	// Fit RGB-offset endpoints only for the selected HDR RGB-offset format
+	if (is_rgbo)
 	{
 		// Alpha variation cannot constrain the shared RGB offset
 		bool is_constant_rgb = wmin1 >= wmax1 * 0.999f;
