@@ -88,6 +88,9 @@ struct astcenc_preset_config
 	/** @brief The threshold for skipping two weight planes. */
 	float tune_2plane_early_out_limit_correlation;
 
+	/** @brief The minimum fraction of the best predicted gain for dual-plane components. */
+	float tune_2plane_component_limit_factor;
+
 	/** @brief The enable threshold for the mode0 fast-path search. */
 	float tune_search_mode0_enable;
 };
@@ -115,6 +118,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.85f,
+		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for high bitrate, fast
@@ -136,6 +140,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.90f,
+		.tune_2plane_component_limit_factor      = 0.97f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for high bitrate, medium
@@ -157,6 +162,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 1.10f,
 		.tune_3partition_early_out_limit_factor  = 1.05f,
 		.tune_2plane_early_out_limit_correlation = 0.95f,
+		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for high bitrate, thorough
@@ -178,6 +184,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 1.35f,
 		.tune_3partition_early_out_limit_factor  = 1.15f,
 		.tune_2plane_early_out_limit_correlation = 0.97f,
+		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for high bitrate, very thorough
@@ -199,6 +206,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 1.60f,
 		.tune_3partition_early_out_limit_factor  = 1.40f,
 		.tune_2plane_early_out_limit_correlation = 0.98f,
+		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for high bitrate, exhaustive
@@ -220,6 +228,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2partition_early_out_limit_factor  = 2.00f,
 		.tune_3partition_early_out_limit_factor  = 2.00f,
 		.tune_2plane_early_out_limit_correlation = 0.99f,
+		.tune_2plane_component_limit_factor      = 0.80f,
 		.tune_search_mode0_enable                = 0.0f,
 	}
 }};
@@ -247,6 +256,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.80f,
+		.tune_2plane_component_limit_factor      = 0.99f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for medium bitrate, fast
@@ -268,6 +278,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.85f,
+		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for medium bitrate, medium
@@ -289,6 +300,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 1.10f,
 		.tune_3partition_early_out_limit_factor  = 1.05f,
 		.tune_2plane_early_out_limit_correlation = 0.90f,
+		.tune_2plane_component_limit_factor      = 0.96f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for medium bitrate, thorough
@@ -310,6 +322,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 1.40f,
 		.tune_3partition_early_out_limit_factor  = 1.20f,
 		.tune_2plane_early_out_limit_correlation = 0.95f,
+		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for medium bitrate, very thorough
@@ -331,6 +344,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 1.60f,
 		.tune_3partition_early_out_limit_factor  = 1.40f,
 		.tune_2plane_early_out_limit_correlation = 0.98f,
+		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 0.0f,
 	},
 	// Settings for medium bitrate, exhaustive
@@ -352,6 +366,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2partition_early_out_limit_factor  = 2.00f,
 		.tune_3partition_early_out_limit_factor  = 2.00f,
 		.tune_2plane_early_out_limit_correlation = 0.99f,
+		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 0.0f,
 	}
 }};
@@ -379,6 +394,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.80f,
+		.tune_2plane_component_limit_factor      = 0.99f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for low bitrate, fast
@@ -400,6 +416,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 1.00f,
 		.tune_3partition_early_out_limit_factor  = 1.00f,
 		.tune_2plane_early_out_limit_correlation = 0.85f,
+		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for low bitrate, medium
@@ -421,6 +438,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 1.10f,
 		.tune_3partition_early_out_limit_factor  = 1.05f,
 		.tune_2plane_early_out_limit_correlation = 0.90f,
+		.tune_2plane_component_limit_factor      = 0.96f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for low bitrate, thorough
@@ -442,6 +460,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 1.30f,
 		.tune_3partition_early_out_limit_factor  = 1.20f,
 		.tune_2plane_early_out_limit_correlation = 0.97f,
+		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for low bitrate, very thorough
@@ -463,6 +482,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 1.60f,
 		.tune_3partition_early_out_limit_factor  = 1.40f,
 		.tune_2plane_early_out_limit_correlation = 0.98f,
+		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 1.0f,
 	},
 	// Settings for low bitrate, exhaustive
@@ -484,6 +504,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2partition_early_out_limit_factor  = 2.00f,
 		.tune_3partition_early_out_limit_factor  = 2.00f,
 		.tune_2plane_early_out_limit_correlation = 0.99f,
+		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 1.0f,
 	}
 }};

@@ -1422,6 +1422,23 @@ static bool edit_astcenc_config(
 
 			config.tune_2plane_early_out_limit_correlation = value;
 		}
+		else if (!strcmp(argv[argidx], "-2planecomponentlimitfactor"))
+		{
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
+			{
+				return true;
+			}
+
+			float value;
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
+			{
+				return true;
+			}
+
+			config.tune_2plane_component_limit_factor = value;
+		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
 			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
@@ -1655,6 +1672,7 @@ static void print_astcenc_config(
 		printf("    3 partition cutoff:         %g\n", static_cast<double>(config.tune_2partition_early_out_limit_factor));
 		printf("    4 partition cutoff:         %g\n", static_cast<double>(config.tune_3partition_early_out_limit_factor));
 		printf("    2 plane correlation cutoff: %g\n", static_cast<double>(config.tune_2plane_early_out_limit_correlation));
+		printf("    2 plane component cutoff:   %g\n", static_cast<double>(config.tune_2plane_component_limit_factor));
 		printf("    Block mode centile cutoff:  %g%%\n", static_cast<double>(config.tune_block_mode_limit));
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);

@@ -416,6 +416,7 @@ static astcenc_error validate_config(
 	config.tune_2partition_early_out_limit_factor = astc::max(config.tune_2partition_early_out_limit_factor, 0.0f);
 	config.tune_3partition_early_out_limit_factor = astc::max(config.tune_3partition_early_out_limit_factor, 0.0f);
 	config.tune_2plane_early_out_limit_correlation = astc::max(config.tune_2plane_early_out_limit_correlation, 0.0f);
+	config.tune_2plane_component_limit_factor = astc::clamp(config.tune_2plane_component_limit_factor, 0.0f, 1.0f);
 
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
@@ -531,6 +532,7 @@ astcenc_error astcenc_config_init(
 		config.tune_2partition_early_out_limit_factor = (*preset_configs)[start].tune_2partition_early_out_limit_factor;
 		config.tune_3partition_early_out_limit_factor = (*preset_configs)[start].tune_3partition_early_out_limit_factor;
 		config.tune_2plane_early_out_limit_correlation = (*preset_configs)[start].tune_2plane_early_out_limit_correlation;
+		config.tune_2plane_component_limit_factor = (*preset_configs)[start].tune_2plane_component_limit_factor;
 		config.tune_search_mode0_enable = (*preset_configs)[start].tune_search_mode0_enable;
 	}
 	// Start and end node are not the same - so interpolate between them
@@ -570,6 +572,7 @@ astcenc_error astcenc_config_init(
 		config.tune_2partition_early_out_limit_factor = LERP(tune_2partition_early_out_limit_factor);
 		config.tune_3partition_early_out_limit_factor = LERP(tune_3partition_early_out_limit_factor);
 		config.tune_2plane_early_out_limit_correlation = LERP(tune_2plane_early_out_limit_correlation);
+		config.tune_2plane_component_limit_factor = LERP(tune_2plane_component_limit_factor);
 		config.tune_search_mode0_enable = LERP(tune_search_mode0_enable);
 		#undef LERP
 		#undef LERPI

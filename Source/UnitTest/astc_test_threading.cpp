@@ -532,6 +532,7 @@ static auto config_fields(const astcenc_config& config)
 		config.tune_2partition_early_out_limit_factor,
 		config.tune_3partition_early_out_limit_factor,
 		config.tune_2plane_early_out_limit_correlation,
+		config.tune_2plane_component_limit_factor,
 		config.tune_search_mode0_enable,
 		config.progress_callback);
 }

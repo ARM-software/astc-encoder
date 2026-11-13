@@ -427,6 +427,14 @@ ADVANCED COMPRESSION
             -thorough     : 0.95
             -verythorough : 0.98
             -exhaustive   : 0.99
+
+    -2planecomponentlimitfactor <factor>
+        Only test dual-plane components whose predicted error reduction
+        is at least <factor> times the best predicted reduction. Values
+        range from 0 to 1; 0 disables component pruning. Ambiguous
+        predictions retain all eligible components. Defaults are 0.95
+        for blocks with 25 to 63 texels, and 0.5 otherwise. The correlation
+        cutoff still applies.
 )"
 // This split in the literals needed for MSVC, compiler will concatenate
 R"(
