@@ -61,6 +61,24 @@
 #include <assert.h>
 
 /**
+ * @brief The best endpoint encoding for one bit budget in the current partition search.
+ */
+struct endpoint_format_choice
+{
+	/** @brief The estimated endpoint error, excluding weight error. */
+	float error;
+
+	/** @brief The endpoint quantization level. */
+	uint8_t quant_level;
+
+	/** @brief The quantization level when matching formats free extra bits. */
+	uint8_t quant_level_mod;
+
+	/** @brief The selected endpoint format for each partition. */
+	uint8_t formats[BLOCK_MAX_PARTITIONS];
+};
+
+/**
  * @brief Compute the errors of the endpoint line options for one partition.
  *
  * Uncorrelated data assumes storing completely independent RGBA channels for each endpoint. Same
@@ -1342,6 +1360,10 @@ unsigned int compute_ideal_endpoint_formats(
 	float error_of_best_combination = ERROR_CALC_DEFAULT;
 	int index_of_best_combination = -1;
 
+	// Endpoint choices depend on the bit budget; only weight error varies between block modes
+	endpoint_format_choice cached_formats[128];
+	bool is_cached[128] { false };
+
 	// The block contains 1 partition
 	if (partition_count == 1)
 	{
@@ -1353,13 +1375,23 @@ unsigned int compute_ideal_endpoint_formats(
 				continue;
 			}
 
-			float error_of_best = one_partition_find_best_combination_for_bitcount(
-			    best_error[0], format_of_choice[0], qwt_bitcounts[i],
-			    best_quant_levels[i], best_ep_formats[i][0]);
+			int bitcount = qwt_bitcounts[i];
+			endpoint_format_choice& choice = cached_formats[bitcount];
+			if (!is_cached[bitcount])
+			{
+				choice.error = one_partition_find_best_combination_for_bitcount(
+				    best_error[0], format_of_choice[0], bitcount,
+				    choice.quant_level, choice.formats[0]);
+				choice.quant_level_mod = choice.quant_level;
+				is_cached[bitcount] = true;
+			}
 
-			float total_error = error_of_best + qwt_errors[i];
+			best_quant_levels[i] = choice.quant_level;
+			best_quant_levels_mod[i] = choice.quant_level_mod;
+			best_ep_formats[i][0] = choice.formats[0];
+
+			float total_error = choice.error + qwt_errors[i];
 			errors_of_best_combination[i] = total_error;
-			best_quant_levels_mod[i] = best_quant_levels[i];
 
 			if (total_error < error_of_best_combination)
 			{
@@ -1386,12 +1418,24 @@ unsigned int compute_ideal_endpoint_formats(
 				continue;
 			}
 
-			float error_of_best = two_partitions_find_best_combination_for_bitcount(
-			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    best_quant_levels[i], best_quant_levels_mod[i],
-			    best_ep_formats[i]);
+			int bitcount = qwt_bitcounts[i];
+			endpoint_format_choice& choice = cached_formats[bitcount];
+			if (!is_cached[bitcount])
+			{
+				choice.error = two_partitions_find_best_combination_for_bitcount(
+				    combined_best_error, formats_of_choice, bitcount,
+				    choice.quant_level, choice.quant_level_mod, choice.formats);
+				is_cached[bitcount] = true;
+			}
 
-			float total_error = error_of_best + qwt_errors[i];
+			best_quant_levels[i] = choice.quant_level;
+			best_quant_levels_mod[i] = choice.quant_level_mod;
+			for (int j = 0; j < 2; j++)
+			{
+				best_ep_formats[i][j] = choice.formats[j];
+			}
+
+			float total_error = choice.error + qwt_errors[i];
 			errors_of_best_combination[i] = total_error;
 
 			if (total_error < error_of_best_combination)
@@ -1419,12 +1463,24 @@ unsigned int compute_ideal_endpoint_formats(
 				continue;
 			}
 
-			float error_of_best = three_partitions_find_best_combination_for_bitcount(
-			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    best_quant_levels[i], best_quant_levels_mod[i],
-			    best_ep_formats[i]);
+			int bitcount = qwt_bitcounts[i];
+			endpoint_format_choice& choice = cached_formats[bitcount];
+			if (!is_cached[bitcount])
+			{
+				choice.error = three_partitions_find_best_combination_for_bitcount(
+				    combined_best_error, formats_of_choice, bitcount,
+				    choice.quant_level, choice.quant_level_mod, choice.formats);
+				is_cached[bitcount] = true;
+			}
 
-			float total_error = error_of_best + qwt_errors[i];
+			best_quant_levels[i] = choice.quant_level;
+			best_quant_levels_mod[i] = choice.quant_level_mod;
+			for (int j = 0; j < 3; j++)
+			{
+				best_ep_formats[i][j] = choice.formats[j];
+			}
+
+			float total_error = choice.error + qwt_errors[i];
 			errors_of_best_combination[i] = total_error;
 
 			if (total_error < error_of_best_combination)
@@ -1453,12 +1509,24 @@ unsigned int compute_ideal_endpoint_formats(
 				continue;
 			}
 
-			float error_of_best = four_partitions_find_best_combination_for_bitcount(
-			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    best_quant_levels[i], best_quant_levels_mod[i],
-			    best_ep_formats[i]);
+			int bitcount = qwt_bitcounts[i];
+			endpoint_format_choice& choice = cached_formats[bitcount];
+			if (!is_cached[bitcount])
+			{
+				choice.error = four_partitions_find_best_combination_for_bitcount(
+				    combined_best_error, formats_of_choice, bitcount,
+				    choice.quant_level, choice.quant_level_mod, choice.formats);
+				is_cached[bitcount] = true;
+			}
 
-			float total_error = error_of_best + qwt_errors[i];
+			best_quant_levels[i] = choice.quant_level;
+			best_quant_levels_mod[i] = choice.quant_level_mod;
+			for (int j = 0; j < 4; j++)
+			{
+				best_ep_formats[i][j] = choice.formats[j];
+			}
+
+			float total_error = choice.error + qwt_errors[i];
 			errors_of_best_combination[i] = total_error;
 
 			if (total_error < error_of_best_combination)
