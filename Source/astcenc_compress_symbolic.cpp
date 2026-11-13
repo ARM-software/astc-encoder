@@ -1422,6 +1422,7 @@ void compress_block(
 		0.0f,
 		ctx.config.tune_2partition_early_out_limit_factor,
 		ctx.config.tune_3partition_early_out_limit_factor,
+		// Four-partition searches do not use this threshold
 		0.0f
 	};
 
@@ -1558,7 +1559,10 @@ void compress_block(
 			// because the other correlation trial may fit the partitioning much better.
 			float best_error = best_errorvals_for_pcount[partition_count - 1];
 			float best_error_scale = exit_thresholds_for_pcount[partition_count - 1] * 1.85f;
-			if (best_error > (best_error_in_prev * best_error_scale))
+
+			// No four-partition pruning threshold is defined; evaluate all requested candidates
+			if ((partition_count < 4) &&
+			    (best_error > (best_error_in_prev * best_error_scale)))
 			{
 				trace_add_data("skip", "tune_partition_early_out_limit_factor");
 				goto END_OF_TESTS;
@@ -1574,7 +1578,8 @@ void compress_block(
 		// If using N partitions doesn't improve much over using N-1 partitions then skip trying N+1
 		float best_error = best_errorvals_for_pcount[partition_count - 1];
 		float best_error_scale = exit_thresholds_for_pcount[partition_count - 1];
-		if (best_error > (best_error_in_prev * best_error_scale))
+		if ((partition_count < 4) &&
+		    (best_error > (best_error_in_prev * best_error_scale)))
 		{
 			trace_add_data("skip", "tune_partition_early_out_limit_factor");
 			goto END_OF_TESTS;
