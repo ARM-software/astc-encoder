@@ -1721,11 +1721,23 @@ static void quantize_hdr_luminance_large_range(
 	lower_v0 = astc::clamp(lower_v0, 0, 255);
 	lower_v1 = astc::clamp(lower_v1, 0, 255);
 
-	// Determine the distance between the point in code-point space and the input value
+	// Quantization can reverse the submode error ranking, so score the quantized endpoints
+	upper_v0 = quant_color(quant_level, upper_v0);
+	upper_v1 = quant_color(quant_level, upper_v1);
+	lower_v0 = quant_color(quant_level, lower_v0);
+	lower_v1 = quant_color(quant_level, lower_v1);
+
 	int upper0_dec = upper_v0 << 8;
 	int upper1_dec = upper_v1 << 8;
-	int lower0_dec = (lower_v1 << 8) + 128;
-	int lower1_dec = (lower_v0 << 8) - 128;
+	int lower0_dec = lower_v0 << 8;
+	int lower1_dec = lower_v1 << 8;
+
+	// Equal quantized values select the upper submode in the decoder
+	if (lower_v0 > lower_v1)
+	{
+		lower0_dec = (lower_v1 << 8) + 128;
+		lower1_dec = (lower_v0 << 8) - 128;
+	}
 
 	int upper0_diff = upper0_dec - ilum0;
 	int upper1_diff = upper1_dec - ilum1;
@@ -1747,9 +1759,8 @@ static void quantize_hdr_luminance_large_range(
 		v1 = lower_v1;
 	}
 
-	// OK; encode
-	output[0] = quant_color(quant_level, v0);
-	output[1] = quant_color(quant_level, v1);
+	output[0] = static_cast<uint8_t>(v0);
+	output[1] = static_cast<uint8_t>(v1);
 }
 
 /**
