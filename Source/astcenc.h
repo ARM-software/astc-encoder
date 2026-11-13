@@ -579,6 +579,16 @@ struct astcenc_config
 	float tune_2plane_early_out_limit_correlation;
 
 	/**
+	 * @brief The relative gain cutoff for dual-plane components (-2planecomponentlimitfactor).
+	 *
+	 * Components are retained when their predicted error reduction is at least this fraction of
+	 * the best predicted reduction. Valid values are between 0 and 1; 0 disables component pruning.
+	 * Ambiguous predictions retain all eligible components. Defaults are 0.95 for blocks with
+	 * 25 to 63 texels, and 0.5 otherwise.
+	 */
+	float tune_2plane_component_limit_factor;
+
+	/**
 	 * @brief The config enable for the mode0 fast-path search.
 	 *
 	 * If this is set to TUNE_MIN_SEARCH_MODE0 or higher then the early-out fast mode0

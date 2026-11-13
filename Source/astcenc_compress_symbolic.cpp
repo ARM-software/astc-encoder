@@ -1210,16 +1210,206 @@ static float compress_symbolic_block_for_partition_2planes(
 }
 
 /**
- * @brief Determine the lowest cross-channel correlation factor.
+ * @brief Estimate line-fitting errors for four three-component covariance matrices.
  *
- * @param texels_per_block   The number of texels in a block.
- * @param blk                The image block color data to compress.
+ * Each SIMD lane evaluates the channels left after separating one component. Power iteration from
+ * all three covariance columns avoids missing a dominant direction orthogonal to a single seed.
+ * These estimates rank the components to select for full dual-plane searches.
  *
- * @return Return the lowest correlation factor.
+ * @param diag0   The first diagonal entries.
+ * @param diag1   The second diagonal entries.
+ * @param diag2   The third diagonal entries.
+ * @param cov01   The first and second component covariances.
+ * @param cov02   The first and third component covariances.
+ * @param cov12   The second and third component covariances.
+ *
+ * @return The estimated squared errors of the best-fitting lines.
+ */
+static vfloat4 estimate_3comp_line_error(
+	vfloat4 diag0,
+	vfloat4 diag1,
+	vfloat4 diag2,
+	vfloat4 cov01,
+	vfloat4 cov02,
+	vfloat4 cov12
+) {
+	// Scale each matrix independently to keep power iteration in a useful numeric range
+	// Include off-diagonal entries in case covariance cancellation makes the matrix indefinite
+	vfloat4 cov_scale = max(abs(cov01), max(abs(cov02), abs(cov12)));
+	vfloat4 scale = max(max(diag0, diag1), max(diag2, max(cov_scale, vfloat4(1e-20f))));
+	vfloat4 rscale = vfloat4(1.0f) / scale;
+	diag0 = diag0 * rscale;
+	diag1 = diag1 * rscale;
+	diag2 = diag2 * rscale;
+	cov01 = cov01 * rscale;
+	cov02 = cov02 * rscale;
+	cov12 = cov12 * rscale;
+
+	vfloat4 seeds0[3] { diag0, cov01, cov02 };
+	vfloat4 seeds1[3] { cov01, diag1, cov12 };
+	vfloat4 seeds2[3] { cov02, cov12, diag2 };
+	vfloat4 best_variance = vfloat4::zero();
+
+	for (unsigned int i = 0; i < 3; i++)
+	{
+		vfloat4 x = seeds0[i];
+		vfloat4 y = seeds1[i];
+		vfloat4 z = seeds2[i];
+
+		for (unsigned int j = 0; j < 3; j++)
+		{
+			vfloat4 next_x = (diag0 * x + cov01 * y) + cov02 * z;
+			vfloat4 next_y = (cov01 * x + diag1 * y) + cov12 * z;
+			vfloat4 next_z = (cov02 * x + cov12 * y) + diag2 * z;
+			x = next_x;
+			y = next_y;
+			z = next_z;
+		}
+
+		// The Rayleigh quotient measures variance captured by this direction
+		vfloat4 cx = (diag0 * x + cov01 * y) + cov02 * z;
+		vfloat4 cy = (cov01 * x + diag1 * y) + cov12 * z;
+		vfloat4 cz = (cov02 * x + cov12 * y) + diag2 * z;
+
+		vfloat4 norm = (x * x + y * y) + z * z;
+		vfloat4 variance = ((x * cx + y * cy) + z * cz) / max(norm, vfloat4(1e-20f));
+
+		best_variance = max(best_variance, variance);
+	}
+
+	return max((diag0 + diag1) + diag2 - best_variance, vfloat4::zero()) * scale;
+}
+
+/**
+ * @brief Rank and select dual-plane components using predicted line-fitting error reductions.
+ *
+ * @param      blk                The image block color data to compress.
+ * @param      covariance         The diagonal and packed off-diagonal covariance entries.
+ * @param      ideal_ep           The ideal endpoints from the single-plane search.
+ * @param      min_gain_factor    The minimum fraction of the best predicted error reduction.
+ * @param[out] plane_components   The selected component search order.
+ *
+ * @return The number of selected components.
+ */
+static unsigned int select_dual_plane_components(
+	const image_block& blk,
+	const vfloat4 covariance[3],
+	const endpoints& ideal_ep,
+	float min_gain_factor,
+	unsigned int plane_components[BLOCK_MAX_COMPONENTS]
+) {
+	vfloat4 diag = covariance[0] * blk.channel_weight;
+	vfloat4 cov0 = covariance[1];
+	vfloat4 cov1 = covariance[2];
+	vfloat4 channel_scale = sqrt(blk.channel_weight);
+	float r = diag.lane<0>();
+	float g = diag.lane<1>();
+	float b = diag.lane<2>();
+	float a = diag.lane<3>();
+	float sr = channel_scale.lane<0>();
+	float sg = channel_scale.lane<1>();
+	float sb = channel_scale.lane<2>();
+	float sa = channel_scale.lane<3>();
+
+	// Lane C holds the covariance of the channels remaining when C uses the second plane
+	vfloat4 diag0(g, r, r, r);
+	vfloat4 diag1(b, b, g, g);
+	vfloat4 cov01 = cov0.swz<3, 1, 0, 0>() * vfloat4(sg * sb, sr * sb, sr * sg, sr * sg);
+	vfloat4 errors;
+
+	if (blk.is_constant_channel(3))
+	{
+		// With constant alpha, the remaining two-channel line error has a closed form
+		vfloat4 diff = diag0 - diag1;
+		vfloat4 root = sqrt(diff * diff + vfloat4(4.0f) * cov01 * cov01);
+		errors = max(vfloat4(0.5f) * (diag0 + diag1 - root), vfloat4::zero());
+	}
+	else
+	{
+		vfloat4 diag2(a, a, a, b);
+		vfloat4 cov02(cov1.lane<0>() * sg * sa, cov0.lane<2>() * sr * sa,
+		              cov0.lane<2>() * sr * sa, cov0.lane<1>() * sr * sb);
+		vfloat4 cov12(cov1.lane<1>() * sb * sa, cov1.lane<1>() * sb * sa,
+		              cov1.lane<0>() * sg * sa, cov0.lane<3>() * sg * sb);
+		errors = estimate_3comp_line_error(diag0, diag1, diag2, cov01, cov02, cov12);
+	}
+
+	ASTCENC_ALIGNAS float scores[BLOCK_MAX_COMPONENTS];
+	store(errors, scores);
+
+	unsigned int component_count = BLOCK_MAX_COMPONENTS;
+	for (unsigned int i = 0; i < BLOCK_MAX_COMPONENTS; i++)
+	{
+		if (blk.is_constant_channel(i))
+		{
+			scores[i] = ERROR_CALC_DEFAULT;
+			component_count--;
+		}
+	}
+
+	// The single-plane error is common to every split, so rank by remaining fit error
+	for (unsigned int i = 1; i < BLOCK_MAX_COMPONENTS; i++)
+	{
+		unsigned int component = plane_components[i];
+		unsigned int j = i;
+		while ((j > 0) && (scores[component] < scores[plane_components[j - 1]]))
+		{
+			plane_components[j] = plane_components[j - 1];
+			j--;
+		}
+
+		plane_components[j] = component;
+	}
+
+	// Reuse the single-plane fit direction to estimate its error in the same weighted metric
+	float rg = cov0.lane<0>() * sr * sg;
+	float rb = cov0.lane<1>() * sr * sb;
+	float ra = cov0.lane<2>() * sr * sa;
+	float gb = cov0.lane<3>() * sg * sb;
+	float ga = cov1.lane<0>() * sg * sa;
+	float ba = cov1.lane<1>() * sb * sa;
+
+	vfloat4 row0(r, rg, rb, ra);
+	vfloat4 row1(rg, g, gb, ga);
+	vfloat4 row2(rb, gb, b, ba);
+	vfloat4 row3(ra, ga, ba, a);
+
+	vfloat4 dir = (ideal_ep.endpt1[0] - ideal_ep.endpt0[0]) * channel_scale;
+	vfloat4 projected = (row0 * dir.swz<0, 0, 0, 0>() + row1 * dir.swz<1, 1, 1, 1>())
+	                  + (row2 * dir.swz<2, 2, 2, 2>() + row3 * dir.swz<3, 3, 3, 3>());
+
+	float variance = dot_s(dir, projected) / astc::max(dot_s(dir, dir), 1e-20f);
+	float total_variance = hadd_s(diag);
+	float single_error = astc::max(total_variance - variance, 0.0f);
+	float best_gain = single_error - scores[plane_components[0]];
+
+	// Keep ambiguous choices; only prune when the predicted benefit is above numeric noise
+	if ((min_gain_factor > 0.0f) && (best_gain > (total_variance * 1e-4f)))
+	{
+		float error_limit = single_error - min_gain_factor * best_gain;
+		while ((component_count > 1) &&
+		       (scores[plane_components[component_count - 1]] > error_limit))
+		{
+			component_count--;
+		}
+	}
+
+	return component_count;
+}
+
+/**
+ * @brief Determine the lowest cross-channel correlation and retain covariance data.
+ *
+ * @param      texels_per_block   The number of texels in a block.
+ * @param      blk                The image block color data to compress.
+ * @param[out] covariance         The diagonal and packed off-diagonal covariance entries.
+ *
+ * @return The lowest correlation factor.
  */
 static float prepare_block_statistics(
 	int texels_per_block,
-	const image_block& blk
+	const image_block& blk,
+	vfloat4 covariance[3]
 ) {
 	// Accumulate the 10 upper-triangle entries of the symmetric covariance matrix
 	float rs = 0.0f;
@@ -1290,6 +1480,11 @@ static float prepare_block_statistics(
 
 	aa_var -= as * (as * rpt);
 
+	// Retain the covariance magnitudes before converting to correlation coefficients
+	covariance[0] = max(vfloat4(rr_var, gg_var, bb_var, aa_var), vfloat4::zero());
+	covariance[1] = vfloat4(rg_cov, rb_cov, ra_cov, gb_cov);
+	covariance[2] = vfloat4(ga_cov, ba_cov, 0.0f, 0.0f);
+
 	// These will give a NaN if a channel is constant - these are fixed up in the next step
 	rg_cov *= astc::rsqrt(rr_var * gg_var);
 	rb_cov *= astc::rsqrt(rr_var * bb_var);
@@ -1340,7 +1535,10 @@ void compress_block(
 	astcenc_profile decode_mode = ctx.config.profile;
 	symbolic_compressed_block scb;
 	const block_size_descriptor& bsd = *ctx.bsd;
-	float lowest_correl;
+	float lowest_correl = 0.0f;
+	unsigned int plane_components[BLOCK_MAX_COMPONENTS] { 3, 2, 1, 0 };
+	unsigned int plane_component_count = 0;
+	vfloat4 covariance[3];
 
 	TRACE_NODE(node0, "block");
 	trace_add_data("pos_x", blk.pos_x);
@@ -1355,7 +1553,8 @@ void compress_block(
 	bool block_is_la = blk.is_luminancealpha();
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
-	bool block_skip_two_plane = false;
+	// Grayscale blocks can only separate alpha, so constant alpha needs no dual-plane search
+	bool block_skip_two_plane = blk.grayscale && blk.is_constant_channel(3);
 	int max_partitions = ctx.config.tune_partition_count_limit;
 
 	unsigned int requested_partition_indices[3] {
@@ -1378,7 +1577,7 @@ void compress_block(
 	                      * block_is_l_scale
 	                      * block_is_la_scale;
 
-	lowest_correl = prepare_block_statistics(bsd.texel_count, blk);
+	lowest_correl = prepare_block_statistics(bsd.texel_count, blk, covariance);
 	trace_add_data("lowest_correl", lowest_correl);
 	trace_add_data("tune_error_threshold", error_threshold);
 #endif
@@ -1488,14 +1687,33 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	lowest_correl = prepare_block_statistics(bsd.texel_count, blk);
+	if (!block_skip_two_plane)
+	{
+		lowest_correl = prepare_block_statistics(bsd.texel_count, blk, covariance);
+	}
 #endif
 
-	block_skip_two_plane = lowest_correl > ctx.config.tune_2plane_early_out_limit_correlation;
+	block_skip_two_plane = block_skip_two_plane ||
+	                       (lowest_correl > ctx.config.tune_2plane_early_out_limit_correlation);
 
-	// Test all single-partition dual-plane modes, alpha first, as most likely to be uncorrelated
-	for (int i = BLOCK_MAX_COMPONENTS - 1; i >= 0; i--)
+	if (!block_skip_two_plane)
 	{
+		if (blk.grayscale)
+		{
+			plane_component_count = 1;
+		}
+		else
+		{
+			plane_component_count = select_dual_plane_components(
+			    blk, covariance, tmpbuf.ei1.ep, ctx.config.tune_2plane_component_limit_factor,
+			    plane_components);
+		}
+	}
+
+	// Test only components with competitive predicted error reductions
+	for (unsigned int trial = 0; trial < plane_component_count; trial++)
+	{
+		unsigned int i = plane_components[trial];
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", 1);
 		trace_add_data("plane_count", 2);
