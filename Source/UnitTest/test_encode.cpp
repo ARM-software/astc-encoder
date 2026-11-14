@@ -20,6 +20,7 @@
  */
 
 #include <limits>
+#include <memory>
 
 #include "gtest/gtest.h"
 
@@ -27,6 +28,104 @@
 
 namespace astcenc
 {
+
+/** @brief Failed searches fall back to the block mean with profile-correct color encoding. */
+TEST(compress, mean_color_fallback)
+{
+	auto bsd = std::make_unique<block_size_descriptor>();
+	auto working_buffers = std::make_unique<compression_working_buffers>();
+	init_block_size_descriptor(4, 4, 1, true, 1, 1.0f, *bsd);
+	prepare_angular_tables();
+
+	// Make every single-plane mode exceed the endpoint bit budget to force search failure
+	for (unsigned int i = 0; i < bsd->block_mode_count_1plane_selected; i++)
+	{
+		bsd->block_modes[i].weight_bits = 127;
+	}
+
+	const astcenc_profile profiles[] {
+		ASTCENC_PRF_LDR, ASTCENC_PRF_LDR_SRGB, ASTCENC_PRF_HDR_RGB_LDR_A, ASTCENC_PRF_HDR
+	};
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	for (astcenc_profile profile : profiles)
+	{
+		astcenc_contexti ctx {};
+		astcenc_error status = astcenc_config_init(profile, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0,
+		                                           &ctx.config);
+		ASSERT_EQ(status, ASTCENC_SUCCESS);
+		ctx.config.tune_partition_count_limit = 1;
+		ctx.config.tune_candidate_limit = 1;
+		ctx.bsd = bsd.get();
+
+		float low = 0.25f;
+		float high = 0.75f;
+		float expected = 0.5f;
+		float expected_alpha = 0.5f;
+		int expected_type = SYM_BTYPE_CONST_U16;
+		if (profile == ASTCENC_PRF_LDR_SRGB)
+		{
+			expected = 128.0f / 255.0f;
+			expected_alpha = expected;
+		}
+
+		if ((profile == ASTCENC_PRF_HDR) || (profile == ASTCENC_PRF_HDR_RGB_LDR_A))
+		{
+			low = 16.0f;
+			high = 64.0f;
+			expected = 32.0f;
+			expected_type = SYM_BTYPE_CONST_F16;
+		}
+
+		float pixels[16 * 4];
+		for (unsigned int i = 0; i < 16; i++)
+		{
+			float color = low;
+			if (i >= 8)
+			{
+				color = high;
+			}
+
+			pixels[4 * i] = color;
+			pixels[4 * i + 1] = color;
+			pixels[4 * i + 2] = color;
+			pixels[4 * i + 3] = 0.5f;
+		}
+
+		void* slices[] { pixels };
+		astcenc_image image {
+			.dim_x = 4,
+			.dim_y = 4,
+			.dim_z = 1,
+			.data_type = ASTCENC_TYPE_F32,
+			.data = slices,
+			.row_stride = 4 * 4 * sizeof(float)
+		};
+
+		image_block blk {};
+		blk.texel_count = 16;
+		blk.channel_weight = vfloat4(1.0f);
+		load_image_block(profile, image, blk, *bsd, 0, 0, 0, swizzle);
+
+		// Grayscale with constant alpha skips the dual-plane search
+		uint8_t physical[16];
+		compress_block(ctx, blk, physical, *working_buffers);
+		symbolic_compressed_block symbolic;
+		physical_to_symbolic(*bsd, physical, symbolic);
+		EXPECT_EQ(symbolic.block_type, expected_type);
+
+		image_block decoded {};
+		bool is_successful = decompress_symbolic_block(profile, *bsd, 0, 0, 0, symbolic, decoded);
+		ASSERT_TRUE(is_successful);
+		EXPECT_NEAR(decoded.data_r[0], expected, expected * 0.001f);
+		EXPECT_NEAR(decoded.data_g[0], expected, expected * 0.001f);
+		EXPECT_NEAR(decoded.data_b[0], expected, expected * 0.001f);
+		EXPECT_NEAR(decoded.data_a[0], expected_alpha, 0.001f);
+	}
+}
 
 /** @brief Preserve HDR mode bits when endpoint quantization rounds down across a bit boundary. */
 TEST(compress, hdr_quantization_mode_bits)
