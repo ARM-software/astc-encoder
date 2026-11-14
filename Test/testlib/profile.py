@@ -28,7 +28,7 @@ import shutil
 import subprocess as sp
 import sys
 
-from .timing import paired_t_test, relative_ci_half_width
+from .timing import minimum_timing_runs, paired_t_test, relative_ci_half_width
 
 
 PROCESSING_TIME_PATTERN = re.compile(r'^\s*(?:Coding|Decoding) time:\s*([0-9.]+)\s+s\s*$')
@@ -164,7 +164,6 @@ def fingerprint(path: Path) -> str:
     Return:
         The hexadecimal SHA-256 digest.
     '''
-
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -203,7 +202,6 @@ def select_quality_metrics(arguments: list[str], available: dict[str, float]) ->
     Return:
         The relevant metric names, or an empty list outside test mode.
     '''
-
     if arguments[0] not in ('-tl', '-ts', '-th', '-tH'):
         return []
 
@@ -254,7 +252,6 @@ def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
     Return:
         The timing and quality samples for binary A and binary B.
     '''
-
     # Warmups use the same codec settings but never enter the measured sample sets
     for _ in range(warmups):
         run_codec(binary_a, arguments)
@@ -262,6 +259,7 @@ def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
 
     samples_a = []
     samples_b = []
+    min_runs = minimum_timing_runs(runs)
 
     # Alternate the leading binary to reduce systematic ordering effects
     for run in range(runs):
@@ -276,7 +274,7 @@ def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
         samples_b.append(result_b)
         print(f'Pair {run + 1:>2}/{runs}: A {result_a.time:.4f} s, B {result_b.time:.4f} s')
 
-        if confidence is not None and len(samples_a) >= 2:
+        if confidence is not None and len(samples_a) >= min_runs:
             times_a = [sample.time for sample in samples_a]
             times_b = [sample.time for sample in samples_b]
             _, p = paired_t_test(times_a, times_b)
@@ -393,7 +391,6 @@ class PrecisionSamples:
         Return:
             True when at least two measured rounds meet the target for every binary.
         '''
-
         if len(self.rounds) < 2:
             return False
 
@@ -428,7 +425,6 @@ def collect_precision_samples(binaries: dict[str, str], arguments: list[str], ru
     Raises:
         ValueError: The binary set is empty or the run counts are invalid.
     '''
-
     if not binaries or (runs < 1) or (warmups < 0):
         raise ValueError('Precision sampling requires binaries and valid run counts')
 
@@ -440,6 +436,7 @@ def collect_precision_samples(binaries: dict[str, str], arguments: list[str], ru
     orders = [names[i:] + names[:i] for i in range(len(names))]
     orders += [list(reversed(order)) for order in orders]
     samples = PrecisionSamples(arguments=arguments)
+    min_runs = minimum_timing_runs(runs)
 
     for index in range(warmups + runs):
         sample = SampleRound(order=orders[index % len(orders)])
@@ -456,7 +453,8 @@ def collect_precision_samples(binaries: dict[str, str], arguments: list[str], ru
             timings = ' '.join(f'{name}={sample.results[name].time:.4f}s' for name in names)
             print(f'  Round {index - warmups + 1}/{runs}: {timings}', flush=True)
 
-            if samples.update_intervals(names, confidence, precision):
+            if ((len(samples.rounds) >= min_runs) and
+                    samples.update_intervals(names, confidence, precision)):
                 samples.stop_reason = 'precision'
                 count = len(samples.rounds)
                 print(f'  Stopping after {count} rounds: '

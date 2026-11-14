@@ -52,7 +52,6 @@ def decode_color(raw_color: str) -> Color:
     Raises:
         AssertionError: The color representation is not supported.
     '''
-
     if raw_color in NAMED_COLORS:
         return NAMED_COLORS[raw_color]
 

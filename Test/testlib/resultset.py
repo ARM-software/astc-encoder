@@ -189,7 +189,6 @@ class ResultSet:
         Raise:
             KeyError: No match could be found.
         '''
-
         for record in self.records:
             if record.block_size == other.block_size and record.name == other.name:
                 return record
@@ -238,7 +237,6 @@ class ResultSet:
         Args:
             file_path: The output file path.
         '''
-
         if not file_path.exists():
             self.save_to_file(file_path)
 
@@ -392,7 +390,6 @@ class ResultSummary:
         Args:
             record (Record): The Record to add.
         '''
-
         # Record pass/fail status
         if record.status == ResultStatus.PASS:
             self.passes += 1
@@ -427,7 +424,6 @@ class ResultSummary:
         Return:
             The worst test result.
         '''
-
         if self.fails:
             return ResultStatus.FAIL
 

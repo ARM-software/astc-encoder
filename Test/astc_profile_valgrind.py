@@ -177,12 +177,14 @@ def parse_command_line() -> argparse.Namespace:
     '''
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--show-cli', dest='show_cli', default=False,
-                        action='store_true',
-                        help='enable CLI wrapper nodes in call graph')
+    parser.add_argument(
+        '--show-cli', dest='show_cli', default=False,
+        action='store_true',
+        help='enable CLI wrapper nodes in call graph')
 
-    parser.add_argument('--output', default='perf',
-                        help='output file base name (default: %(default)s)')
+    parser.add_argument(
+        '--output', default='perf',
+        help='output file base name (default: %(default)s)')
 
     add_codec_arguments(parser)
 

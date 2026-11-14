@@ -137,85 +137,6 @@ def find_reference_encoders(test_dir: Path) -> list[str]:
     return sorted(reference_encoders)
 
 
-def add_selection_arguments(parser: argparse.ArgumentParser, test_dir: Path) -> None:
-    '''
-    Add encoder, image, and coverage selection arguments.
-
-    Args:
-        parser: The argument parser receiving these options.
-        test_dir: The root directory containing image test sets.
-    '''
-    # Encoder aliases and stored references define the available comparison targets
-    reference_encoders = ['rebuild', *find_reference_encoders(test_dir)]
-
-    parser.add_argument('--encoder', dest='encoders', default='avx2',
-                        help='test encoder variant or '
-                             'ref-<version>-<variant>')
-
-    parser.add_argument('--reference', default='ref-main-avx2',
-                        choices=reference_encoders,
-                        help='reference encoder variant')
-
-    # Image filters apply before the test plan is constructed
-    parser.add_argument('--color-profile', dest='profiles', default='all',
-                        choices=[*PROFILES, 'all'], help='test color profile')
-
-    parser.add_argument('--color-format', dest='formats', default='all',
-                        choices=[*FORMATS, 'all'], help='test color format')
-
-    parser.add_argument('--block-size', dest='block_sizes', action='append',
-                        choices=[*TEST_BLOCK_SIZES, 'all'], help='test block size')
-
-    test_set_choices = [x.name for x in test_dir.iterdir() if x.is_dir()]
-    test_set_choices.sort()
-    test_set_choices.append('all')
-    parser.add_argument('--test-set', dest='test_sets', default='Small',
-                        choices=test_set_choices, help='test image set')
-
-    parser.add_argument('--test-image', dest='test_image', default=None,
-                        help='select a specific test image from the test set')
-
-    # Coverage selection spans all requested qualities
-    quality_choices = list(TEST_QUALITIES)
-    quality_choices.append('all')
-    quality_choices.append('all+')
-    parser.add_argument('--test-quality', dest='test_qual', action='append',
-                        choices=quality_choices, help='test quality')
-
-    parser.add_argument('--pairwise', action='store_true',
-                        help='cover all profile-format/block/quality pairs '
-                             'and images')
-
-    parser.add_argument('--quality-update', action='store_true',
-                        help='only update records with PSNR changes')
-
-
-def add_run_arguments(parser: argparse.ArgumentParser) -> None:
-    '''
-    Add execution and timing precision arguments.
-
-    Args:
-        parser: The argument parser receiving these options.
-    '''
-    parser.add_argument('--repeats', dest='repeats', default=1,
-                        type=int, help='maximum test repeats; stop early when '
-                                       'the timing confidence interval meets '
-                                       'the requested precision')
-
-    parser.add_argument('--confidence', type=float, default=95.0,
-                        help='timing confidence level in percent '
-                             '(default: %(default)s)')
-
-    parser.add_argument('--precision', type=float, default=1.0,
-                        help='allowed timing confidence interval half-width '
-                             'as a percent of the mean (default: %(default)s)')
-
-    parser.add_argument('--keep-output', dest='keep_output', default=False,
-                        action='store_true', help='keep image output')
-
-    parser.add_argument('-j', dest='threads', default=None, type=int, help='encoder thread count')
-
-
 def expand_all(value: str, choices: tuple[str, ...] | list[str]) -> list[str]:
     '''
     Expand an all selection into a fresh list of supported values.
@@ -227,7 +148,6 @@ def expand_all(value: str, choices: tuple[str, ...] | list[str]) -> list[str]:
     Return:
         The selected values without sharing mutable defaults.
     '''
-
     if value == 'all':
         return list(choices)
 
@@ -260,50 +180,6 @@ def normalize_selection(args: argparse.Namespace, test_dir: Path) -> None:
 
     if args.reference == 'rebuild':
         args.reference = None
-
-
-def parse_command_line(argv: list[str] | None = None) -> argparse.Namespace:
-    '''
-    Parse and normalize the image test command line.
-
-    Args:
-        argv: The command-line arguments, or None to read the process arguments.
-
-    Return:
-        The normalized selections and validated run options.
-    '''
-    parser = argparse.ArgumentParser()
-    test_dir = Path(__file__).parent / 'Images'
-    add_selection_arguments(parser, test_dir)
-    add_run_arguments(parser)
-    args = parser.parse_args(argv)
-
-    # Keep validation errors in the units accepted by the command line
-    if args.repeats < 1:
-        parser.error('--repeats must be at least one')
-
-    if not 0.0 < args.confidence < 100.0:
-        parser.error('--confidence must be between 0 and 100, exclusive')
-
-    if (not math.isfinite(args.precision)) or (args.precision <= 0.0):
-        parser.error('--precision must be a finite positive percentage')
-
-    # Allow new reference encoders before their result CSVs have been generated
-    if args.encoders not in (*TEST_ENCODERS, *ENCODER_GROUPS):
-        pattern = r'ref-(?:main|[0-9]+\.[^-]+)-(.+)'
-        match = re.fullmatch(pattern, args.encoders)
-
-        if (match is None) or (match.group(1) not in TEST_ENCODERS):
-            parser.error(f'--encoder: invalid choice: {args.encoders!r}')
-
-    # Shared execution code uses fractions rather than CLI percentages
-    args.run_options = RunOptions(repeats=args.repeats, keep_output=args.keep_output,
-                                  threads=args.threads, confidence=args.confidence / 100.0,
-                                  precision=args.precision / 100.0)
-
-    normalize_selection(args, test_dir)
-
-    return args
 
 
 def run_configuration(args: argparse.Namespace, quality: str, test_set_name: str,
@@ -354,6 +230,145 @@ def run_configuration(args: argparse.Namespace, quality: str, test_set_name: str
         return summary.get_worst_result()
 
     return ResultStatus.NOT_RUN
+
+
+def add_selection_arguments(parser: argparse.ArgumentParser, test_dir: Path) -> None:
+    '''
+    Add encoder, image, and coverage selection arguments.
+
+    Args:
+        parser: The argument parser receiving these options.
+        test_dir: The root directory containing image test sets.
+    '''
+    # Encoder aliases and stored references define the available comparison targets
+    reference_encoders = ['rebuild', *find_reference_encoders(test_dir)]
+
+    parser.add_argument(
+        '--encoder', dest='encoders', default='avx2',
+        help='test encoder variant or ref-<version>-<variant>')
+
+    parser.add_argument(
+        '--reference', default='ref-main-avx2',
+        choices=reference_encoders,
+        help='reference encoder variant')
+
+    # Image filters apply before the test plan is constructed
+    parser.add_argument(
+        '--color-profile', dest='profiles', default='all',
+        choices=[*PROFILES, 'all'],
+        help='test color profile')
+
+    parser.add_argument(
+        '--color-format', dest='formats', default='all',
+        choices=[*FORMATS, 'all'],
+        help='test color format')
+
+    parser.add_argument(
+        '--block-size', dest='block_sizes', action='append',
+        choices=[*TEST_BLOCK_SIZES, 'all'],
+        help='test block size')
+
+    test_set_choices = [x.name for x in test_dir.iterdir() if x.is_dir()]
+    test_set_choices.sort()
+    test_set_choices.append('all')
+    parser.add_argument(
+        '--test-set', dest='test_sets', default='Small',
+        choices=test_set_choices,
+        help='test image set')
+
+    parser.add_argument(
+        '--test-image', dest='test_image', default=None,
+        help='select a test image')
+
+    # Coverage selection spans all requested qualities
+    quality_choices = list(TEST_QUALITIES)
+    quality_choices.append('all')
+    quality_choices.append('all+')
+    parser.add_argument(
+        '--test-quality', dest='test_qual', action='append',
+        choices=quality_choices,
+        help='test quality')
+
+    parser.add_argument(
+        '--pairwise', action='store_true',
+        help='cover all option pairs and images')
+
+    parser.add_argument(
+        '--quality-update', action='store_true',
+        help='only update records with PSNR changes')
+
+
+def add_run_arguments(parser: argparse.ArgumentParser) -> None:
+    '''
+    Add execution and timing precision arguments.
+
+    Args:
+        parser: The argument parser receiving these options.
+    '''
+    parser.add_argument(
+        '--repeats', dest='repeats', default=1, type=int,
+        help='maximum test repeats; stop early at the timing precision target')
+
+    parser.add_argument(
+        '--confidence', type=float, default=95.0,
+        help='timing confidence in percent (default: %(default)s)')
+
+    parser.add_argument(
+        '--precision', type=float, default=0.5,
+        help='timing CI half-width as percent of mean (default: %(default)s)')
+
+    parser.add_argument(
+        '--keep-output', dest='keep_output', default=False,
+        action='store_true',
+        help='keep image output')
+
+    parser.add_argument(
+        '-j', dest='threads', default=None, type=int,
+        help='encoder thread count')
+
+
+def parse_command_line(argv: list[str] | None = None) -> argparse.Namespace:
+    '''
+    Parse and normalize the image test command line.
+
+    Args:
+        argv: The command-line arguments, or None to read the process arguments.
+
+    Return:
+        The normalized selections and validated run options.
+    '''
+    parser = argparse.ArgumentParser()
+    test_dir = Path(__file__).parent / 'Images'
+    add_selection_arguments(parser, test_dir)
+    add_run_arguments(parser)
+    args = parser.parse_args(argv)
+
+    # Keep validation errors in the units accepted by the command line
+    if args.repeats < 1:
+        parser.error('--repeats must be at least one')
+
+    if not 0.0 < args.confidence < 100.0:
+        parser.error('--confidence must be between 0 and 100, exclusive')
+
+    if (not math.isfinite(args.precision)) or (args.precision <= 0.0):
+        parser.error('--precision must be a finite positive percentage')
+
+    # Allow new reference encoders before their result CSVs have been generated
+    if args.encoders not in (*TEST_ENCODERS, *ENCODER_GROUPS):
+        pattern = r'ref-(?:main|[0-9]+\.[^-]+)-(.+)'
+        match = re.fullmatch(pattern, args.encoders)
+
+        if (match is None) or (match.group(1) not in TEST_ENCODERS):
+            parser.error(f'--encoder: invalid choice: {args.encoders!r}')
+
+    # Shared execution code uses fractions rather than CLI percentages
+    args.run_options = RunOptions(repeats=args.repeats, keep_output=args.keep_output,
+                                  threads=args.threads, confidence=args.confidence / 100.0,
+                                  precision=args.precision / 100.0)
+
+    normalize_selection(args, test_dir)
+
+    return args
 
 
 def main() -> int:

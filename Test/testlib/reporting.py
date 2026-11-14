@@ -42,12 +42,12 @@ def format_solo_result(result: Record) -> str:
     coding_rate = f'{result.coding_rate:.3f} MT/s'
 
     fields = (
-        f'{name:<32}',
+        f'{name:<33}',
         f'{psnr:>11}',
         f'{ssim:>5}',
         f'{total_time:>9}',
         f'{coding_time:>9}',
-        f'{coding_rate:>11}',
+        f'{coding_rate:>12}',
     )
 
     return ' | '.join(fields)
@@ -76,12 +76,12 @@ def format_compare_result(result: Record) -> str:
     coding_rate = f'{result.coding_rate:.3f} MT/s'
 
     fields = (
-        f'{name:<32}',
+        f'{name:<33}',
         f'{psnr:>22}',
         f'{ssim:>14}',
         f'{total_time:>15}',
         f'{coding_time:>15}',
-        f'{coding_rate:>11}',
+        f'{coding_rate:>12}',
         result.status.name
     )
 
@@ -101,7 +101,6 @@ def report_quality(arguments: list[str], samples_a: list[CodecResult],
     Raises:
         ValueError: A test-mode run did not report a required quality score.
     '''
-
     if arguments[0] not in ('-tl', '-ts', '-th', '-tH'):
         print('Quality: unavailable (use -tl, -ts, -th, or -tH test mode)')
 

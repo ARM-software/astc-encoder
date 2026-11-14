@@ -50,15 +50,22 @@ def add_codec_arguments(parser: argparse.ArgumentParser, is_pair: bool = False) 
         parser: The argument parser receiving these arguments.
         is_pair: Whether to accept two binaries for a comparison.
     '''
-
     if is_pair:
-        parser.add_argument('binary_a', help='the first astcenc binary')
-        parser.add_argument('binary_b', help='the second astcenc binary')
-    else:
-        parser.add_argument('binary', help='the astcenc binary to profile')
+        parser.add_argument(
+            'binary_a',
+            help='the first astcenc binary')
 
-    parser.add_argument('arguments', nargs=argparse.REMAINDER,
-                        help='arguments passed through to the binary or binaries')
+        parser.add_argument(
+            'binary_b',
+            help='the second astcenc binary')
+    else:
+        parser.add_argument(
+            'binary',
+            help='the astcenc binary to profile')
+
+    parser.add_argument(
+        'arguments', nargs=argparse.REMAINDER,
+        help='arguments passed through to the binary or binaries')
 
 
 def parse_comparison_args(description: str | None, *, is_ttest: bool) -> argparse.Namespace:
@@ -87,10 +94,18 @@ def parse_comparison_args(description: str | None, *, is_ttest: bool) -> argpars
         count_help = 'number of measured pairs (default: %(default)s)'
         confidence_help = 'accepted for compatibility; otherwise ignored'
 
-    parser.add_argument(f'--{count_name}', type=int, default=10, help=count_help)
-    parser.add_argument('--warmups', type=int, default=1,
-                        help='number of warm-up pairs (default: %(default)s)')
-    parser.add_argument('--confidence', type=confidence_value, default=0.95, help=confidence_help)
+    parser.add_argument(
+        f'--{count_name}', type=int, default=10,
+        help=count_help)
+
+    parser.add_argument(
+        '--warmups', type=int, default=1,
+        help='number of warm-up pairs (default: %(default)s)')
+
+    parser.add_argument(
+        '--confidence', type=confidence_value, default=0.95,
+        help=confidence_help)
+
     args = parser.parse_args()
 
     if getattr(args, count_name) < minimum:
