@@ -514,7 +514,6 @@ void store_image_block(
 						color = float_to_float16(colorf);
 					}
 
-					// TODO: Vectorize with store N shorts?
 					data16_row[0] = static_cast<uint16_t>(color.lane<0>());
 					data16_row[1] = static_cast<uint16_t>(color.lane<1>());
 					data16_row[2] = static_cast<uint16_t>(color.lane<2>());

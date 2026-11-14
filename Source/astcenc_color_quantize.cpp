@@ -2063,7 +2063,6 @@ uint8_t pack_color_endpoints(
 			}
 		}
 
-		// TODO: Can we vectorize this?
 		output[0] = static_cast<uint8_t>(color0_out.lane<0>());
 		output[1] = static_cast<uint8_t>(color1_out.lane<0>());
 		output[2] = static_cast<uint8_t>(color0_out.lane<1>());
@@ -2146,7 +2145,6 @@ uint8_t pack_color_endpoints(
 			}
 		}
 
-		// TODO: Can we vectorize this?
 		output[0] = static_cast<uint8_t>(color0_out.lane<0>());
 		output[1] = static_cast<uint8_t>(color1_out.lane<0>());
 		output[2] = static_cast<uint8_t>(color0_out.lane<1>());
