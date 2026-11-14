@@ -215,7 +215,7 @@ def run_configuration(args: argparse.Namespace, quality: str, test_set_name: str
 
     results = run_test_set(target.encoder, test_set, quality, cases, args.run_options, reference)
 
-    # Quality-only updates retain stored timing data for unchanged scores
+    # Quality-only updates retain stored timing data even when scores change
     test_csv = target.out_dir / f'astc_{target.name}_{quality}_results.csv'
 
     if args.quality_update:
@@ -295,7 +295,7 @@ def add_selection_arguments(parser: argparse.ArgumentParser, test_dir: Path) -> 
 
     parser.add_argument(
         '--quality-update', action='store_true',
-        help='only update records with PSNR changes')
+        help='only update PSNR and SSIM fields in existing records')
 
 
 def add_run_arguments(parser: argparse.ArgumentParser) -> None:
