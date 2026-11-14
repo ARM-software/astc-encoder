@@ -696,8 +696,8 @@ static float compress_symbolic_block_for_partition_1plane(
 			    blk, pi, di, workscb.weights, partition_format_specifiers[i],
 			    workep, rgbs_colors, rgbo_colors);
 
-			// Quantize the chosen color, tracking if worth trying the mod value
-			bool all_same = color_quant_level[i] != color_quant_level_mod[i];
+			// Delta choices can change with precision, so use base formats to enable the mod trial
+			bool is_matched_format_candidate = color_quant_level[i] != color_quant_level_mod[i];
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
@@ -709,12 +709,13 @@ static float compress_symbolic_block_for_partition_1plane(
 				    workscb.color_values[j],
 				    color_quant_level[i]);
 
-				all_same = all_same && workscb.color_formats[j] == workscb.color_formats[0];
+				is_matched_format_candidate = is_matched_format_candidate &&
+				    (partition_format_specifiers[i][j] == partition_format_specifiers[i][0]);
 			}
 
 			// Matching endpoint modes free extra color bits; try requantizing at higher precision
 			workscb.color_formats_matched = 0;
-			if (partition_count >= 2 && all_same)
+			if ((partition_count >= 2) && is_matched_format_candidate)
 			{
 				uint8_t colorvals[BLOCK_MAX_PARTITIONS][8];
 				uint8_t color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
