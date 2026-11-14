@@ -1990,7 +1990,7 @@ uint8_t pack_color_endpoints(
 	switch (format)
 	{
 	case FMT_RGB:
-		if (quant_level <= QUANT_160)
+		if (quant_level <= QUANT_192)
 		{
 			if (try_quantize_rgb_delta_blue_contract(color0_ldr, color1_ldr, color0_out, color1_out, quant_level))
 			{
@@ -2072,7 +2072,7 @@ uint8_t pack_color_endpoints(
 		break;
 
 	case FMT_RGBA:
-		if (quant_level <= QUANT_160)
+		if (quant_level <= QUANT_192)
 		{
 			if (try_quantize_rgba_delta_blue_contract(color0_ldr, color1_ldr, color0_out, color1_out, quant_level))
 			{
@@ -2187,6 +2187,7 @@ uint8_t pack_color_endpoints(
 		break;
 
 	case FMT_LUMINANCE:
+		// A luminance-delta encoding trial is skipped because quality gain is marginal
 		quantize_luminance(color0_ldr, color1_ldr, output, quant_level);
 		retval = FMT_LUMINANCE;
 		break;
@@ -2196,7 +2197,7 @@ uint8_t pack_color_endpoints(
 		// negligible image quality gains. QUANT_16 L/A endpoint examples:
 		//   Input: (153,153), (153,170); Direct: (153,153), (153,170); Delta: (153,153), (152,165)
 		//   Input: (153,153), (170,153); Direct: (153,153), (170,153); Delta: (153,153), (165,152)
-		if (quant_level <= 18)
+		if (quant_level <= QUANT_192)
 		{
 			if (try_quantize_luminance_alpha_delta(color0_ldr, color1_ldr, output, quant_level))
 			{

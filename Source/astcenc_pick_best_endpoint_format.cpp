@@ -612,7 +612,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		// Pick among the available LDR endpoint modes
 		for (int i = QUANT_6; i <= QUANT_256; i++)
 		{
-			// Offset encoding not possible at higher quant levels
+			// Do not assume a delta precision gain near the 8-bit endpoint precision limit
 			if (i >= QUANT_192)
 			{
 				error_scale_oe_rgba = 1.0f;
