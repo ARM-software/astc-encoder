@@ -1820,8 +1820,7 @@ void compress_block(
 	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
-	// Replace any remaining error block with a valid encoding
-	// TODO: Use a better fallback, such as the average color
+	// Replace any remaining error block with the mean color in the compression color space
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -1834,10 +1833,27 @@ END_OF_TESTS:
 		}
 #endif
 
-		scb.block_type = SYM_BTYPE_CONST_U16;
-		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
-		vint4 color_u16 = float_to_int_rtn(color_f32);
-		store(color_u16, scb.constant_color);
+		vfloat4 color = clamp(0.0f, 65535.0f, blk.data_mean);
+		if ((decode_mode == ASTCENC_PRF_HDR) ||
+		    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
+		{
+			// Convert the LNS mean back to FP16, keeping LDR alpha in linear space
+			vint4 color_f16 = lns_to_sf16(float_to_int(color));
+			if (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A)
+			{
+				vint4 alpha_f16 = float_to_float16(color / 65535.0f);
+				color_f16.set_lane<3>(alpha_f16.lane<3>());
+			}
+
+			scb.block_type = SYM_BTYPE_CONST_F16;
+			store(color_f16, scb.constant_color);
+		}
+		else
+		{
+			scb.block_type = SYM_BTYPE_CONST_U16;
+			vint4 color_u16 = float_to_int_rtn(color);
+			store(color_u16, scb.constant_color);
+		}
 	}
 
 	// Compress to a physical block
