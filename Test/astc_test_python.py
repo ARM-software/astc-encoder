@@ -185,7 +185,7 @@ class ResultSetUpdateTests(unittest.TestCase):
 
     def test_unchanged_quality(self):
         '''
-        Ignore timing and SSIM changes when PSNR rounds to the same value.
+        Ignore timing changes when PSNR and SSIM round to the same values.
         '''
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'results.csv'
@@ -196,7 +196,7 @@ class ResultSetUpdateTests(unittest.TestCase):
             os.utime(path, ns=(1000000000, 1000000000))
 
             updated = ResultSet('Small')
-            updated.add_record(Record('4x4', 'image.png', 30.123456, 0.99, 5.0, 4.0, 0.4))
+            updated.add_record(Record('4x4', 'image.png', 30.123456, 0.900001, 5.0, 4.0, 0.4))
             updated.save_quality_changes(path)
 
             self.assertEqual(path.read_bytes(), original)
@@ -204,7 +204,7 @@ class ResultSetUpdateTests(unittest.TestCase):
 
     def test_partial_quality_update(self):
         '''
-        Replace changed scores, append new cases, and keep untested rows.
+        Replace only changed scores, append new cases, and keep untested rows.
         '''
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'results.csv'
@@ -216,7 +216,7 @@ class ResultSetUpdateTests(unittest.TestCase):
             existing.save_to_file(path)
 
             updated = ResultSet('Small')
-            updated.add_record(Record('4x4', 'same.png', 30.0, 0.99, 5.0, 4.0, 0.4))
+            updated.add_record(Record('4x4', 'same.png', 30.0, 0.9, 5.0, 4.0, 0.4))
             updated.add_record(Record('4x4', 'better.png', 31.0, 0.95, 2.0, 1.6, 1.0))
             updated.add_record(Record('4x4', 'worse.png', 29.0, 0.85, 2.0, 1.6, 1.0))
             updated.add_record(Record('8x8', 'same.png', 27.0, 0.75, 2.0, 1.6, 1.0))
@@ -224,10 +224,30 @@ class ResultSetUpdateTests(unittest.TestCase):
 
             expected = ResultSet('Small')
             expected.add_record(existing.records[0])
-            expected.add_record(updated.records[1])
-            expected.add_record(updated.records[2])
+            expected.add_record(Record('4x4', 'better.png', 31.0, 0.95, 1.0, 0.8, 2.0))
+            expected.add_record(Record('4x4', 'worse.png', 29.0, 0.85, 1.0, 0.8, 2.0))
             expected.add_record(existing.records[3])
             expected.add_record(updated.records[3])
+            expected_path = Path(directory) / 'expected.csv'
+            expected.save_to_file(expected_path)
+            self.assertEqual(path.read_bytes(), expected_path.read_bytes())
+
+    def test_ssim_only_update(self):
+        '''
+        Update SSIM independently of PSNR without changing stored timing data.
+        '''
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'results.csv'
+            existing = ResultSet('Small')
+            existing.add_record(Record('4x4', 'image.png', 30.0, 0.9, 1.0, 0.8, 2.0))
+            existing.save_to_file(path)
+
+            updated = ResultSet('Small')
+            updated.add_record(Record('4x4', 'image.png', 30.0, 0.95, 5.0, 4.0, 0.4))
+            updated.save_quality_changes(path)
+
+            expected = ResultSet('Small')
+            expected.add_record(Record('4x4', 'image.png', 30.0, 0.95, 1.0, 0.8, 2.0))
             expected_path = Path(directory) / 'expected.csv'
             expected.save_to_file(expected_path)
             self.assertEqual(path.read_bytes(), expected_path.read_bytes())

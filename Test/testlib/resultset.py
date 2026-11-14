@@ -228,11 +228,10 @@ class ResultSet:
 
     def save_quality_changes(self, file_path: Path) -> None:
         '''
-        Update a CSV only for new records or changed PSNR values.
+        Update the quality fields in a CSV while preserving existing timing data.
 
-        Compare PSNR at the four decimal places stored in the CSV. Preserve existing records,
-        including timing and SSIM, when PSNR is unchanged. Retain untested records, and leave
-        unchanged files untouched.
+        Compare PSNR and SSIM at the four decimal places stored in the CSV. Retain untested
+        records, and leave unchanged files untouched. New records include all measurements.
 
         Args:
             file_path: The output file path.
@@ -261,10 +260,14 @@ class ResultSet:
             else:
                 previous = existing.records[index]
 
-                if f'{previous.psnr:0.4f}' == f'{record.psnr:0.4f}':
+                is_psnr_unchanged = f'{previous.psnr:0.4f}' == f'{record.psnr:0.4f}'
+                is_ssim_unchanged = f'{previous.ssim:0.4f}' == f'{record.ssim:0.4f}'
+
+                if is_psnr_unchanged and is_ssim_unchanged:
                     continue
 
-                existing.records[index] = record
+                previous.psnr = record.psnr
+                previous.ssim = record.ssim
 
             is_changed = True
 
