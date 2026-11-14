@@ -24,6 +24,19 @@ import statistics
 from scipy import stats
 
 
+def minimum_timing_runs(runs: int) -> int:
+    '''
+    Determine the minimum sample count before confidence-based early stopping.
+
+    Args:
+        runs: The requested maximum number of measured runs.
+
+    Return:
+        Half the requested runs rounded up, capped at four, with at least two for statistics.
+    '''
+    return max(2, min((runs + 1) // 2, 4))
+
+
 def ci_half_width(times: list[float], confidence: float) -> float:
     '''
     Compute the two-sided Student's t confidence interval half-width.
@@ -51,7 +64,6 @@ def relative_ci_half_width(times: list[float], confidence: float) -> float:
     Return:
         The interval half-width as a fraction of the mean coding time.
     '''
-
     return ci_half_width(times, confidence) / statistics.mean(times)
 
 
@@ -97,7 +109,6 @@ def paired_t_test(sample_a: list[float], sample_b: list[float]) -> tuple[float, 
     Raises:
         ValueError: The sample sizes differ or contain fewer than two values.
     '''
-
     if len(sample_a) != len(sample_b) or len(sample_a) < 2:
         raise ValueError('Paired t-test requires equal sample set sizes')
 

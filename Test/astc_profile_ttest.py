@@ -20,9 +20,10 @@ Utility script to compare the performance and quality of two astcenc binaries.
 
 The binaries are run in alternating order and their reported processing times are analyzed with a
 paired, two-sided Student's t-test. The command line options following the script options are passed
-through to astcenc unchanged. After at least two measured pairs, stop when the paired test reaches
-the requested confidence level (95% by default), or the --repeats limit is reached. Repeated checks
-use nominal confidence, not a sequentially adjusted guarantee.
+through to astcenc unchanged. Early stopping requires half the requested pairs, rounded up and
+capped at four, with at least two pairs for statistics. Then stop when the paired test reaches the
+requested confidence level (95% by default), or the --repeats limit is reached. Repeated checks use
+nominal confidence, not a sequentially adjusted guarantee.
 
 Use an astcenc test mode (-tl, -ts, -th, or -tH) to report image quality. Test image names (e.g.
 ldr-rgb-... or ldr-rgba-...) select RGB or RGBA PSNR; other names report both when available.
@@ -50,7 +51,6 @@ def parse_command_line() -> argparse.Namespace:
     Return:
         The binary paths, codec arguments, and validated sampling settings.
     '''
-
     return parse_comparison_args(__doc__, is_ttest=True)
 
 

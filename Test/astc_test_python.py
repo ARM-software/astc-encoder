@@ -144,7 +144,6 @@ class ImageSelectionTests(unittest.TestCase):
         '''
         Respect block size and quality filters, including empty selections.
         '''
-
         for blocks in [[], ['4x4'], ['3x3x3']]:
             with self.subTest(blocks=blocks):
                 full = select_test_cases(self.test_set, blocks, ['fast'])

@@ -197,7 +197,6 @@ class CLITestBase(unittest.TestCase):
         Return:
             The path to the test image file on disk.
         '''
-
         # Handle explicit mode
         if profile == 'EXP':
             file_handle, path = tempfile.mkstemp(mode, dir=self.tmp_dir.name)
@@ -615,7 +614,6 @@ class CLIPTest(CLITestBase):
         '''
         Test SSIM channel labels, identity scores, and HDR exposure reporting.
         '''
-
         for profile, mode in (('LDR', '-tl'), ('LDRS', '-ts')):
             with self.subTest(mode=mode):
                 image_in = self.get_ref_image_path(profile, 'input', 'A')
@@ -1296,7 +1294,6 @@ class CLIPTest(CLITestBase):
         '''
         Crop options are ignored during decompression.
         '''
-
         for option in ('--croporigin', '--cropsize'):
             self.exec([
                 self.binary, '-dl',
@@ -1660,7 +1657,6 @@ class CLIPTest(CLITestBase):
         '''
         Test codec thread count.
         '''
-
         if self.skip_thread_count:
             self.skipTest('Thread timing disabled by --skip-thread-count')
 
@@ -2734,7 +2730,6 @@ class CLINTest(CLITestBase):
         '''
         Test HDR encodings warn and write error colors when decoded as LDR.
         '''
-
         for mode in ('-dl', '-ds'):
             with self.subTest(mode=mode):
                 image_in = self.get_image_path('HDR-A-1x1.astc')
@@ -2758,14 +2753,28 @@ def main() -> int:
     '''
     parser = argparse.ArgumentParser()
 
-    coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512']
-    parser.add_argument('--encoder', dest='encoder', default='avx2',
-                        choices=coders, help='test encoder variant')
-    parser.add_argument('--binary', type=Path,
-                        help='path to the binary to test; overrides the '
-                             'default ./bin/astcenc-<encoder> path')
-    parser.add_argument('--skip-thread-count', action='store_true',
-                        help='skip the thread timing test')
+    coders = [
+        # General purpose
+        'none',
+        # Arm aarch64
+        'neon', 'sve_128', 'sve_256',
+        # x86-64
+        'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512'
+    ]
+
+    parser.add_argument(
+        '--encoder', dest='encoder', default='avx2',
+        choices=coders,
+        help='test encoder variant')
+
+    parser.add_argument(
+        '--binary', type=Path,
+        help='override the default ./bin/astcenc-<encoder> path')
+
+    parser.add_argument(
+        '--skip-thread-count', action='store_true',
+        help='skip the thread timing test')
+
     args = parser.parse_known_args()
 
     binary = args[0].binary

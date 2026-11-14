@@ -132,10 +132,13 @@ def parse_command_line() -> argparse.Namespace:
     '''
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('bin', type=argparse.FileType('r'), help='the binary to size')
+    parser.add_argument(
+        'bin', type=argparse.FileType('r'),
+        help='the binary to size')
 
-    parser.add_argument('ref_bin', nargs='?', type=argparse.FileType('r'),
-                        help='the reference binary to compare against')
+    parser.add_argument(
+        'ref_bin', nargs='?', type=argparse.FileType('r'),
+        help='the reference binary to compare against')
 
     return parser.parse_args()
 

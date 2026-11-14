@@ -32,9 +32,10 @@ on PATH. Use matched build options and give the script exclusive use of the mach
 measurement.
 
 Runs 4x4, 6x6, and 8x8 at -thorough, -medium, and -fast for all three images. Each case has one
-warmup and at most ten measured rounds, with 12 codec threads. After at least two measured rounds,
-stop a case when every binary's 95% timing confidence interval has a half-width within 1% of its
-mean. Repeated checks use nominal confidence, not a sequentially adjusted guarantee. The three
+warmup and at most ten measured rounds, with 12 codec threads. Early stopping requires half the
+requested rounds, rounded up and capped at four, with at least two rounds for statistics. Then stop
+a case when every binary's 95% timing confidence interval has a half-width within 1% of its mean.
+Repeated checks use nominal confidence, not a sequentially adjusted guarantee. The three
 binaries run serially in rotating order. All three comparisons reuse the same samples, keeping each
 binary's mean consistent between tables. HDR compression uses -perceptual. HDR metrics use a fixed
 -3 to +1 f-stop window across binary versions, matching the current compressor's automatic exposure
@@ -125,47 +126,6 @@ MEASUREMENT_NOTES = '''## Measurement notes
 '''
 
 
-def parse_command_line() -> argparse.Namespace:
-    '''
-    Parse executable paths, image paths, and measurement settings.
-
-    Return:
-        The validated command-line arguments.
-    '''
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('release_avx2', help='5.7.1 AVX2 binary')
-    parser.add_argument('main_avx2', help='main AVX2 binary')
-    parser.add_argument('main_avx512', help='main AVX512 binary')
-    images = Path(__file__).resolve().parent / 'Images'
-    kodak = images / 'KodakMnt'
-    parser.add_argument('--rgb-image', type=Path, default=kodak / 'LDR-RGB/ldr-rgb-montage.png')
-    parser.add_argument('--normal-image', type=Path, default=kodak / 'LDR-XY/ldr-xy-montage.png')
-    hdr = images / 'HDRIHaven/HDR-RGB/hdr-rgb-canarywharf.hdr'
-    parser.add_argument('--hdr-image', type=Path, default=hdr,
-                        help='Radiance HDR image (default: Canarywharf)')
-    stamp = datetime.now().strftime('%y%m%d-%H.%M')
-    out_dir = Path('x_profiles') / f'report-{stamp}'
-    parser.add_argument('--output', type=Path, default=out_dir,
-                        help='output directory (default: %(default)s)')
-    parser.add_argument('--runs', type=int, default=10,
-                        help='maximum rounds per case, 2 to 10 (default: %(default)s)')
-    parser.add_argument('--warmups', type=int, default=1,
-                        help='warmup rounds per case (default: %(default)s)')
-    parser.add_argument('--threads', type=int, default=12,
-                        help='codec threads (default: %(default)s)')
-    args = parser.parse_args()
-
-    if args.runs < 2 or args.runs > 10:
-        parser.error('--runs must be between 2 and 10')
-
-    if args.threads < 1 or args.warmups < 0:
-        parser.error('threads must be positive; warmups cannot be negative')
-
-    return args
-
-
 def image_size(path: Path) -> tuple[int, int]:
     '''
     Read image dimensions, including Radiance HDR headers unsupported by Pillow.
@@ -180,7 +140,6 @@ def image_size(path: Path) -> tuple[int, int]:
         OSError: The image cannot be read.
         ValueError: The Radiance header or dimensions are invalid.
     '''
-
     if path.suffix.lower() != '.hdr':
         with Image.open(path) as image:
             return image.size
@@ -348,7 +307,6 @@ def mean_time(case: dict[str, Any], binary: str) -> float:
     Return:
         The arithmetic mean coding time in seconds.
     '''
-
     return statistics.mean(r['results'][binary]['time'] for r in case['rounds'])
 
 
@@ -710,7 +668,6 @@ def set_change_limits(ax: Any, values: list[float], unit: str) -> None:
         values: The available signed quality differences.
         unit: The metric unit, or an empty string for dimensionless scores.
     '''
-
     if not values:
         return
 
@@ -853,6 +810,74 @@ def save_report(out_dir: Path, data: dict[str, Any]) -> None:
     plot_quality_changes(out_dir, data)
     report_path = out_dir / 'report.md'
     print(f'Report: {report_path}\nRaw measurements: {raw_path}')
+
+
+def parse_command_line() -> argparse.Namespace:
+    '''
+    Parse executable paths, image paths, and measurement settings.
+
+    Return:
+        The validated command-line arguments.
+    '''
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument(
+        'release_avx2',
+        help='5.7.1 AVX2 binary')
+
+    parser.add_argument(
+        'main_avx2',
+        help='main AVX2 binary')
+
+    parser.add_argument(
+        'main_avx512',
+        help='main AVX512 binary')
+
+    images = Path(__file__).resolve().parent / 'Images'
+    kodak = images / 'KodakMnt'
+
+    parser.add_argument(
+        '--rgb-image', type=Path, default=kodak / 'LDR-RGB/ldr-rgb-montage.png',
+        help='RGB image (default: Kodak RGB Montage)')
+
+    parser.add_argument(
+        '--normal-image', type=Path, default=kodak / 'LDR-XY/ldr-xy-montage.png',
+        help='XY image (default: Kodak XY Montage)')
+
+    hdr = images / 'HDRIHaven/HDR-RGB/hdr-rgb-canarywharf.hdr'
+    parser.add_argument(
+        '--hdr-image', type=Path, default=hdr,
+        help='HDR image (default: Canarywharf)')
+
+    stamp = datetime.now().strftime('%y%m%d-%H.%M')
+    out_dir = Path('x_profiles') / f'report-{stamp}'
+    parser.add_argument(
+        '--output', type=Path, default=out_dir,
+        help='output directory (default: %(default)s)')
+
+    parser.add_argument(
+        '--runs', type=int, default=10,
+        help='maximum rounds per case, 2 to 10 (default: %(default)s)')
+
+    parser.add_argument(
+        '--warmups', type=int, default=1,
+        help='warmup rounds per case (default: %(default)s)')
+
+    parser.add_argument(
+        '--threads', type=int, default=12,
+        help='codec threads (default: %(default)s)')
+
+    args = parser.parse_args()
+
+    if args.runs < 2:
+        parser.error('--runs must be at least 2')
+
+    if args.threads < 1 or args.warmups < 0:
+        parser.error('threads must be positive; warmups cannot be negative')
+
+    return args
 
 
 def main() -> int:

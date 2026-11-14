@@ -53,7 +53,6 @@ def is_3d(block_size: str) -> bool:
     Return:
         True if the block size is 3D, False if 2D.
     '''
-
     return block_size.count('x') == 2
 
 

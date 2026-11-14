@@ -35,7 +35,7 @@ import sys
 from typing import Optional
 
 from .testset import TestImage
-from .timing import is_timing_stable
+from .timing import is_timing_stable, minimum_timing_runs
 
 
 @dataclass(frozen=True)
@@ -63,7 +63,6 @@ class RunOptions:
         Raises:
             ValueError: A run count or timing threshold is outside its valid range.
         '''
-
         if self.repeats < 1:
             raise ValueError('The repeat limit must be at least one')
 
@@ -102,7 +101,6 @@ class RunResult:
         Return:
             The highest quality scores and rate, and the lowest elapsed times.
         '''
-
         return RunResult(
             psnr=max(self.psnr, other.psnr),
             ssim=max(self.ssim, other.ssim),
@@ -165,7 +163,6 @@ class EncoderBase(ABC):
         Return:
             The command line arguments for this encoder version.
         '''
-
     def execute(self, command: list[str]) -> list[str]:
         '''
         Run a subprocess with the specified command.
@@ -318,6 +315,7 @@ class EncoderBase(ABC):
                          coding_time=sys.float_info.max, coding_rate=0.0)
         times = []
         self.last_run_count = 0
+        min_runs = minimum_timing_runs(options.repeats)
 
         for _ in range(options.repeats):
             output = self.execute(command)
@@ -328,7 +326,8 @@ class EncoderBase(ABC):
             times.append(result.coding_time)
             self.last_run_count = len(times)
 
-            if is_timing_stable(times, options.confidence, options.precision):
+            if ((len(times) >= min_runs) and
+                    is_timing_stable(times, options.confidence, options.precision)):
                 break
 
         return best
@@ -441,7 +440,6 @@ class Encoder2x(EncoderBase):
         Return:
             The regex pattern.
         '''
-
         if image.color_profile in ('hdr', 'hdra'):
             label = 'mSSIM (RGB)'
         elif image.color_format == 'rgba':

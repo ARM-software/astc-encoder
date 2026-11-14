@@ -39,7 +39,6 @@ def parse_command_line() -> argparse.Namespace:
     Return:
         The binary paths, codec arguments, and validated sampling settings.
     '''
-
     return parse_comparison_args(__doc__, is_ttest=False)
 
 
