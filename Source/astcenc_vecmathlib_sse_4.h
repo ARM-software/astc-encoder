@@ -1443,6 +1443,149 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 #endif
 }
 
+// ============================================================================
+// Packed byte and bit operations
+// ============================================================================
+
+#if ASTCENC_AVX >= 2
+#define ASTCENC_USE_NATIVE_BIT_PERMUTE 1
+
+/** @brief True if arbitrary bit extraction and deposition have native instructions. */
+static constexpr bool is_bit_permute_fast = true;
+
+/**
+ * @brief Keep the lowest bits of a word.
+ *
+ * @param value   The source word.
+ * @param count   The number of low bits to keep, in [0, 64].
+ *
+ * @return The masked word.
+ */
+ASTCENC_SIMD_INLINE uint64_t mask_low_bits(uint64_t value, unsigned int count)
+{
+	return _bzhi_u64(value, count);
+}
+
+/**
+ * @brief Extract a contiguous bit range from a word.
+ *
+ * @param value    The source word.
+ * @param offset   The first bit, in [0, 63].
+ * @param count    The number of bits, in [0, 64 - offset].
+ *
+ * @return The extracted bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t extract_bit_range(uint64_t value, unsigned int offset, unsigned int count)
+{
+	return _bextr_u64(value, offset, count);
+}
+
+/**
+ * @brief Compress selected bits into consecutive low bits, preserving their order.
+ *
+ * @param value   The source word.
+ * @param mask    The source bit positions to select.
+ *
+ * @return The selected bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t compress_bits(uint64_t value, uint64_t mask)
+{
+	return _pext_u64(value, mask);
+}
+
+/**
+ * @brief Deposit consecutive low bits into selected positions, preserving their order.
+ *
+ * @param value   The source word.
+ * @param mask    The destination bit positions to fill.
+ *
+ * @return The deposited bits, with all other positions zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t deposit_bits(uint64_t value, uint64_t mask)
+{
+	return _pdep_u64(value, mask);
+}
+
+#define ASTCENC_USE_NATIVE_UNPACK_BYTE_FIELDS 1
+
+/**
+ * @brief Expand eight consecutive fixed-width fields into packed bytes.
+ *
+ * @param packed   The packed fields, starting at bit zero.
+ * @param bits     The field width, in [1, 8].
+ *
+ * @return The eight byte values in the low eight bytes, with the high bytes zero.
+ */
+ASTCENC_SIMD_INLINE vint4 unpack_byte_fields(uint64_t packed, unsigned int bits)
+{
+	uint64_t lane_mask = 0x0101010101010101ull * mask_low_bits(~0ull, bits);
+	return vint4(_mm_cvtsi64_si128(deposit_bits(packed, lane_mask)));
+}
+#endif
+
+#if ASTCENC_SSE >= 41
+#define ASTCENC_USE_NATIVE_VTABLE_LOOKUP_8BIT 1
+
+/**
+ * @brief Look up sixteen packed byte indices in a 16-entry byte table.
+ *
+ * @param table     The prepared lookup table.
+ * @param indices   The sixteen byte indices, each in [0, 15].
+ *
+ * @return The sixteen table values as packed bytes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup_8bit(const vtable4_16x8& table, vint4 indices)
+{
+	return vint4(_mm_shuffle_epi8(table.t0.m, indices.m));
+}
+
+/**
+ * @brief Look up sixteen packed byte indices in a 32-entry byte table.
+ *
+ * @param table     The prepared lookup table.
+ * @param indices   The sixteen byte indices, each in [0, 31].
+ *
+ * @return The sixteen table values as packed bytes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup_8bit(const vtable4_32x8& table, vint4 indices)
+{
+	__m128i low = _mm_shuffle_epi8(table.t0.m, indices.m);
+	__m128i high_indices = _mm_sub_epi8(indices.m, _mm_set1_epi8(16));
+	__m128i high = _mm_shuffle_epi8(table.t1.m, high_indices);
+	return vint4(_mm_xor_si128(low, high));
+}
+
+#define ASTCENC_USE_NATIVE_STORE_DEINTERLEAVED_BYTES 1
+
+/**
+ * @brief Store alternating bytes into two eight-byte output sequences.
+ *
+ * @param      data   The sixteen interleaved input bytes.
+ * @param[out] even   The eight even-indexed bytes.
+ * @param[out] odd    The eight odd-indexed bytes.
+ */
+ASTCENC_SIMD_INLINE void store_deinterleaved_bytes(vint4 data, uint8_t* even, uint8_t* odd)
+{
+	__m128i order = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15);
+	__m128i result = _mm_shuffle_epi8(data.m, order);
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(even), result);
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(odd), _mm_srli_si128(result, 8));
+}
+#endif
+
+#define ASTCENC_USE_NATIVE_STORE_LOW_8BYTES 1
+
+/**
+ * @brief Store the lowest eight packed bytes to an unaligned address.
+ *
+ * @param      data     The packed bytes.
+ * @param[out] output   The eight-byte destination.
+ */
+ASTCENC_SIMD_INLINE void store_low_8bytes(vint4 data, uint8_t* output)
+{
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(output), data.m);
+}
+
 /**
  * @brief Return a vector of interleaved RGBA data.
  *

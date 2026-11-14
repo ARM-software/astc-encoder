@@ -1530,11 +1530,10 @@ static float prepare_block_statistics(
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
-	uint8_t pcb[16],
+	symbolic_compressed_block& scb,
 	compression_working_buffers& tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
-	symbolic_compressed_block scb;
 	const block_size_descriptor& bsd = *ctx.bsd;
 	float lowest_correl = 0.0f;
 	unsigned int plane_components[BLOCK_MAX_COMPONENTS] { 3, 2, 1, 0 };
@@ -1611,7 +1610,6 @@ void compress_block(
 
 		trace_add_data("exit", "quality hit");
 
-		symbolic_to_physical(bsd, scb, pcb);
 		return;
 	}
 
@@ -1856,9 +1854,6 @@ END_OF_TESTS:
 			store(color_u16, scb.constant_color);
 		}
 	}
-
-	// Compress to a physical block
-	symbolic_to_physical(bsd, scb, pcb);
 }
 
 #endif

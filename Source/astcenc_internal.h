@@ -2165,17 +2165,17 @@ void compute_angular_endpoints_2planes(
 ============================================================================ */
 
 /**
- * @brief Compress an image block into a physical block.
+ * @brief Compress an image block into a symbolic block.
  *
  * @param      ctx      The compressor context and configuration.
  * @param      blk      The image block color data to compress.
- * @param[out] pcb      The physical compressed block output.
+ * @param[out] scb      The symbolic compressed block output.
  * @param[out] tmpbuf   Preallocated scratch buffers for the compressor.
  */
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
-	uint8_t pcb[16],
+	symbolic_compressed_block& scb,
 	compression_working_buffers& tmpbuf);
 
 /**

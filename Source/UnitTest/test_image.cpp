@@ -16,18 +16,20 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Unit tests for strided image storage.
+ * @brief Unit tests for image storage and block traversal.
  */
 
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <type_traits>
 #include <vector>
 
 #include "gtest/gtest.h"
 
 #include "../astcenc.h"
+#include "../astcenc_morton.h"
 
 namespace astcenc
 {
@@ -212,6 +214,189 @@ TEST(image, row_stride)
 			test_row_stride<uint16_t>(ASTCENC_TYPE_F16, depth, is_alpha_scaled);
 			test_row_stride<float>(ASTCENC_TYPE_F32, depth, is_alpha_scaled);
 		}
+	}
+}
+
+/**
+ * @brief Check partial brick traversal preserves raster output without padding blocks.
+ *
+ * @param is_morton   Whether to use Morton order instead of scanline order.
+ */
+static void test_bricks(bool is_morton)
+{
+	const unsigned int block_sizes[][3] { { 4, 4, 1 }, { 10, 6, 1 }, { 3, 3, 3 } };
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+	const uint8_t constant_header[8] { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+
+	for (const auto& block : block_sizes)
+	{
+		size_t brick_width = 128;
+		if (is_morton)
+		{
+			brick_width = 16;
+		}
+
+		size_t width = block[0] * brick_width + 1;
+		size_t height = block[1] * 8 + 1;
+		size_t depth = 1;
+		if (block[2] > 1)
+		{
+			depth = block[2] * 2 + 1;
+		}
+
+		size_t blocks_x = (width + block[0] - 1) / block[0];
+		size_t blocks_y = (height + block[1] - 1) / block[1];
+		size_t blocks_z = (depth + block[2] - 1) / block[2];
+		size_t block_count = blocks_x * blocks_y * blocks_z;
+		size_t data_size = block_count * 16;
+
+		// Each raster block has a distinct constant color, with guards outside the output payload
+		std::vector<uint8_t> expected(data_size + 32, 0x55);
+		for (size_t i = 0; i < block_count; i++)
+		{
+			uint8_t* output = expected.data() + 16 + i * 16;
+			std::copy_n(constant_header, 8, output);
+			for (size_t channel = 0; channel < 4; channel++)
+			{
+				uint8_t value = static_cast<uint8_t>(((i >> (channel * 3)) + channel * 47) & 0xFF);
+				output[8 + channel * 2] = value;
+				output[9 + channel * 2] = value;
+			}
+		}
+
+		std::vector<uint8_t> pixels(width * height * depth * 4);
+		std::vector<void*> slices(depth);
+		for (size_t z = 0; z < depth; z++)
+		{
+			slices[z] = pixels.data() + z * width * height * 4;
+			for (size_t y = 0; y < height; y++)
+			{
+				for (size_t x = 0; x < width; x++)
+				{
+					size_t index = ((z / block[2]) * blocks_y + y / block[1]) * blocks_x
+					             + x / block[0];
+					for (size_t channel = 0; channel < 4; channel++)
+					{
+						pixels[((z * height + y) * width + x) * 4 + channel] =
+						    expected[16 + index * 16 + 8 + channel * 2];
+					}
+				}
+			}
+		}
+
+		astcenc_image image {
+			.dim_x = width,
+			.dim_y = height,
+			.dim_z = depth,
+			.data_type = ASTCENC_TYPE_U8,
+			.data = slices.data(),
+			.row_stride = 0
+		};
+
+		unsigned int flags = 0;
+		if (is_morton)
+		{
+			flags |= ASTCENC_FLG_USE_MORTON;
+		}
+
+		astcenc_config config;
+		astcenc_error status = astcenc_config_init(
+		    ASTCENC_PRF_LDR, block[0], block[1], block[2], ASTCENC_PRE_FASTEST, flags, &config);
+		ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+		for (unsigned int thread_count : { 1u, 4u })
+		{
+			SCOPED_TRACE(::testing::Message() << block[0] << 'x' << block[1] << 'x' << block[2]
+			                                << ", threads " << thread_count);
+			astcenc_context* context_raw;
+			status = astcenc_context_alloc(&config, thread_count, &context_raw, nullptr);
+			ASSERT_EQ(status, ASTCENC_SUCCESS);
+			astcenc_context_unq_ptr context(context_raw, astcenc_context_free);
+
+			std::vector<uint8_t> output(data_size + 32, 0x55);
+			std::vector<astcenc_error> results(thread_count);
+			std::vector<std::thread> workers;
+			for (unsigned int thread_index = 0; thread_index < thread_count; thread_index++)
+			{
+				workers.emplace_back([&, thread_index] {
+					results[thread_index] = astcenc_compress_image(
+					    context.get(), &image, &swizzle,
+					    output.data() + 16, data_size, thread_index);
+				});
+			}
+
+			for (auto& worker : workers)
+			{
+				worker.join();
+			}
+
+			for (astcenc_error result : results)
+			{
+				ASSERT_EQ(result, ASTCENC_SUCCESS);
+			}
+
+			EXPECT_EQ(output, expected);
+		}
+	}
+}
+
+/** @brief Morton bricks cover partial edges and preserve raster output. */
+TEST(image, morton_bricks)
+{
+	test_bricks(true);
+}
+
+/** @brief Scanline bricks cover partial edges and preserve raster output. */
+TEST(image, scanline_bricks)
+{
+	test_bricks(false);
+}
+
+/** @brief Both traversal orders cover their brick once, in the expected block order. */
+TEST(image, brick_layout)
+{
+	for (bool is_morton : { false, true })
+	{
+		brick_layout layout(is_morton);
+		unsigned int expected_width = 128;
+		unsigned int expected_height = 1;
+		if (is_morton)
+		{
+			expected_width = 16;
+			expected_height = 8;
+		}
+
+		EXPECT_EQ(layout.width, expected_width);
+		EXPECT_EQ(layout.height, expected_height);
+		brick_layout::validity_mask visited;
+		for (unsigned int index = 0; index < brick_layout::block_count; index++)
+		{
+			auto position = layout.get_position(index);
+			ASSERT_LT(position.x, expected_width);
+			ASSERT_LT(position.y, expected_height);
+			EXPECT_EQ(position.z, 0u);
+			size_t raster_index = position.y * expected_width + position.x;
+			bool is_visited = visited[raster_index];
+			EXPECT_FALSE(is_visited);
+			visited.set(raster_index);
+
+			size_t expected_index = position.x;
+			if (is_morton)
+			{
+				size_t x = position.x;
+				size_t y = position.y;
+				expected_index = (x & 1) | ((y & 1) << 1) | ((x & 2) << 1) |
+				                 ((y & 2) << 2) | ((x & 4) << 2) | ((y & 4) << 3) |
+				                 ((x & 8) << 3);
+			}
+
+			EXPECT_EQ(index, expected_index);
+		}
+
+		bool is_complete = visited.all();
+		EXPECT_TRUE(is_complete);
 	}
 }
 

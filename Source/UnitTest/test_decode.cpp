@@ -29,8 +29,53 @@
 
 #include "../astcenc.h"
 
+#if defined(ASTCENC_RDO)
+#include "../astcenc_internal.h"
+#include "../astcenc_rdo.h"
+#endif
+
 namespace astcenc
 {
+
+#if defined(ASTCENC_RDO)
+/** @brief Every fixed QUANT decoder must preserve values, partial groups, and output bounds. */
+TEST(decompress, fixed_quantization_decode)
+{
+	for (unsigned int level = QUANT_2; level <= QUANT_256; level++)
+	{
+		auto quant = static_cast<quant_method>(level);
+		unsigned int alphabet_size = get_quant_level(quant);
+		rdo_ise_decode_func* fixed_decode = rdo_get_ise_decoder(level);
+		for (unsigned int count = 1; count <= 64; count++)
+		{
+			for (unsigned int offset = 0; offset < 8; offset++)
+			{
+				uint8_t input[64];
+				uint8_t encoded[80] {};
+				uint8_t decoded[66];
+				uint8_t generic[64];
+				std::fill_n(decoded, 66, 0xCD);
+				for (unsigned int i = 0; i < count; i++)
+				{
+					input[i] = static_cast<uint8_t>((37 * i + 13 * count + offset) % alphabet_size);
+				}
+
+				encode_ise(quant, count, input, encoded, offset);
+				fixed_decode(count, encoded, decoded + 1, offset);
+				decode_ise(quant, count, encoded, generic, offset);
+				for (unsigned int i = 0; i < count; i++)
+				{
+					ASSERT_EQ(decoded[i + 1], input[i]);
+					ASSERT_EQ(decoded[i + 1], generic[i]);
+				}
+
+				EXPECT_EQ(decoded[0], 0xCD);
+				EXPECT_EQ(decoded[count + 1], 0xCD);
+			}
+		}
+	}
+}
+#endif
 
 /** @brief Input overflow tests for xy * z. */
 TEST(decompress, overflow_in_z)

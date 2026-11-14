@@ -925,6 +925,38 @@ static bool edit_astcenc_config(
 			argidx++;
 			cli_config.silentmode = 1;
 		}
+#if defined(ASTCENC_RDO)
+		else if (!strcmp(argv[argidx], "-rdo-lambda"))
+		{
+			const char* option = argv[argidx];
+			bool is_arg_error = advance_option(option, argc, 1, argidx);
+			if (is_arg_error)
+			{
+				return true;
+			}
+
+			if (!(operation & ASTCENC_STAGE_COMPRESS))
+			{
+				print_error("ERROR: %s switch requires compression mode\n", option);
+				return true;
+			}
+
+			float value;
+			bool is_parse_error = parse_float(option, argv[argidx - 1], value);
+			if (is_parse_error)
+			{
+				return true;
+			}
+
+			if (value < 0.0f)
+			{
+				print_error("ERROR: Value for %s switch must be nonnegative\n", option);
+				return true;
+			}
+
+			config.rdo_lambda = value;
+		}
+#endif
 		else if (!strcmp(argv[argidx], "--croporigin"))
 		{
 			const char* option = argv[argidx];
@@ -1664,6 +1696,13 @@ static void print_astcenc_config(
 		printf("    G component weight:         %g\n", static_cast<double>(config.cw_g_weight));
 		printf("    B component weight:         %g\n", static_cast<double>(config.cw_b_weight));
 		printf("    A component weight:         %g\n", static_cast<double>(config.cw_a_weight));
+#if defined(ASTCENC_RDO)
+		if (config.rdo_lambda > 0.0f)
+		{
+			printf("    RDO:                        Enabled\n");
+			printf("    RDO lambda:                 %g\n", static_cast<double>(config.rdo_lambda));
+		}
+#endif
 		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 		printf("    2 partition index cutoff:   %u partition ids\n", config.tune_2partition_index_limit);
 		printf("    3 partition index cutoff:   %u partition ids\n", config.tune_3partition_index_limit);
@@ -2515,6 +2554,14 @@ int astcenc_main(
 				return 1;
 			}
 		}
+		else if (ends_with(input_filename, ".astcm"))
+		{
+			error = load_astcm_compressed_image(input_filename.c_str(), image_comp);
+			if (error)
+			{
+				return 1;
+			}
+		}
 		else if (ends_with(input_filename, ".ktx"))
 		{
 			bool is_srgb;
@@ -2620,7 +2667,8 @@ int astcenc_main(
 
 	if (operation & ASTCENC_STAGE_ST_COMP)
 	{
-		if (!(is_null || ends_with(output_filename, ".astc") || ends_with(output_filename, ".ktx")))
+		if (!(is_null || ends_with(output_filename, ".astc") ||
+		      ends_with(output_filename, ".astcm") || ends_with(output_filename, ".ktx")))
 		{
 			const char *eptr = strrchr(output_filename.c_str(), '.');
 			eptr = eptr ? eptr : "";
@@ -2777,6 +2825,12 @@ int astcenc_main(
 		{
 			config.flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
 		}
+	}
+
+	// Match encoder traversal and RDO history to the compressed output layout
+	if ((operation & ASTCENC_STAGE_ST_COMP) && ends_with(output_filename, ".astcm"))
+	{
+		config.flags |= ASTCENC_FLG_USE_MORTON;
 	}
 
 	astcenc_context* codec_context_raw { nullptr };
@@ -2968,6 +3022,15 @@ int astcenc_main(
 				return 1;
 			}
 		}
+		else if (ends_with(output_filename, ".astcm"))
+		{
+			error = store_astcm_compressed_image(image_comp, output_filename.c_str());
+			if (error)
+			{
+				print_error("ERROR: Failed to store compressed image\n");
+				return 1;
+			}
+		}
 		else if (ends_with(output_filename, ".ktx"))
 		{
 			bool srgb = profile == ASTCENC_PRF_LDR_SRGB;
@@ -3043,6 +3106,20 @@ int astcenc_main(
 			printf("    Decoding time:             %8.4f s\n", decompression_time);
 			printf("    Decoding rate:             %8.4f MT/s\n", decompression_rate);
 		}
+#if defined(ASTCENC_RDO_SIZE)
+		// Always print size metrics
+		bool is_morton = config.flags & ASTCENC_FLG_USE_MORTON;
+		if (!(operation & ASTCENC_STAGE_COMPRESS))
+		{
+			is_morton = ends_with(input_filename, ".astcm");
+		}
+
+		bool is_metrics_error = print_compression_metrics(image_comp, is_morton);
+		if (is_metrics_error)
+		{
+			return 1;
+		}
+#endif
 	}
 
 	if (is_decompression_warning)

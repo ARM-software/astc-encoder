@@ -201,10 +201,14 @@ public:
 	 * This can be called from multi-threaded code. The first thread to hit this will process the
 	 * initialization. Other threads will block and wait for it to complete.
 	 *
-	 * @param task_count   Total number of tasks needing processing.
-	 * @param callback     Function pointer for progress status callbacks.
+	 * @param task_count           Total number of tasks needing processing.
+	 * @param callback             Function pointer for progress status callbacks.
+	 * @param callback_min_tasks   Minimum task count between progress callbacks.
 	 */
-	void init(size_t task_count, astcenc_progress_callback callback)
+	void init(
+		size_t task_count,
+		astcenc_progress_callback callback,
+		size_t callback_min_tasks = 4096)
 	{
 		std::lock_guard<std::mutex> lck(m_lock);
 
@@ -214,8 +218,9 @@ public:
 			m_total_task_count = task_count;
 			m_init_done = true;
 
-			// Report every 1% or 4096 blocks, whichever is larger, to avoid callback overhead
-			float min_diff = (4096.0f / static_cast<float>(task_count)) * 100.0f;
+			// Report every 1% or the requested task minimum to avoid callback overhead
+			float min_diff = (static_cast<float>(callback_min_tasks) /
+			                  static_cast<float>(task_count)) * 100.0f;
 			m_callback_min_diff = astc::max(min_diff, 1.0f);
 		}
 	}

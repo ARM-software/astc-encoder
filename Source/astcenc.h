@@ -406,6 +406,14 @@ static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
 static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
 
 /**
+ * @brief Use 16x8 Morton-ordered encoder bricks instead of 128x1 scanline bricks.
+ *
+ * RDO optimizes blocks in the selected brick order. The compressed image buffer remains in raster
+ * order; callers storing Morton-ordered files must reorder the blocks during serialization.
+ */
+static const unsigned int ASTCENC_FLG_USE_MORTON           = 1 << 7;
+
+/**
  * @brief The bit mask of all valid flags.
  */
 static const unsigned int ASTCENC_ALL_FLAGS =
@@ -415,7 +423,8 @@ static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_USE_PERCEPTUAL |
                               ASTCENC_FLG_USE_DECODE_UNORM8 |
                               ASTCENC_FLG_DECOMPRESS_ONLY |
-                              ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+                              ASTCENC_FLG_SELF_DECOMPRESS_ONLY |
+                              ASTCENC_FLG_USE_MORTON;
 
 /**
  * @brief The config structure.
@@ -605,6 +614,15 @@ struct astcenc_config
 	 * reduce compression performance.
 	 */
 	astcenc_progress_callback progress_callback;
+
+#if defined(ASTCENC_RDO)
+	/**
+	 * @brief The experimental RDO rate weight; zero disables RDO and is the default.
+	 *
+	 * Requires ASTCENC_RDO to be defined for both the library and its callers.
+	 */
+	float rdo_lambda;
+#endif
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**

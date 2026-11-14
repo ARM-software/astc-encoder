@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -21,10 +21,15 @@
 
 #include "astcenc_internal.h"
 
+#if defined(ASTCENC_RDO)
+#include "astcenc_rdo.h"
+#endif
+
 #include <array>
+#include <cstring>
 
 /** @brief Unpacked quint triplets <low,middle,high> for each packed value. */
-static const uint8_t quints_of_integer[128][3] {
+static constexpr uint8_t quints_of_integer[128][3] {
 	{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0},
 	{4, 0, 0}, {0, 4, 0}, {4, 4, 0}, {4, 4, 4},
 	{0, 1, 0}, {1, 1, 0}, {2, 1, 0}, {3, 1, 0},
@@ -99,7 +104,7 @@ static const uint8_t integer_of_quints[5][5][5] {
 };
 
 /** @brief Unpacked trit quintuplets <low,...,high> for each packed value. */
-static const uint8_t trits_of_integer[256][5] {
+static constexpr uint8_t trits_of_integer[256][5] {
 	{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}, {0, 0, 2, 0, 0},
 	{0, 1, 0, 0, 0}, {1, 1, 0, 0, 0}, {2, 1, 0, 0, 0}, {1, 0, 2, 0, 0},
 	{0, 2, 0, 0, 0}, {1, 2, 0, 0, 0}, {2, 2, 0, 0, 0}, {2, 0, 2, 0, 0},
@@ -487,6 +492,318 @@ static inline unsigned int read_bits(
 	return value;
 }
 
+/**
+ * @brief Pack radix digits into byte lanes for a single table load per ISE group.
+ *
+ * @tparam EntryCount   The number of radix codes.
+ * @tparam ValueCount   The number of digits per code.
+ * @param  values       The decoded radix digits.
+ *
+ * @return The digit groups packed into little-endian words.
+ */
+template<size_t EntryCount, size_t ValueCount>
+static constexpr std::array<uint64_t, EntryCount> pack_radix_table(
+	const uint8_t (&values)[EntryCount][ValueCount]
+) {
+	std::array<uint64_t, EntryCount> packed {};
+	for (size_t i = 0; i < EntryCount; i++)
+	{
+		for (size_t j = 0; j < ValueCount; j++)
+		{
+			packed[i] |= static_cast<uint64_t>(values[i][j]) << (8 * j);
+		}
+	}
+
+	return packed;
+}
+
+/** @brief Three quint digits stored in byte lanes. */
+static constexpr auto packed_quints = pack_radix_table(quints_of_integer);
+
+/** @brief Five trit digits stored in byte lanes. */
+static constexpr auto packed_trits = pack_radix_table(trits_of_integer);
+
+#if defined(ASTCENC_RDO)
+/* See astcenc_rdo.h for documentation. */
+void rdo_decode_ise_radix_weights(
+	unsigned int quant_level,
+	unsigned int count,
+	const uint8_t* input_data,
+	uint8_t* output_data
+) {
+	if (quant_level == QUANT_3)
+	{
+		unsigned int i = 0;
+		for (; i + 5 <= count; i += 5)
+		{
+			uint64_t weights = packed_trits[input_data[i / 5]] << 5;
+			store_le64_prefix(weights, output_data + i, 5);
+		}
+
+		unsigned int tail = count - i;
+		if (tail != 0)
+		{
+			unsigned int bits = (tail * 8 + 4) / 5;
+			unsigned int code = input_data[i / 5] & ((1u << bits) - 1);
+			uint64_t weights = packed_trits[code] << 5;
+			for (unsigned int j = 0; j < tail; j++)
+			{
+				output_data[i + j] = static_cast<uint8_t>(weights >> (8 * j));
+			}
+		}
+	}
+	else
+	{
+		assert(quant_level == QUANT_5);
+		unsigned int i = 0;
+		unsigned int offset = 0;
+		for (; i + 3 <= count; i += 3)
+		{
+			unsigned int code = read_bits(7, offset, input_data);
+			uint64_t weights = packed_quints[code] << 4;
+			store_le64_prefix(weights, output_data + i, 3);
+			offset += 7;
+		}
+
+		unsigned int tail = count - i;
+		if (tail != 0)
+		{
+			unsigned int bits = (tail * 7 + 2) / 3;
+			unsigned int code = read_bits(bits, offset, input_data);
+			uint64_t weights = packed_quints[code] << 4;
+			for (unsigned int j = 0; j < tail; j++)
+			{
+				output_data[i + j] = static_cast<uint8_t>(weights >> (8 * j));
+			}
+		}
+	}
+}
+#endif
+
+/**
+ * @brief Read a little-endian ISE group without accessing bytes outside the group.
+ *
+ * @param input_data   The packed sequence.
+ * @param bit_offset   The initial bit offset in the packed sequence.
+ * @param bit_count    The number of group bits, at most 56.
+ *
+ * @return The extracted group bits.
+ */
+static ASTCENC_SIMD_INLINE uint64_t read_ise_group_packed(
+	const uint8_t* input_data,
+	unsigned int bit_offset,
+	unsigned int bit_count
+) {
+	unsigned int byte_count = ((bit_offset & 7) + bit_count + 7) / 8;
+	const uint8_t* source = input_data + (bit_offset >> 3);
+	uint64_t packed = 0;
+	unsigned int shift = 0;
+	if (byte_count >= 4)
+	{
+		uint32_t value;
+		std::memcpy(&value, source, 4);
+		packed = value;
+		source += 4;
+		byte_count -= 4;
+		shift = 32;
+	}
+
+	if (byte_count >= 2)
+	{
+		uint16_t value;
+		std::memcpy(&value, source, 2);
+		packed |= static_cast<uint64_t>(value) << shift;
+		source += 2;
+		byte_count -= 2;
+		shift += 16;
+	}
+
+	if (byte_count != 0)
+	{
+		packed |= static_cast<uint64_t>(*source) << shift;
+	}
+
+	return extract_bit_range(packed, bit_offset & 7, bit_count);
+}
+
+/**
+ * @brief Decode binary-only ISE values using packed byte-lane expansion.
+ *
+ * @param      bits          The number of bits per value, in the range 1..8.
+ * @param      count         The number of values to decode.
+ * @param      input_data    The packed sequence.
+ * @param[out] output_data   The decoded values.
+ * @param      bit_offset    The initial bit offset in the packed sequence.
+ */
+[[maybe_unused]] static ASTCENC_SIMD_INLINE void decode_ise_bits_packed(
+	unsigned int bits,
+	unsigned int count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	// Seven eight-bit values still fit a word when the sequence starts between bytes
+	unsigned int group_size = 8;
+	if (bits == 8)
+	{
+		group_size = 7;
+	}
+
+	uint64_t lane_mask = 0x0101010101010101ull * mask_low_bits(~0ull, bits);
+	unsigned int input_bytes = (bit_offset + count * bits + 7) / 8;
+	for (unsigned int i = 0; i < count; i += group_size)
+	{
+		unsigned int value_count = astc::min(group_size, count - i);
+		unsigned int bit_count = value_count * bits;
+		uint64_t packed;
+		if (input_bytes >= 8)
+		{
+			unsigned int byte_offset = astc::min(bit_offset >> 3, input_bytes - 8);
+			std::memcpy(&packed, input_data + byte_offset, 8);
+			packed = extract_bit_range(packed, bit_offset - 8 * byte_offset, bit_count);
+		}
+		else
+		{
+			packed = read_ise_group_packed(input_data, bit_offset, bit_count);
+		}
+
+		uint64_t decoded = deposit_bits(packed, lane_mask);
+		if (value_count == 8)
+		{
+			std::memcpy(output_data + i, &decoded, 8);
+		}
+		else
+		{
+			for (unsigned int j = 0; j < value_count; j++)
+			{
+				output_data[i + j] = static_cast<uint8_t>(decoded >> (8 * j));
+			}
+		}
+
+		bit_offset += bit_count;
+	}
+}
+
+/**
+ * @brief Decode interleaved five-value trit groups using packed bit extraction.
+ *
+ * @tparam HasBits   True for mixed binary and radix values.
+ *
+ * @param      bits          The number of low binary bits per value.
+ * @param      count         The number of values to decode.
+ * @param      input_data    The packed sequence.
+ * @param[out] output_data   The decoded values.
+ * @param      bit_offset    The initial bit offset in the packed sequence.
+ */
+template<bool HasBits>
+static ASTCENC_SIMD_INLINE void decode_ise_trits_packed(
+	unsigned int bits,
+	unsigned int count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	if constexpr (!HasBits)
+	{
+		bits = 0;
+	}
+
+	// Low binary bits and shared radix-code bits occupy disjoint positions in each group
+	static constexpr uint64_t low_masks[7] {
+		0x0000000000ull, 0x0000000949ull, 0x0000019B33ull, 0x000039DCE7ull,
+		0x00079EF3CFull, 0x00F9F7CF9Full, 0x1F9FBF3F3Full
+	};
+	uint64_t low_mask = low_masks[bits];
+	uint64_t lane_mask = 0x0101010101ull * mask_low_bits(~0ull, bits);
+	uint64_t code_mask = mask_low_bits(~low_mask, 5 * bits + 8);
+	unsigned int full_count = (count / 5) * 5;
+	unsigned int bit_count = 5 * bits + 8;
+	unsigned int i = 0;
+	for (; i < full_count; i += 5)
+	{
+		uint64_t packed = read_ise_group_packed(input_data, bit_offset, bit_count);
+		unsigned int code = static_cast<unsigned int>(compress_bits(packed, code_mask));
+		uint64_t decoded = packed_trits[code];
+		decoded = (decoded << bits) | deposit_bits(compress_bits(packed, low_mask), lane_mask);
+		std::memcpy(output_data + i, &decoded, 5);
+		bit_offset += bit_count;
+	}
+
+	unsigned int tail_count = count - i;
+	if (tail_count != 0)
+	{
+		bit_count = tail_count * bits + (tail_count * 8 + 4) / 5;
+		uint64_t packed = read_ise_group_packed(input_data, bit_offset, bit_count);
+		unsigned int code = static_cast<unsigned int>(compress_bits(packed, code_mask));
+		uint64_t decoded = packed_trits[code];
+		decoded = (decoded << bits) | deposit_bits(compress_bits(packed, low_mask), lane_mask);
+		for (unsigned int j = 0; j < tail_count; j++)
+		{
+			output_data[i + j] = static_cast<uint8_t>(decoded >> (8 * j));
+		}
+	}
+}
+
+/**
+ * @brief Decode interleaved three-value quint groups using packed bit extraction.
+ *
+ * @tparam HasBits   True for mixed binary and radix values.
+ *
+ * @param      bits          The number of low binary bits per value.
+ * @param      count         The number of values to decode.
+ * @param      input_data    The packed sequence.
+ * @param[out] output_data   The decoded values.
+ * @param      bit_offset    The initial bit offset in the packed sequence.
+ */
+template<bool HasBits>
+static ASTCENC_SIMD_INLINE void decode_ise_quints_packed(
+	unsigned int bits,
+	unsigned int count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	if constexpr (!HasBits)
+	{
+		bits = 0;
+	}
+
+	// Low binary bits and shared radix-code bits occupy disjoint positions in each group
+	static constexpr uint64_t low_masks[6] {
+		0x0000000000ull, 0x0000000091ull, 0x0000000663ull,
+		0x00000039C7ull, 0x000001E78Full, 0x00000F9F1Full
+	};
+	uint64_t low_mask = low_masks[bits];
+	uint64_t lane_mask = 0x010101ull * mask_low_bits(~0ull, bits);
+	uint64_t code_mask = mask_low_bits(~low_mask, 3 * bits + 7);
+	unsigned int full_count = (count / 3) * 3;
+	unsigned int bit_count = 3 * bits + 7;
+	unsigned int i = 0;
+	for (; i < full_count; i += 3)
+	{
+		uint64_t packed = read_ise_group_packed(input_data, bit_offset, bit_count);
+		unsigned int code = static_cast<unsigned int>(compress_bits(packed, code_mask));
+		uint64_t decoded = packed_quints[code];
+		decoded = (decoded << bits) | deposit_bits(compress_bits(packed, low_mask), lane_mask);
+		std::memcpy(output_data + i, &decoded, 3);
+		bit_offset += bit_count;
+	}
+
+	unsigned int tail_count = count - i;
+	if (tail_count != 0)
+	{
+		bit_count = tail_count * bits + (tail_count * 7 + 2) / 3;
+		uint64_t packed = read_ise_group_packed(input_data, bit_offset, bit_count);
+		unsigned int code = static_cast<unsigned int>(compress_bits(packed, code_mask));
+		uint64_t decoded = packed_quints[code];
+		decoded = (decoded << bits) | deposit_bits(compress_bits(packed, low_mask), lane_mask);
+		for (unsigned int j = 0; j < tail_count; j++)
+		{
+			output_data[i + j] = static_cast<uint8_t>(decoded >> (8 * j));
+		}
+	}
+}
+
 /* See header for documentation. */
 void encode_ise(
 	quant_method quant_level,
@@ -644,9 +961,21 @@ void encode_ise(
 	}
 }
 
-/* See header for documentation. */
-void decode_ise(
-	quant_method quant_level,
+/**
+ * @brief Decode an ISE sequence with explicit binary and radix parameters.
+ *
+ * @param      bits                The binary bits per value.
+ * @param      is_trit_sequence    True if the sequence has trit groups.
+ * @param      is_quint_sequence   True if the sequence has quint groups.
+ * @param      character_count     The number of encoded values.
+ * @param      input_data          The packed input sequence.
+ * @param[out] output_data         The decoded values.
+ * @param      bit_offset          The initial input bit offset.
+ */
+static ASTCENC_SIMD_INLINE void decode_ise_fixed(
+	unsigned int bits,
+	bool is_trit_sequence,
+	bool is_quint_sequence,
 	unsigned int character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
@@ -659,9 +988,39 @@ void decode_ise(
 	uint8_t results[68];
 	uint8_t tq_blocks[22] { 0 };  // Trit-blocks or quint-blocks, must be zeroed
 
-	unsigned int bits = btq_counts[quant_level].bits;
-	unsigned int trits = btq_counts[quant_level].trits;
-	unsigned int quints = btq_counts[quant_level].quints;
+	if constexpr (is_bit_permute_fast)
+	{
+		if (is_trit_sequence)
+		{
+			if (bits == 0)
+			{
+				decode_ise_trits_packed<false>(bits, character_count, input_data, output_data, bit_offset);
+			}
+			else
+			{
+				decode_ise_trits_packed<true>(bits, character_count, input_data, output_data, bit_offset);
+			}
+
+			return;
+		}
+
+		if (is_quint_sequence)
+		{
+			if (bits == 0)
+			{
+				decode_ise_quints_packed<false>(bits, character_count, input_data, output_data, bit_offset);
+			}
+			else
+			{
+				decode_ise_quints_packed<true>(bits, character_count, input_data, output_data, bit_offset);
+			}
+
+			return;
+		}
+
+		decode_ise_bits_packed(bits, character_count, input_data, output_data, bit_offset);
+		return;
+	}
 
 	unsigned int lcounter = 0;
 	unsigned int hcounter = 0;
@@ -672,7 +1031,7 @@ void decode_ise(
 		results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));
 		bit_offset += bits;
 
-		if (trits)
+		if (is_trit_sequence)
 		{
 			static const uint8_t bits_to_read[5]  { 2, 2, 1, 2, 1 };
 			static const uint8_t block_shift[5]   { 0, 2, 4, 5, 7 };
@@ -685,7 +1044,7 @@ void decode_ise(
 			lcounter = next_lcounter[lcounter];
 		}
 
-		if (quints)
+		if (is_quint_sequence)
 		{
 			static const uint8_t bits_to_read[3]  { 3, 2, 2 };
 			static const uint8_t block_shift[3]   { 0, 3, 5 };
@@ -700,7 +1059,7 @@ void decode_ise(
 	}
 
 	// Unpack trit-blocks or quint-blocks as needed
-	if (trits)
+	if (is_trit_sequence)
 	{
 		unsigned int trit_blocks = (character_count + 4) / 5;
 		promise(trit_blocks > 0);
@@ -715,7 +1074,7 @@ void decode_ise(
 		}
 	}
 
-	if (quints)
+	if (is_quint_sequence)
 	{
 		unsigned int quint_blocks = (character_count + 2) / 3;
 		promise(quint_blocks > 0);
@@ -733,3 +1092,280 @@ void decode_ise(
 		output_data[i] = results[i];
 	}
 }
+
+/* See header for documentation. */
+void decode_ise(
+	quant_method quant_level,
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	const auto& counts = btq_counts[quant_level];
+	decode_ise_fixed(counts.bits, counts.trits != 0, counts.quints != 0,
+	                 character_count, input_data, output_data, bit_offset);
+}
+
+#if defined(ASTCENC_RDO)
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_2(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(1, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_3(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(0, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_4(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(2, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_5(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(0, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_6(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(1, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_8(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(3, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_10(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(1, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_12(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(2, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_16(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(4, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_20(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(2, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_24(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(3, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_32(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(5, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_40(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(3, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_48(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(4, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_64(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(6, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_80(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(4, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_96(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(5, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_128(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(7, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_160(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(5, false, true, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_192(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(6, true, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/** @copydoc rdo_ise_decode_func */
+static void rdo_decode_ise_quant_256(
+	unsigned int character_count,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	unsigned int bit_offset
+) {
+	decode_ise_fixed(8, false, false, character_count,
+	                 input_data, output_data, bit_offset);
+}
+
+/* See header for documentation. */
+rdo_ise_decode_func* rdo_get_ise_decoder(unsigned int quant_level)
+{
+	static rdo_ise_decode_func* const decoders[] {
+		rdo_decode_ise_quant_2,
+		rdo_decode_ise_quant_3,
+		rdo_decode_ise_quant_4,
+		rdo_decode_ise_quant_5,
+		rdo_decode_ise_quant_6,
+		rdo_decode_ise_quant_8,
+		rdo_decode_ise_quant_10,
+		rdo_decode_ise_quant_12,
+		rdo_decode_ise_quant_16,
+		rdo_decode_ise_quant_20,
+		rdo_decode_ise_quant_24,
+		rdo_decode_ise_quant_32,
+		rdo_decode_ise_quant_40,
+		rdo_decode_ise_quant_48,
+		rdo_decode_ise_quant_64,
+		rdo_decode_ise_quant_80,
+		rdo_decode_ise_quant_96,
+		rdo_decode_ise_quant_128,
+		rdo_decode_ise_quant_160,
+		rdo_decode_ise_quant_192,
+		rdo_decode_ise_quant_256,
+	};
+	assert(quant_level < 21);
+	return decoders[quant_level];
+}
+#endif

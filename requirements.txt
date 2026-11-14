@@ -4,6 +4,9 @@ numpy
 Pillow
 scipy
 
+# RDO file compression comparisons
+lz4
+
 # Python static analysis and style checks
 mypy
 pycodestyle

@@ -25,6 +25,7 @@
  * failing and the values in the test may need updating.
  */
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -36,6 +37,130 @@
 
 namespace astcenc
 {
+
+/** @brief Scalar vector arithmetic must wrap exactly like native integer SIMD instructions. */
+TEST(SuiteVint4, WrappingArithmetic)
+{
+	vint4 highest(std::numeric_limits<int>::max());
+	vint4 lowest(std::numeric_limits<int>::min());
+	vint4 sum = highest + vint4(1);
+	vint4 difference = lowest - vint4(1);
+	vint4 product = highest * vint4(2);
+	bool is_sum_valid = all(sum == lowest);
+	bool is_difference_valid = all(difference == highest);
+	bool is_product_valid = all(product == vint4(-2));
+	EXPECT_TRUE(is_sum_valid);
+	EXPECT_TRUE(is_difference_valid);
+	EXPECT_TRUE(is_product_valid);
+}
+
+/** @brief Packed bit operations must handle empty, sparse, and full-width fields. */
+TEST(SuiteMisc, PackedBitOperations)
+{
+	uint64_t empty = mask_low_bits(~0ull, 0);
+	uint64_t full = mask_low_bits(~0ull, 64);
+	uint64_t high = extract_bit_range(1ull << 63, 63, 1);
+	uint64_t compressed = compress_bits(0xA55A, 0x0F0F);
+	uint64_t deposited = deposit_bits(0x5A, 0x0F0F);
+	uint64_t all_compressed = compress_bits(0x123456789ABCDEF0ull, ~0ull);
+	uint64_t all_deposited = deposit_bits(0x123456789ABCDEF0ull, ~0ull);
+	EXPECT_EQ(empty, 0u);
+	EXPECT_EQ(full, ~0ull);
+	EXPECT_EQ(high, 1u);
+	EXPECT_EQ(compressed, 0x5Au);
+	EXPECT_EQ(deposited, 0x050Au);
+	EXPECT_EQ(all_compressed, 0x123456789ABCDEF0ull);
+	EXPECT_EQ(all_deposited, 0x123456789ABCDEF0ull);
+}
+
+/** @brief Fixed-width bit fields and byte lookups must preserve packed byte order. */
+TEST(SuiteVint4, PackedByteOperations)
+{
+	uint64_t packed = 0xFEDCBA9876543210ull;
+	for (unsigned int bits = 1; bits <= 8; bits++)
+	{
+		uint8_t bytes[16];
+		vint4 fields = unpack_byte_fields(packed, bits);
+		store(fields, bytes);
+		for (unsigned int i = 0; i < 8; i++)
+		{
+			uint8_t expected = static_cast<uint8_t>((packed >> (i * bits)) & ((1u << bits) - 1));
+			EXPECT_EQ(bytes[i], expected);
+			EXPECT_EQ(bytes[8 + i], 0);
+		}
+	}
+
+	uint8_t table_bytes[32];
+	for (unsigned int i = 0; i < 32; i++)
+	{
+		table_bytes[i] = static_cast<uint8_t>(i * 7 + 3);
+	}
+
+	vtable4_16x8 table16;
+	vtable4_32x8 table32;
+	vtable_prepare(table16, table_bytes);
+	vtable_prepare(table32, table_bytes);
+	for (unsigned int half = 0; half < 2; half++)
+	{
+		uint8_t indices[16];
+		for (unsigned int i = 0; i < 16; i++)
+		{
+			indices[i] = static_cast<uint8_t>(2 * i + half);
+		}
+
+		vint4 input = vint4::load(indices);
+		vint4 values = vtable_lookup_8bit(table32, input);
+		uint8_t bytes[16];
+		store(values, bytes);
+		for (unsigned int i = 0; i < 16; i++)
+		{
+			EXPECT_EQ(bytes[i], table_bytes[indices[i]]);
+			indices[i] &= 15;
+		}
+
+		input = vint4::load(indices);
+		values = vtable_lookup_8bit(table16, input);
+		store(values, bytes);
+		for (unsigned int i = 0; i < 16; i++)
+		{
+			EXPECT_EQ(bytes[i], table_bytes[indices[i]]);
+		}
+	}
+}
+
+/** @brief Packed byte stores must deinterleave correctly and write exactly eight bytes. */
+TEST(SuiteVint4, PackedByteStores)
+{
+	uint8_t bytes[16];
+	uint8_t even[10];
+	uint8_t odd[10];
+	uint8_t low[10];
+	std::fill_n(even, 10, 0xFE);
+	std::fill_n(odd, 10, 0xFE);
+	std::fill_n(low, 10, 0xFE);
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		bytes[i] = static_cast<uint8_t>(i);
+	}
+
+	vint4 input = vint4::load(bytes);
+	store_deinterleaved_bytes(input, even + 1, odd + 1);
+	store_low_8bytes(input, low + 1);
+	for (unsigned int i = 0; i < 8; i++)
+	{
+		EXPECT_EQ(even[i + 1], 2 * i);
+		EXPECT_EQ(odd[i + 1], 2 * i + 1);
+		EXPECT_EQ(low[i + 1], i);
+	}
+
+	EXPECT_EQ(even[0], 0xFE);
+	EXPECT_EQ(even[9], 0xFE);
+	EXPECT_EQ(odd[0], 0xFE);
+	EXPECT_EQ(odd[9], 0xFE);
+	EXPECT_EQ(low[0], 0xFE);
+	EXPECT_EQ(low[9], 0xFE);
+}
+
 
 // Misc utility tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #if ASTCENC_SIMD_WIDTH == 8

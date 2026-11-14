@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <iosfwd>
 #include <memory>
 #include <vector>
 
@@ -268,6 +269,68 @@ bool load_cimage(
 bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename);
+
+/**
+ * @brief Serialize a raster-ordered compressed buffer as an ASTC image.
+ *
+ * @param      img      The image to serialize.
+ * @param[out] stream   The output stream, including the ASTC header.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool write_cimage(
+	const astc_compressed_image& img,
+	std::ostream& stream);
+
+/**
+ * @brief Load a Morton-ordered .astcm image into a raster-ordered compressed buffer.
+ *
+ * @param      filename   The file to load.
+ * @param[out] img        The image to populate with loaded data.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool load_astcm_compressed_image(
+	const char* filename,
+	astc_compressed_image& img);
+
+/**
+ * @brief Store a raster-ordered compressed buffer as a Morton-ordered .astcm image.
+ *
+ * @param img        The image to store; only 2D images and blocks are supported.
+ * @param filename   The file to save.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool store_astcm_compressed_image(
+	const astc_compressed_image& img,
+	const char* filename);
+
+/**
+ * @brief Serialize a raster-ordered compressed buffer as a Morton-ordered .astcm image.
+ *
+ * @param      img      The image to serialize; only 2D images and blocks are supported.
+ * @param[out] stream   The output stream, including the ASTCM header.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool write_astcm_compressed_image(
+	const astc_compressed_image& img,
+	std::ostream& stream);
+
+#if defined(ASTCENC_RDO_SIZE)
+/**
+ * @brief Report the serialized ASTC or ASTCM size before and after level 9 raw DEFLATE compression.
+ *
+ * @param img         The compressed image to measure.
+ * @param is_morton   Whether to serialize in Morton order instead of scanline order.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool print_compression_metrics(
+	const astc_compressed_image& img,
+	bool is_morton);
+#endif
 
 /**
  * @brief Load a compressed .ktx image.

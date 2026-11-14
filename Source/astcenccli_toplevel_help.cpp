@@ -554,13 +554,19 @@ COMPRESSION FILE FORMATS
     The following formats are supported as compression outputs:
 
     * ASTC (*.astc)
+    * Morton-ordered ASTC (*.astcm, 2D only)
     * Khronos Texture KTX (*.ktx)
+
+    Compression uses 16x8 Morton-ordered encoder bricks for ASTCM output,
+    and 128x1 scanline-ordered encoder bricks for linear ASTC and KTX output.
+    These dimensions are in ASTC blocks. ASTCM file tiles remain 8x8 blocks.
 
 DECOMPRESSION FILE FORMATS
 
     The following formats are supported as decompression inputs:
 
     * ASTC (*.astc)
+    * Morton-ordered ASTC (*.astcm, 2D only)
     * Khronos Texture KTX (*.ktx)
 
     The following formats are supported as decompression outputs:

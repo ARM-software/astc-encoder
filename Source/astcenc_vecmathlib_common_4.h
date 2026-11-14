@@ -30,6 +30,7 @@
 	#error "Include astcenc_vecmathlib.h, do not include directly"
 #endif
 
+#include <bit>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -556,6 +557,252 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 ma
 	}
 }
 
+#endif
+
+// ============================================================================
+// Packed byte and bit operations
+// ============================================================================
+
+/**
+ * @brief Load a little-endian word from an unaligned byte sequence.
+ *
+ * @param data   The eight input bytes.
+ *
+ * @return The decoded word.
+ */
+ASTCENC_SIMD_INLINE uint64_t load_le64(const uint8_t* data)
+{
+	if constexpr (std::endian::native == std::endian::little)
+	{
+		uint64_t value;
+		std::memcpy(&value, data, 8);
+		return value;
+	}
+	else
+	{
+		uint64_t value = 0;
+		for (unsigned int i = 0; i < 8; i++)
+		{
+			value |= static_cast<uint64_t>(data[i]) << (8 * i);
+		}
+
+		return value;
+	}
+}
+
+/**
+ * @brief Store a prefix of a little-endian word to unaligned memory.
+ *
+ * @param      value    The source word.
+ * @param[out] output   The destination bytes.
+ * @param      count    The number of bytes to write, in [0, 8].
+ */
+ASTCENC_SIMD_INLINE void store_le64_prefix(uint64_t value, uint8_t* output, unsigned int count)
+{
+	if constexpr (std::endian::native == std::endian::little)
+	{
+		std::memcpy(output, &value, count);
+	}
+	else
+	{
+		for (unsigned int i = 0; i < count; i++)
+		{
+			output[i] = static_cast<uint8_t>(value >> (8 * i));
+		}
+	}
+}
+
+#if !defined(ASTCENC_USE_NATIVE_BIT_PERMUTE)
+
+/** @brief True if arbitrary bit extraction and deposition have native instructions. */
+static constexpr bool is_bit_permute_fast = false;
+
+/**
+ * @brief Keep the lowest bits of a word.
+ *
+ * @param value   The source word.
+ * @param count   The number of low bits to keep, in [0, 64].
+ *
+ * @return The masked word.
+ */
+ASTCENC_SIMD_INLINE uint64_t mask_low_bits(uint64_t value, unsigned int count)
+{
+	if (count == 64)
+	{
+		return value;
+	}
+
+	return value & ((1ull << count) - 1);
+}
+
+/**
+ * @brief Extract a contiguous bit range from a word.
+ *
+ * @param value    The source word.
+ * @param offset   The first bit, in [0, 63].
+ * @param count    The number of bits, in [0, 64 - offset].
+ *
+ * @return The extracted bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t extract_bit_range(uint64_t value, unsigned int offset, unsigned int count)
+{
+	return mask_low_bits(value >> offset, count);
+}
+
+/**
+ * @brief Compress selected bits into consecutive low bits, preserving their order.
+ *
+ * @param value   The source word.
+ * @param mask    The source bit positions to select.
+ *
+ * @return The selected bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t compress_bits(uint64_t value, uint64_t mask)
+{
+	uint64_t result = 0;
+	uint64_t output_bit = 1;
+	while (mask != 0)
+	{
+		uint64_t input_bit = mask & (0ull - mask);
+		if ((value & input_bit) != 0)
+		{
+			result |= output_bit;
+		}
+
+		mask &= mask - 1;
+		output_bit <<= 1;
+	}
+
+	return result;
+}
+
+/**
+ * @brief Deposit consecutive low bits into selected positions, preserving their order.
+ *
+ * @param value   The source word.
+ * @param mask    The destination bit positions to fill.
+ *
+ * @return The deposited bits, with all other positions zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t deposit_bits(uint64_t value, uint64_t mask)
+{
+	uint64_t result = 0;
+	while (mask != 0)
+	{
+		uint64_t output_bit = mask & (0ull - mask);
+		if ((value & 1) != 0)
+		{
+			result |= output_bit;
+		}
+
+		mask &= mask - 1;
+		value >>= 1;
+	}
+
+	return result;
+}
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_UNPACK_BYTE_FIELDS)
+/**
+ * @brief Expand eight consecutive fixed-width fields into packed bytes.
+ *
+ * @param packed   The packed fields, starting at bit zero.
+ * @param bits     The field width, in [1, 8].
+ *
+ * @return The eight byte values in the low eight bytes, with the high bytes zero.
+ */
+ASTCENC_SIMD_INLINE vint4 unpack_byte_fields(uint64_t packed, unsigned int bits)
+{
+	uint8_t values[16] {};
+	for (unsigned int i = 0; i < 8; i++)
+	{
+		values[i] = static_cast<uint8_t>((packed >> (i * bits)) & ((1u << bits) - 1));
+	}
+
+	return vint4::load(values);
+}
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_VTABLE_LOOKUP_8BIT)
+/**
+ * @brief Look up sixteen packed byte indices in a 16-entry byte table.
+ *
+ * @param table     The prepared lookup table.
+ * @param indices   The sixteen byte indices, each in [0, 15].
+ *
+ * @return The sixteen table values as packed bytes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup_8bit(const vtable4_16x8& table, vint4 indices)
+{
+	uint8_t input[16];
+	uint8_t output[16];
+	store(indices, input);
+	for (unsigned int i = 0; i < 16; i += 4)
+	{
+		vint4 values = vtable_lookup_32bit(table, vint4(input + i));
+		pack_and_store_low_bytes(values, output + i);
+	}
+
+	return vint4::load(output);
+}
+
+/**
+ * @brief Look up sixteen packed byte indices in a 32-entry byte table.
+ *
+ * @param table     The prepared lookup table.
+ * @param indices   The sixteen byte indices, each in [0, 31].
+ *
+ * @return The sixteen table values as packed bytes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup_8bit(const vtable4_32x8& table, vint4 indices)
+{
+	uint8_t input[16];
+	uint8_t output[16];
+	store(indices, input);
+	for (unsigned int i = 0; i < 16; i += 4)
+	{
+		vint4 values = vtable_lookup_32bit(table, vint4(input + i));
+		pack_and_store_low_bytes(values, output + i);
+	}
+
+	return vint4::load(output);
+}
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_STORE_DEINTERLEAVED_BYTES)
+/**
+ * @brief Store alternating bytes into two eight-byte output sequences.
+ *
+ * @param      data   The sixteen interleaved input bytes.
+ * @param[out] even   The eight even-indexed bytes.
+ * @param[out] odd    The eight odd-indexed bytes.
+ */
+ASTCENC_SIMD_INLINE void store_deinterleaved_bytes(vint4 data, uint8_t* even, uint8_t* odd)
+{
+	uint8_t bytes[16];
+	store(data, bytes);
+	for (unsigned int i = 0; i < 8; i++)
+	{
+		even[i] = bytes[2 * i];
+		odd[i] = bytes[2 * i + 1];
+	}
+}
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_STORE_LOW_8BYTES)
+/**
+ * @brief Store the lowest eight packed bytes to an unaligned address.
+ *
+ * @param      data     The packed bytes.
+ * @param[out] output   The eight-byte destination.
+ */
+ASTCENC_SIMD_INLINE void store_low_8bytes(vint4 data, uint8_t* output)
+{
+	uint8_t bytes[16];
+	store(data, bytes);
+	std::memcpy(output, bytes, 8);
+}
 #endif
 
 /**

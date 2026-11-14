@@ -20,7 +20,7 @@
  */
 
 #include <array>
-#include <bit>
+#include <cmath>
 #include <cstring>
 #include <new>
 
@@ -28,7 +28,12 @@
 #include "astcenc_diagnostic_trace.h"
 #include "astcenc_internal_entry.h"
 #include "astcenc_mathlib.h"
+#include "astcenc_morton.h"
 #include "astcenc_preset_configs.h"
+
+#if defined(ASTCENC_RDO)
+#include "astcenc_rdo.h"
+#endif
 
 /**
  * @brief Validate image storage and resolve the default row stride.
@@ -379,6 +384,13 @@ static astcenc_error validate_config(
 		return status;
 	}
 
+#if defined(ASTCENC_RDO)
+	if (!std::isfinite(config.rdo_lambda) || (config.rdo_lambda < 0.0f))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+#endif
+
 	// A block_z of 0 is accepted to mean 2D, normalize to 1 to avoid div-by-zero later
 	config.block_z = astc::max(config.block_z, 1u);
 
@@ -472,6 +484,9 @@ astcenc_error astcenc_config_init(
 	config.block_x = block_x;
 	config.block_y = block_y;
 	config.block_z = block_z;
+#if defined(ASTCENC_RDO)
+	config.rdo_lambda = 0.0f;
+#endif
 
 	float texels = static_cast<float>(block_x * block_y * block_z);
 	float ltexels = logf(texels) / logf(10.0f);
@@ -758,6 +773,7 @@ astcenc_error astcenc_context_alloc(
 		}
 
 		bool can_omit_modes = static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY);
+
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z,
 		                           can_omit_modes,
 		                           config.tune_partition_count_limit,
@@ -850,13 +866,224 @@ void astcenc_context_free(
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 
+/** @brief A sparse brick of symbolic blocks indexed in the selected traversal order. */
+struct compression_brick
+{
+	/** @brief A bit for each in-range brick position; other slots must not be read. */
+	brick_layout::validity_mask valid_mask;
+
+	/** @brief The symbolic encoding at each valid brick position. */
+	symbolic_compressed_block blocks[brick_layout::block_count];
+
+	/** @brief The raster output byte offset at each valid brick position. */
+	size_t offsets[brick_layout::block_count];
+};
+
+/**
+ * @brief Load and compress one selected image block to symbolic form.
+ *
+ * @param[in]     ctx              The compressor context.
+ * @param[in]     image            The input image.
+ * @param[in]     swizzle          The input swizzle.
+ * @param[in]     load_func        The image block loader selected for this image.
+ * @param[in]     channel_weight   The configured weights before per-block adjustments.
+ * @param[in]     origin           The block origin in texels.
+ * @param[in,out] blk              The reusable image block storage.
+ * @param[in,out] temp_buffers     The thread's compression scratch buffers.
+ * @param[out]    scb              The symbolic encoding of this block.
+ */
+static void compress_image_block(
+	const astcenc_contexti& ctx,
+	const astcenc_image& image,
+	const astcenc_swizzle& swizzle,
+	decltype(&load_image_block) load_func,
+	const vfloat4& channel_weight,
+	const position& origin,
+	image_block& blk,
+	compression_working_buffers& temp_buffers,
+	symbolic_compressed_block& scb
+) {
+	const block_size_descriptor& bsd = *ctx.bsd;
+	astcenc_profile decode_mode = ctx.config.profile;
+	size_t block_x = bsd.dim_x;
+	size_t block_y = bsd.dim_y;
+	size_t block_z = bsd.dim_z;
+	size_t dim_x = image.dim_x;
+	size_t dim_y = image.dim_y;
+	bool is_hdr = (decode_mode == ASTCENC_PRF_HDR) ||
+	              (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+
+	// Check for blocks with negligible alpha contribution
+	bool is_full_block_needed = true;
+	if ((ctx.config.a_scale_radius != 0) && (block_z == 1))
+	{
+		size_t start_x = origin.x;
+		size_t end_x = astc::min(dim_x, start_x + block_x);
+
+		size_t start_y = origin.y;
+		size_t end_y = astc::min(dim_y, start_y + block_y);
+
+		// SATs accumulate error, so don't test exactly zero. Test for less than 1 alpha
+		// in the expanded block footprint that includes the alpha radius.
+		size_t x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
+		size_t y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
+
+		float footprint = static_cast<float>(x_footprint * y_footprint);
+		float threshold = 0.9f / (255.0f * footprint);
+
+		// Check for alpha values above the threshold
+		is_full_block_needed = false;
+		for (size_t ay = start_y; ay < end_y; ay++)
+		{
+			for (size_t ax = start_x; ax < end_x; ax++)
+			{
+				float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
+				if (a_avg > threshold)
+				{
+					is_full_block_needed = true;
+					ax = end_x;
+					ay = end_y;
+				}
+			}
+		}
+	}
+
+	// Fetch the full block for compression
+	blk.channel_weight = channel_weight;
+	if (is_full_block_needed)
+	{
+		load_func(decode_mode, image, blk, bsd, origin.x, origin.y, origin.z, swizzle);
+
+		if (is_hdr && (ctx.config.flags & ASTCENC_FLG_USE_PERCEPTUAL))
+		{
+			// Approximate display-space error by weighting logarithmic channels by
+			// their geometric brightness
+			vfloat4 mean = blk.data_mean;
+			mean.set_lane<3>(0.0f);
+			vfloat4 geometric_mean = float16_to_float(lns_to_sf16(float_to_int(mean)));
+			float maximum = astc::max(hmax_s(geometric_mean), 1e-20f);
+
+			// Retain at least 1% weight for dim channels
+			vfloat4 weights = max(geometric_mean / maximum, vfloat4(0.01f));
+			weights.set_lane<3>(1.0f);
+			blk.channel_weight = weights * blk.channel_weight;
+		}
+
+		// Scale RGB error contribution by the maximum alpha in the block. This
+		// encourages alpha accuracy in transparent regions, gaining up to 0.5 dB.
+		if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
+		{
+			float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
+			if (decode_mode == ASTCENC_PRF_HDR)
+			{
+				// Transparency uses linear alpha, even when the endpoints use LNS
+				vint4 alpha_lns = float_to_int(blk.data_max);
+				vfloat4 alpha = float16_to_float(lns_to_sf16(alpha_lns));
+				alpha_scale = astc::clamp1f(alpha.lane<3>());
+			}
+
+			blk.channel_weight = blk.channel_weight
+			                   * vfloat4(alpha_scale, alpha_scale, alpha_scale, 1.0f);
+		}
+	}
+	// Apply alpha scale RDO - substitute constant color block
+	else
+	{
+		blk.origin_texel = vfloat4::zero();
+		blk.data_min = vfloat4::zero();
+		blk.data_mean = vfloat4::zero();
+		blk.data_max = vfloat4::zero();
+		blk.grayscale = true;
+	}
+
+	compress_block(ctx, blk, scb, temp_buffers);
+}
+
+/**
+ * @brief Compress every in-range block in a brick to symbolic form.
+ *
+ * @param[in]     ctx              The compressor context.
+ * @param[in]     image            The input image.
+ * @param[in]     swizzle          The input swizzle.
+ * @param[in]     load_func        The image block loader selected for this image.
+ * @param[in]     channel_weight   The configured weights before per-block adjustments.
+ * @param[in]     origin           The brick origin in ASTC blocks.
+ * @param[in,out] blk              The reusable image block storage.
+ * @param[in,out] temp_buffers     The thread's compression scratch buffers.
+ * @param[out]    brick            The sparse symbolic encodings and raster output offsets.
+ * @param[in]     layout           The brick dimensions and traversal order.
+ */
+static void brick_compress_to_symbolic(
+	const astcenc_contexti& ctx,
+	const astcenc_image& image,
+	const astcenc_swizzle& swizzle,
+	decltype(&load_image_block) load_func,
+	const vfloat4& channel_weight,
+	const position& origin,
+	image_block& blk,
+	compression_working_buffers& temp_buffers,
+	compression_brick& brick,
+	const brick_layout& layout
+) {
+	const block_size_descriptor& bsd = *ctx.bsd;
+	size_t blocks_x = astc::get_block_count_safe(image.dim_x, bsd.dim_x);
+	size_t blocks_y = astc::get_block_count_safe(image.dim_y, bsd.dim_y);
+
+	// Reused edge bricks may contain stale data outside the current valid mask
+	brick.valid_mask.reset();
+	for (unsigned int index = 0; index < brick_layout::block_count; index++)
+	{
+		auto local_position = layout.get_position(index);
+		size_t x = origin.x + local_position.x;
+		size_t y = origin.y + local_position.y;
+		if ((x >= blocks_x) || (y >= blocks_y))
+		{
+			continue;
+		}
+
+		const position texel_position {
+			.x = x * bsd.dim_x,
+			.y = y * bsd.dim_y,
+			.z = origin.z * bsd.dim_z
+		};
+		compress_image_block(ctx, image, swizzle, load_func, channel_weight,
+		                     texel_position, blk, temp_buffers, brick.blocks[index]);
+
+		brick.offsets[index] = ((origin.z * blocks_y + y) * blocks_x + x) * 16;
+		brick.valid_mask.set(index);
+	}
+}
+
+/**
+ * @brief Pack every valid symbolic block in a brick into the raster-ordered output stream.
+ *
+ * @param[in]  bsd      The block size descriptor.
+ * @param[in]  brick    The sparse symbolic encodings and raster output offsets.
+ * @param[out] buffer   The output array for the compressed image.
+ */
+static void brick_symbolic_to_physical(
+	const block_size_descriptor& bsd,
+	const compression_brick& brick,
+	uint8_t* buffer
+) {
+	for (unsigned int index = 0; index < brick_layout::block_count; index++)
+	{
+		if (!brick.valid_mask[index])
+		{
+			continue;
+		}
+
+		symbolic_to_physical(bsd, brick.blocks[index], buffer + brick.offsets[index]);
+	}
+}
+
 /**
  * @brief Compress an image, after any preflight has completed.
  *
  * @param[in,out] ctxo           The compressor context.
  * @param         thread_index   The thread index.
- * @param         image          The input image.
- * @param         swizzle        The input swizzle.
+ * @param[in]     image          The input image.
+ * @param[in]     swizzle        The input swizzle.
  * @param[out]    buffer         The output array for the compressed data.
  */
 static void compress_image(
@@ -871,6 +1098,8 @@ static void compress_image(
 	astcenc_profile decode_mode = ctx.config.profile;
 
 	image_block blk {};
+	compression_brick brick;
+	const brick_layout layout(ctx.config.flags & ASTCENC_FLG_USE_MORTON);
 
 	size_t block_x = bsd.dim_x;
 	size_t block_y = bsd.dim_y;
@@ -885,18 +1114,18 @@ static void compress_image(
 	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
 	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
 
-	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
-	// Should never fail here - tested in caller before calling here
-	assert(block_count > 0);
-
-
-	size_t row_blocks = blocks_x;
-	size_t plane_blocks = blocks_x * blocks_y;
+	// The caller has validated the block grid, so the smaller brick grid also fits in size_t
+	size_t bricks_x = astc::get_block_count_safe(blocks_x, layout.width);
+	size_t bricks_y = astc::get_block_count_safe(blocks_y, layout.height);
+	size_t plane_bricks = bricks_x * bricks_y;
+	size_t brick_count = plane_bricks * blocks_z;
+	assert(brick_count > 0);
 
 	blk.decode_unorm8 = ctxo.context.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
 
 	// The L+A refit skips the RGB+offset endpoint calculation needed for HDR mode 7
-	bool is_ldr = ctx.config.profile == ASTCENC_PRF_LDR || ctx.config.profile == ASTCENC_PRF_LDR_SRGB;
+	bool is_ldr = (ctx.config.profile == ASTCENC_PRF_LDR) ||
+	              (ctx.config.profile == ASTCENC_PRF_LDR_SRGB);
 	if (is_ldr)
 	{
 		blk.active_channel_mask = ctx.active_channel_mask;
@@ -916,7 +1145,7 @@ static void compress_image(
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread runs initialization
-	ctxo.manage_compress.init(block_count, ctx.config.progress_callback);
+	ctxo.manage_compress.init(brick_count, ctx.config.progress_callback, brick_layout::block_count);
 
 	// Select the optimized loader when supported
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
@@ -938,7 +1167,7 @@ static void compress_image(
 	while (true)
 	{
 		size_t count;
-		size_t base = ctxo.manage_compress.get_task_assignment(16, count);
+		size_t base = ctxo.manage_compress.get_task_assignment(1, count);
 		if (!count)
 		{
 			break;
@@ -946,98 +1175,27 @@ static void compress_image(
 
 		for (size_t i = base; i < base + count; i++)
 		{
-			// Decode i into x, y, z block indices
-			size_t z = i / plane_blocks;
-			size_t rem = i - (z * plane_blocks);
-			size_t y = rem / row_blocks;
-			size_t x = rem - (y * row_blocks);
+			// Each task owns one brick in a single block-depth plane
+			size_t z = i / plane_bricks;
+			size_t rem = i - (z * plane_bricks);
+			size_t brick_y = rem / bricks_x;
+			size_t brick_x = rem - (brick_y * bricks_x);
 
-			// Check for blocks with negligible alpha contribution
-			bool use_full_block = true;
-			if (ctx.config.a_scale_radius != 0 && block_z == 1)
-			{
-				size_t start_x = x * block_x;
-				size_t end_x = astc::min(dim_x, start_x + block_x);
+			const position origin {
+				.x = brick_x * layout.width,
+				.y = brick_y * layout.height,
+				.z = z
+			};
 
-				size_t start_y = y * block_y;
-				size_t end_y = astc::min(dim_y, start_y + block_y);
+			brick_compress_to_symbolic(ctx, image, swizzle, load_func, channel_weight,
+			                           origin, blk, temp_buffers, brick, layout);
 
-				// SATs accumulate error, so don't test exactly zero. Test for less than 1 alpha in
-				// the expanded block footprint that includes the alpha radius.
-				size_t x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
-				size_t y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
+			brick_symbolic_to_physical(bsd, brick, buffer);
 
-				float footprint = static_cast<float>(x_footprint * y_footprint);
-				float threshold = 0.9f / (255.0f * footprint);
-
-				// Check for alpha values above the threshold
-				use_full_block = false;
-				for (size_t ay = start_y; ay < end_y; ay++)
-				{
-					for (size_t ax = start_x; ax < end_x; ax++)
-					{
-						float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
-						if (a_avg > threshold)
-						{
-							use_full_block = true;
-							ax = end_x;
-							ay = end_y;
-						}
-					}
-				}
-			}
-
-			// Fetch the full block for compression
-			blk.channel_weight = channel_weight;
-			if (use_full_block)
-			{
-				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
-
-				if (is_hdr && (ctx.config.flags & ASTCENC_FLG_USE_PERCEPTUAL))
-				{
-					// Approximate display-space error by weighting logarithmic channels by their
-					// geometric brightness
-					vfloat4 mean = blk.data_mean;
-					mean.set_lane<3>(0.0f);
-					vfloat4 geometric_mean = float16_to_float(lns_to_sf16(float_to_int(mean)));
-					float maximum = astc::max(hmax_s(geometric_mean), 1e-20f);
-
-					// Retain at least 1% weight for dim channels
-					vfloat4 weights = max(geometric_mean / maximum, vfloat4(0.01f));
-					weights.set_lane<3>(1.0f);
-					blk.channel_weight = weights * blk.channel_weight;
-				}
-
-				// Scale RGB error contribution by the maximum alpha in the block. This encourages
-				// alpha accuracy in regions with high transparency, and can gain up to 0.5 dB.
-				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
-				{
-					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
-					if (decode_mode == ASTCENC_PRF_HDR)
-					{
-						// Transparency uses linear alpha, even when the endpoints use LNS
-						vint4 alpha_lns = float_to_int(blk.data_max);
-						vfloat4 alpha = float16_to_float(lns_to_sf16(alpha_lns));
-						alpha_scale = astc::clamp1f(alpha.lane<3>());
-					}
-
-					blk.channel_weight = blk.channel_weight
-					                   * vfloat4(alpha_scale, alpha_scale, alpha_scale, 1.0f);
-				}
-			}
-			// Apply alpha scale RDO - substitute constant color block
-			else
-			{
-				blk.origin_texel = vfloat4::zero();
-				blk.data_min = vfloat4::zero();
-				blk.data_mean = vfloat4::zero();
-				blk.data_max = vfloat4::zero();
-				blk.grayscale = true;
-			}
-
-			size_t offset = ((z * blocks_y + y) * blocks_x + x) * 16;
-			uint8_t *bp = buffer + offset;
-			compress_block(ctx, blk, bp, temp_buffers);
+#if defined(ASTCENC_RDO)
+			rdo_optimize_physical_brick(ctx, image, swizzle, brick.valid_mask,
+			                            brick.offsets, brick.blocks, buffer);
+#endif
 		}
 
 		ctxo.manage_compress.complete_task_assignment(count);

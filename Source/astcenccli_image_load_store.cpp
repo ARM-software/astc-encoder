@@ -2803,9 +2803,9 @@ bool load_cimage(
 }
 
 /* See header for documentation. */
-bool store_cimage(
+bool write_cimage(
 	const astc_compressed_image& img,
-	const char* filename
+	std::ostream& stream
 ) {
 	if ((img.dim_x > 0xFFFFFF) || (img.dim_y > 0xFFFFFF) || (img.dim_z > 0xFFFFFF))
 	{
@@ -2839,6 +2839,22 @@ bool store_cimage(
 	hdr.dim_z[1] = (dim_z >>  8) & 0xFF;
 	hdr.dim_z[2] = (dim_z >> 16) & 0xFF;
 
+	stream.write(reinterpret_cast<const char*>(&hdr), sizeof(astc_header));
+	stream.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
+	return stream.fail();
+}
+
+/* See header for documentation. */
+bool store_cimage(
+	const astc_compressed_image& img,
+	const char* filename
+) {
+	if ((img.dim_x > 0xFFFFFF) || (img.dim_y > 0xFFFFFF) || (img.dim_z > 0xFFFFFF))
+	{
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
+	}
+
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
 	{
@@ -2846,8 +2862,7 @@ bool store_cimage(
 		return true;
 	}
 
-	file.write(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
-	file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
+	bool is_write_error = write_cimage(img, file);
 	file.close();
-	return file.fail();
+	return is_write_error || file.fail();
 }

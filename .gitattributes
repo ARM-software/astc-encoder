@@ -16,6 +16,9 @@ Jenkinsfile text
 *.sh text eol=lf
 
 # Denote all files that are truly binary and should not be modified.
-*.png binary
-*.hdr binary
+*.astc binary
+*.astcm binary
 *.exe binary
+*.hdr binary
+*.png binary
+*.zip binary

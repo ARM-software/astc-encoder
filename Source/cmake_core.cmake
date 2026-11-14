@@ -21,6 +21,16 @@ project(${ASTCENC_TARGET})
 
 include(cmake_compiler.cmake)
 
+set(ASTCENC_RDO_SOURCES "")
+if(ASTCENC_RDO AND (NOT ASTCENC_DECOMPRESSOR))
+    set(ASTCENC_RDO_SOURCES
+        astcenc_rdo_brick.cpp
+        astcenc_rdo_decode.cpp
+        astcenc_rdo_rate.cpp
+        astcenc_rdo_scoring.cpp
+        astcenc_rdo_search.cpp)
+endif()
+
 add_library(${ASTCENC_TARGET}-static
     STATIC
         astcenc_averages_and_directions.cpp
@@ -42,6 +52,7 @@ add_library(${ASTCENC_TARGET}-static
         astcenc_percentile_tables.cpp
         astcenc_pick_best_endpoint_format.cpp
         astcenc_quantization.cpp
+        ${ASTCENC_RDO_SOURCES}
         astcenc_symbolic_physical.cpp
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
@@ -73,6 +84,7 @@ if(${ASTCENC_SHAREDLIB})
             astcenc_percentile_tables.cpp
             astcenc_pick_best_endpoint_format.cpp
             astcenc_quantization.cpp
+            ${ASTCENC_RDO_SOURCES}
             astcenc_symbolic_physical.cpp
             astcenc_weight_align.cpp
             astcenc_weight_quant_xfer_tables.cpp)
@@ -95,6 +107,7 @@ if(${ASTCENC_CLI})
         astcenccli_entry2.cpp)
 
     add_executable(${ASTCENC_TARGET}
+        astcenccli_astcm.cpp
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -112,6 +125,12 @@ if(${ASTCENC_CLI})
             ${ASTCENC_TARGET}-veneer1
             ${ASTCENC_TARGET}-veneer2
             ${ASTCENC_TARGET}-static)
+
+    if(ASTCENC_RDO_SIZE)
+        target_sources(${ASTCENC_TARGET} PRIVATE astcenccli_compression_metrics.cpp)
+        target_compile_definitions(${ASTCENC_TARGET} PRIVATE ASTCENC_RDO_SIZE)
+        target_link_libraries(${ASTCENC_TARGET} PRIVATE ZLIB::ZLIB)
+    endif()
 endif()
 
 macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
@@ -124,6 +143,12 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_DECOMPRESS_ONLY)
+    endif()
+
+    if(ASTCENC_RDO_SOURCES)
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PUBLIC
+                ASTCENC_RDO)
     endif()
 
     if(${ASTCENC_BLOCK_MAX_TEXELS})
@@ -434,7 +459,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
-                    -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c
+                    -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mbmi -mbmi2 -mpopcnt -mf16c
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
@@ -472,8 +497,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<${is_msvc_fe}:/arch:AVX2>
-                    $<${is_clangcl}:-mavx2 -mpopcnt -mf16c>
-                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c>
+                    $<${is_clangcl}:-mavx2 -mbmi -mbmi2 -mpopcnt -mf16c>
+                    $<${is_gnu_fe}:-mavx2 -mbmi -mbmi2 -mpopcnt -mf16c>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 

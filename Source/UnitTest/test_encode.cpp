@@ -111,8 +111,10 @@ TEST(compress, mean_color_fallback)
 		load_image_block(profile, image, blk, *bsd, 0, 0, 0, swizzle);
 
 		// Grayscale with constant alpha skips the dual-plane search
+		symbolic_compressed_block compressed;
+		compress_block(ctx, blk, compressed, *working_buffers);
 		uint8_t physical[16];
-		compress_block(ctx, blk, physical, *working_buffers);
+		symbolic_to_physical(*bsd, compressed, physical);
 		symbolic_compressed_block symbolic;
 		physical_to_symbolic(*bsd, physical, symbolic);
 		EXPECT_EQ(symbolic.block_type, expected_type);
@@ -656,5 +658,56 @@ TEST(compress, data_nan_hdr_ldra)
 		run_positive_test(ASTCENC_PRF_HDR_RGB_LDR_A, input.data());
 	}
 }
+
+#if defined(ASTCENC_RDO)
+/** @brief RDO defaults to zero lambda and accepts nonnegative weights. */
+TEST(compress, rdo_configuration)
+{
+	astcenc_config config;
+	astcenc_error status = astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1,
+	                                           ASTCENC_PRE_MEDIUM, 0, &config);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+	EXPECT_EQ(config.rdo_lambda, 0.0f);
+
+	const float lambdas[] { 0.0f, 0.1f, 0.2f };
+	for (float lambda : lambdas)
+	{
+		config.rdo_lambda = lambda;
+		astcenc_context* context = nullptr;
+		status = astcenc_context_alloc(&config, 1, &context, nullptr);
+		EXPECT_EQ(status, ASTCENC_SUCCESS);
+		if (context)
+		{
+			astcenc_context_free(context);
+		}
+	}
+}
+
+/** @brief Non-finite and negative RDO lambdas are rejected. */
+TEST(compress, invalid_rdo_configuration)
+{
+	astcenc_config config;
+	astcenc_error status = astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1,
+	                                           ASTCENC_PRE_MEDIUM, 0, &config);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+	astcenc_context* context = nullptr;
+	const float invalid_lambdas[] {
+		-1.0f,
+		std::numeric_limits<float>::infinity(),
+		std::numeric_limits<float>::quiet_NaN()
+	};
+	for (float lambda : invalid_lambdas)
+	{
+		config.rdo_lambda = lambda;
+		status = astcenc_context_alloc(&config, 1, &context, nullptr);
+		EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+	}
+
+	config.rdo_lambda = 0.0f;
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+	astcenc_context_free(context);
+}
+#endif
 
 }

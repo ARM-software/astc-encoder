@@ -522,45 +522,45 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 // ============================================================================
 
 /**
- * @brief Overload: vector by vector addition.
+ * @brief Overload: vector by vector addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 {
-	return vint4(a.m[0] + b.m[0],
-	             a.m[1] + b.m[1],
-	             a.m[2] + b.m[2],
-	             a.m[3] + b.m[3]);
+	return vint4(static_cast<int>(static_cast<uint32_t>(a.m[0]) + static_cast<uint32_t>(b.m[0])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[1]) + static_cast<uint32_t>(b.m[1])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[2]) + static_cast<uint32_t>(b.m[2])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[3]) + static_cast<uint32_t>(b.m[3])));
 }
 
 /**
- * @brief Overload: vector by vector subtraction.
+ * @brief Overload: vector by vector subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
-	return vint4(a.m[0] - b.m[0],
-	             a.m[1] - b.m[1],
-	             a.m[2] - b.m[2],
-	             a.m[3] - b.m[3]);
+	return vint4(static_cast<int>(static_cast<uint32_t>(a.m[0]) - static_cast<uint32_t>(b.m[0])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[1]) - static_cast<uint32_t>(b.m[1])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[2]) - static_cast<uint32_t>(b.m[2])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[3]) - static_cast<uint32_t>(b.m[3])));
 }
 
 /**
- * @brief Overload: vector by vector multiplication.
+ * @brief Overload: vector by vector multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {
-	return vint4(a.m[0] * b.m[0],
-	             a.m[1] * b.m[1],
-	             a.m[2] * b.m[2],
-	             a.m[3] * b.m[3]);
+	return vint4(static_cast<int>(static_cast<uint32_t>(a.m[0]) * static_cast<uint32_t>(b.m[0])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[1]) * static_cast<uint32_t>(b.m[1])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[2]) * static_cast<uint32_t>(b.m[2])),
+	             static_cast<int>(static_cast<uint32_t>(a.m[3]) * static_cast<uint32_t>(b.m[3])));
 }
 
 /**
