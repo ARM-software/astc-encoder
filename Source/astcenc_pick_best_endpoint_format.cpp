@@ -1484,8 +1484,6 @@ unsigned int compute_ideal_endpoint_formats(
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(ERROR_CALC_DEFAULT);
 
-		// TODO: This should use size_t for the inputs of start/end_block_mode to avoid some of this
-		// type conversion, but that propagates and will need a bigger PR to fix
 		size_t start_mode = round_down_to_simd_multiple_vla(start_block_mode);
 		vint lane_ids = vint::lane_id() + vint_from_size(start_mode);
 		for (size_t j = start_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)

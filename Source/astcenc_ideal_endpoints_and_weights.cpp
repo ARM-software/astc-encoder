@@ -1009,7 +1009,8 @@ void compute_quantized_weights_for_decimation(
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 
-	// TODO: Oddity to investigate; triggered by test in issue #265
+	// The caller can reset the upper bound to 1, invalidating ranges with a lower bound >= 1.
+	// Fall back to [0, 1] to preserve ordering and avoid division by zero for equal bounds
 	if (high_bound <= low_bound)
 	{
 		low_bound = 0.0f;
