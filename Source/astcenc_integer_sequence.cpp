@@ -983,11 +983,6 @@ static ASTCENC_SIMD_INLINE void decode_ise_fixed(
 ) {
 	promise(character_count > 0);
 
-	// Trit/quint unpacking can write beyond character_count. Reserve four padding entries after the
-	// maximum 64 results.
-	uint8_t results[68];
-	uint8_t tq_blocks[22] { 0 };  // Trit-blocks or quint-blocks, must be zeroed
-
 	if constexpr (is_bit_permute_fast)
 	{
 		if (is_trit_sequence)
@@ -1019,77 +1014,83 @@ static ASTCENC_SIMD_INLINE void decode_ise_fixed(
 		}
 
 		decode_ise_bits_packed(bits, character_count, input_data, output_data, bit_offset);
-		return;
 	}
-
-	unsigned int lcounter = 0;
-	unsigned int hcounter = 0;
-
-	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks
-	for (unsigned int i = 0; i < character_count; i++)
+	else
 	{
-		results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));
-		bit_offset += bits;
+		// Trit/quint unpacking can write beyond character_count. Reserve four padding entries after
+		// the maximum 64 results.
+		uint8_t results[68];
+		uint8_t tq_blocks[22] { 0 };  // Trit-blocks or quint-blocks, must be zeroed
 
+		unsigned int lcounter = 0;
+		unsigned int hcounter = 0;
+
+		// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks
+		for (unsigned int i = 0; i < character_count; i++)
+		{
+			results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));
+			bit_offset += bits;
+
+			if (is_trit_sequence)
+			{
+				static const uint8_t bits_to_read[5]  { 2, 2, 1, 2, 1 };
+				static const uint8_t block_shift[5]   { 0, 2, 4, 5, 7 };
+				static const uint8_t next_lcounter[5] { 1, 2, 3, 4, 0 };
+				static const uint8_t hcounter_incr[5] { 0, 0, 0, 0, 1 };
+				unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
+				bit_offset += bits_to_read[lcounter];
+				tq_blocks[hcounter] |= tdata << block_shift[lcounter];
+				hcounter += hcounter_incr[lcounter];
+				lcounter = next_lcounter[lcounter];
+			}
+
+			if (is_quint_sequence)
+			{
+				static const uint8_t bits_to_read[3]  { 3, 2, 2 };
+				static const uint8_t block_shift[3]   { 0, 3, 5 };
+				static const uint8_t next_lcounter[3] { 1, 2, 0 };
+				static const uint8_t hcounter_incr[3] { 0, 0, 1 };
+				unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
+				bit_offset += bits_to_read[lcounter];
+				tq_blocks[hcounter] |= tdata << block_shift[lcounter];
+				hcounter += hcounter_incr[lcounter];
+				lcounter = next_lcounter[lcounter];
+			}
+		}
+
+		// Unpack trit-blocks or quint-blocks as needed
 		if (is_trit_sequence)
 		{
-			static const uint8_t bits_to_read[5]  { 2, 2, 1, 2, 1 };
-			static const uint8_t block_shift[5]   { 0, 2, 4, 5, 7 };
-			static const uint8_t next_lcounter[5] { 1, 2, 3, 4, 0 };
-			static const uint8_t hcounter_incr[5] { 0, 0, 0, 0, 1 };
-			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
-			bit_offset += bits_to_read[lcounter];
-			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
-			hcounter += hcounter_incr[lcounter];
-			lcounter = next_lcounter[lcounter];
+			unsigned int trit_blocks = (character_count + 4) / 5;
+			promise(trit_blocks > 0);
+			for (unsigned int i = 0; i < trit_blocks; i++)
+			{
+				const uint8_t *tritptr = trits_of_integer[tq_blocks[i]];
+				results[5 * i    ] |= tritptr[0] << bits;
+				results[5 * i + 1] |= tritptr[1] << bits;
+				results[5 * i + 2] |= tritptr[2] << bits;
+				results[5 * i + 3] |= tritptr[3] << bits;
+				results[5 * i + 4] |= tritptr[4] << bits;
+			}
 		}
 
 		if (is_quint_sequence)
 		{
-			static const uint8_t bits_to_read[3]  { 3, 2, 2 };
-			static const uint8_t block_shift[3]   { 0, 3, 5 };
-			static const uint8_t next_lcounter[3] { 1, 2, 0 };
-			static const uint8_t hcounter_incr[3] { 0, 0, 1 };
-			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
-			bit_offset += bits_to_read[lcounter];
-			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
-			hcounter += hcounter_incr[lcounter];
-			lcounter = next_lcounter[lcounter];
+			unsigned int quint_blocks = (character_count + 2) / 3;
+			promise(quint_blocks > 0);
+			for (unsigned int i = 0; i < quint_blocks; i++)
+			{
+				const uint8_t *quintptr = quints_of_integer[tq_blocks[i]];
+				results[3 * i    ] |= quintptr[0] << bits;
+				results[3 * i + 1] |= quintptr[1] << bits;
+				results[3 * i + 2] |= quintptr[2] << bits;
+			}
 		}
-	}
 
-	// Unpack trit-blocks or quint-blocks as needed
-	if (is_trit_sequence)
-	{
-		unsigned int trit_blocks = (character_count + 4) / 5;
-		promise(trit_blocks > 0);
-		for (unsigned int i = 0; i < trit_blocks; i++)
+		for (unsigned int i = 0; i < character_count; i++)
 		{
-			const uint8_t *tritptr = trits_of_integer[tq_blocks[i]];
-			results[5 * i    ] |= tritptr[0] << bits;
-			results[5 * i + 1] |= tritptr[1] << bits;
-			results[5 * i + 2] |= tritptr[2] << bits;
-			results[5 * i + 3] |= tritptr[3] << bits;
-			results[5 * i + 4] |= tritptr[4] << bits;
+			output_data[i] = results[i];
 		}
-	}
-
-	if (is_quint_sequence)
-	{
-		unsigned int quint_blocks = (character_count + 2) / 3;
-		promise(quint_blocks > 0);
-		for (unsigned int i = 0; i < quint_blocks; i++)
-		{
-			const uint8_t *quintptr = quints_of_integer[tq_blocks[i]];
-			results[3 * i    ] |= quintptr[0] << bits;
-			results[3 * i + 1] |= quintptr[1] << bits;
-			results[3 * i + 2] |= quintptr[2] << bits;
-		}
-	}
-
-	for (unsigned int i = 0; i < character_count; i++)
-	{
-		output_data[i] = results[i];
 	}
 }
 
