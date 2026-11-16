@@ -526,6 +526,8 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 {
@@ -540,6 +542,8 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
@@ -554,6 +558,8 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {

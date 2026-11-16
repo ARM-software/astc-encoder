@@ -394,10 +394,12 @@ ASTCENC_SIMD_INLINE bool all(vmask a)
 // vint operators and functions
 // ============================================================================
 /**
- * @brief Overload: vector by vector addition.
+ * @brief Overload: vector by vector addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint operator+(vint a, vint b)
 {
@@ -405,10 +407,12 @@ ASTCENC_SIMD_INLINE vint operator+(vint a, vint b)
 }
 
 /**
- * @brief Overload: vector by vector incremental addition.
+ * @brief Overload: vector by vector incremental addition, wrapping modulo 2^32.
  *
  * @param[in,out] a   The accumulator to update.
- * @param         b   The values to add.
+ * @param[in]     b   The values to add.
+ *
+ * @return The updated accumulator.
  */
 ASTCENC_SIMD_INLINE vint& operator+=(vint& a, const vint& b)
 {
@@ -417,10 +421,12 @@ ASTCENC_SIMD_INLINE vint& operator+=(vint& a, const vint& b)
 }
 
 /**
- * @brief Overload: vector by vector subtraction.
+ * @brief Overload: vector by vector subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint operator-(vint a, vint b)
 {
@@ -428,10 +434,12 @@ ASTCENC_SIMD_INLINE vint operator-(vint a, vint b)
 }
 
 /**
- * @brief Overload: vector by vector multiplication.
+ * @brief Overload: vector by vector multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint operator*(vint a, vint b)
 {

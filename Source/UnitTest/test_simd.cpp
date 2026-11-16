@@ -38,20 +38,79 @@
 namespace astcenc
 {
 
-/** @brief Scalar vector arithmetic must wrap exactly like native integer SIMD instructions. */
+/** @brief Integer vector arithmetic must wrap modulo 2^32 on every backend. */
 TEST(SuiteVint4, WrappingArithmetic)
 {
 	vint4 highest(std::numeric_limits<int>::max());
 	vint4 lowest(std::numeric_limits<int>::min());
+
 	vint4 sum = highest + vint4(1);
 	vint4 difference = lowest - vint4(1);
 	vint4 product = highest * vint4(2);
+
 	bool is_sum_valid = all(sum == lowest);
 	bool is_difference_valid = all(difference == highest);
 	bool is_product_valid = all(product == vint4(-2));
+
 	EXPECT_TRUE(is_sum_valid);
 	EXPECT_TRUE(is_difference_valid);
 	EXPECT_TRUE(is_product_valid);
+
+	vint4 scalar_sum = highest + 1;
+	vint4 scalar_difference = lowest - 1;
+	vint4 scalar_product = highest * 2;
+	vint4 accumulator = highest;
+
+	accumulator += vint4(1);
+
+	bool is_scalar_sum_valid = all(scalar_sum == lowest);
+	bool is_scalar_difference_valid = all(scalar_difference == highest);
+	bool is_scalar_product_valid = all(scalar_product == vint4(-2));
+	bool is_accumulator_valid = all(accumulator == lowest);
+
+	EXPECT_TRUE(is_scalar_sum_valid);
+	EXPECT_TRUE(is_scalar_difference_valid);
+	EXPECT_TRUE(is_scalar_product_valid);
+	EXPECT_TRUE(is_accumulator_valid);
+}
+
+/** @brief Active-width integer vector arithmetic must wrap modulo 2^32. */
+TEST(SuiteVint, WrappingArithmetic)
+{
+	vint highest(std::numeric_limits<int>::max());
+	vint lowest(std::numeric_limits<int>::min());
+
+	vint sum = highest + vint(1);
+	vint difference = lowest - vint(1);
+	vint product = highest * vint(2);
+	vint accumulator = highest;
+
+	accumulator += vint(1);
+
+	bool is_sum_valid = all(sum == lowest);
+	bool is_difference_valid = all(difference == highest);
+	bool is_product_valid = all(product == vint(-2));
+	bool is_accumulator_valid = all(accumulator == lowest);
+
+	EXPECT_TRUE(is_sum_valid);
+	EXPECT_TRUE(is_difference_valid);
+	EXPECT_TRUE(is_product_valid);
+	EXPECT_TRUE(is_accumulator_valid);
+}
+
+/** @brief Integer RGB sums must wrap modulo 2^32 and exclude alpha. */
+TEST(SuiteVint4, WrappingHorizontalSum)
+{
+	int highest = std::numeric_limits<int>::max();
+	int lowest = std::numeric_limits<int>::min();
+
+	int positive_sum = hadd_rgb_s(vint4(highest, 1, 0, highest));
+	int negative_sum = hadd_rgb_s(vint4(lowest, -1, 0, lowest));
+	int intermediate_sum = hadd_rgb_s(vint4(highest, highest, 2, highest));
+
+	EXPECT_EQ(positive_sum, lowest);
+	EXPECT_EQ(negative_sum, highest);
+	EXPECT_EQ(intermediate_sum, 0);
 }
 
 /** @brief Packed bit operations must handle empty, sparse, and full-width fields. */

@@ -68,10 +68,12 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 // ============================================================================
 
 /**
- * @brief Overload: vector by scalar addition.
+ * @brief Overload: vector by scalar addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 {
@@ -79,10 +81,12 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 }
 
 /**
- * @brief Overload: vector by vector incremental addition.
+ * @brief Overload: vector by vector incremental addition, wrapping modulo 2^32.
  *
  * @param[in,out] a   The accumulator to update.
- * @param         b   The values to add.
+ * @param[in]     b   The values to add.
+ *
+ * @return The updated accumulator.
  */
 ASTCENC_SIMD_INLINE vint4& operator+=(vint4& a, const vint4& b)
 {
@@ -91,10 +95,12 @@ ASTCENC_SIMD_INLINE vint4& operator+=(vint4& a, const vint4& b)
 }
 
 /**
- * @brief Overload: vector by scalar subtraction.
+ * @brief Overload: vector by scalar subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
 {
@@ -102,10 +108,12 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
 }
 
 /**
- * @brief Overload: vector by scalar multiplication.
+ * @brief Overload: vector by scalar multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
 {
@@ -158,13 +166,18 @@ ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 }
 
 /**
- * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar, wrapping modulo 2^32.
  *
  * @param a   The vector to reduce.
+ *
+ * @return The sum of the RGB lanes, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 {
-	return a.lane<0>() + a.lane<1>() + a.lane<2>();
+	uint32_t sum = static_cast<uint32_t>(a.lane<0>())
+	             + static_cast<uint32_t>(a.lane<1>())
+	             + static_cast<uint32_t>(a.lane<2>());
+	return static_cast<int>(sum);
 }
 
 /**

@@ -97,7 +97,7 @@ struct morton_brick_layout
 			index >>= 2;
 		}
 
-		if (width > height)
+		if constexpr (width > height)
 		{
 			x |= (index & 1) * height;
 		}

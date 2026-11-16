@@ -531,36 +531,45 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 // ============================================================================
 
 /**
- * @brief Overload: vector by vector addition.
+ * @brief Overload: vector by vector addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 {
-	return vint4(vaddq_s32(a.m, b.m));
+	return vint4(vreinterpretq_s32_u32(vaddq_u32(vreinterpretq_u32_s32(a.m),
+	                                             vreinterpretq_u32_s32(b.m))));
 }
 
 /**
- * @brief Overload: vector by vector subtraction.
+ * @brief Overload: vector by vector subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
-	return vint4(vsubq_s32(a.m, b.m));
+	return vint4(vreinterpretq_s32_u32(vsubq_u32(vreinterpretq_u32_s32(a.m),
+	                                             vreinterpretq_u32_s32(b.m))));
 }
 
 /**
- * @brief Overload: vector by vector multiplication.
+ * @brief Overload: vector by vector multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {
-	return vint4(vmulq_s32(a.m, b.m));
+	return vint4(vreinterpretq_s32_u32(vmulq_u32(vreinterpretq_u32_s32(a.m),
+	                                             vreinterpretq_u32_s32(b.m))));
 }
 
 /**

@@ -523,10 +523,12 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 // ============================================================================
 
 /**
- * @brief Overload: vector by vector addition.
+ * @brief Overload: vector by vector addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 {
@@ -534,10 +536,12 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by vector subtraction.
+ * @brief Overload: vector by vector subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
@@ -545,10 +549,12 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by vector multiplication.
+ * @brief Overload: vector by vector multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {

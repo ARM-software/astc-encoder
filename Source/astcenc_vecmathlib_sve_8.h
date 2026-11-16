@@ -428,10 +428,12 @@ ASTCENC_SIMD_INLINE bool all(vmask8 a)
 // vint8 operators and functions
 // ============================================================================
 /**
- * @brief Overload: vector by vector addition.
+ * @brief Overload: vector by vector addition, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 {
@@ -439,10 +441,12 @@ ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 }
 
 /**
- * @brief Overload: vector by vector subtraction.
+ * @brief Overload: vector by vector subtraction, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 {
@@ -450,10 +454,12 @@ ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 }
 
 /**
- * @brief Overload: vector by vector multiplication.
+ * @brief Overload: vector by vector multiplication, wrapping modulo 2^32.
  *
  * @param a   The left operand.
  * @param b   The right operand.
+ *
+ * @return The per-lane result, wrapping modulo 2^32.
  */
 ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
 {

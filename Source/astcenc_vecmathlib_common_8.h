@@ -39,10 +39,12 @@
 // ============================================================================
 
 /**
- * @brief Overload: vector by vector incremental addition.
+ * @brief Overload: vector by vector incremental addition, wrapping modulo 2^32.
  *
  * @param[in,out] a   The accumulator to update.
- * @param         b   The values to add.
+ * @param[in]     b   The values to add.
+ *
+ * @return The updated accumulator.
  */
 ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
 {
