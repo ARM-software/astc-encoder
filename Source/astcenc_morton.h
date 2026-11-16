@@ -126,7 +126,7 @@ struct brick_layout
 	 *
 	 * @param is_morton   Whether to use Morton order instead of scanline order.
 	 */
-	explicit brick_layout(bool is_morton)
+	brick_layout(bool is_morton)
 	{
 		if (is_morton)
 		{

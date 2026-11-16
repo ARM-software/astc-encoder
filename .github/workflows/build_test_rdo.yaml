@@ -1,0 +1,67 @@
+name: Build and test RDO
+run-name: Build and test RDO PR${{ github.event.number }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  build-ubuntu-x64-clang-rdo:
+    name: Ubuntu x64 Clang RDO (${{ matrix.config }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: Release
+            build_type: Release
+            extra_flags: ''
+          - config: ASAN
+            build_type: RelWithDebInfo
+            extra_flags: -DASTCENC_ASAN=ON
+          - config: UBSAN
+            build_type: RelWithDebInfo
+            extra_flags: -DASTCENC_UBSAN=ON
+    env:
+      CXX: clang++
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Install LLD
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lld
+
+      - name: Build and test RDO
+        shell: bash
+        run: |
+          cmake -S . -B build -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DASTCENC_ISA_AVX2=ON \
+            -DASTCENC_RDO=ON -DASTCENC_UNITTEST=ON ${{ matrix.extra_flags }}
+          cmake --build build --target astcenc-avx2 test-unit-avx2 -j4
+          ctest --test-dir build --output-on-failure --no-tests=error
+
+          BINARY=build/Source/astcenc-avx2
+          OUTPUT_DIR=build/Images
+          mkdir -p "$OUTPUT_DIR"
+          for IMAGE in Test/Images/Small/LDR-*/*.png Test/Images/Small/LDRS-*/*.png; do
+            PROFILE=l
+            case "$IMAGE" in
+              */LDRS-*/*) PROFILE=s ;;
+            esac
+
+            IMAGE_NAME="${IMAGE##*/}"
+            for BLOCK in 4x4 5x5 6x6; do
+              OUTPUT="$OUTPUT_DIR/$IMAGE_NAME-$BLOCK"
+              "$BINARY" "-c$PROFILE" "$IMAGE" "$OUTPUT.astcm" \
+                "$BLOCK" -thorough -rdo-lambda 0.2 -j 2
+              "$BINARY" "-d$PROFILE" "$OUTPUT.astcm" "$OUTPUT.png" -j 2
+            done
+          done
