@@ -799,7 +799,7 @@ astcenc_error astcenc_context_alloc(
 		{
 			if (ctx->owns_bsd)
 			{
-				aligned_free<const block_size_descriptor>(ctx->bsd);
+				aligned_free<const block_size_descriptor>(ctx->bsd, ASTCENC_VECALIGN);
 			}
 			delete ctxo;
 			*context = nullptr;
@@ -836,10 +836,10 @@ void astcenc_context_free(
 	if (ctxo)
 	{
 		astcenc_contexti* ctx = &ctxo->context;
-		aligned_free<compression_working_buffers>(ctx->working_buffers);
+		aligned_free<compression_working_buffers>(ctx->working_buffers, ASTCENC_VECALIGN);
 		if (ctx->owns_bsd)
 		{
-			aligned_free<const block_size_descriptor>(ctx->bsd);
+			aligned_free<const block_size_descriptor>(ctx->bsd, ASTCENC_VECALIGN);
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
 		delete ctx->trace_log;

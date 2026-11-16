@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <limits>
 #include <type_traits>
+#include <new>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -2319,7 +2320,9 @@ T* aligned_malloc(size_t size, size_t align)
 	size_t min_align = astc::max(alignof(T), sizeof(void*));
 	size_t real_align = astc::max(min_align, align);
 
-#if defined(_WIN32)
+#if (__cplusplus >= 201703L || _MSVC_LANG >= 201703L)
+	ptr = ::operator new(size, std::align_val_t{real_align});
+#elif defined(_WIN32)
 	ptr = _aligned_malloc(size, real_align);
 #else
 	error = posix_memalign(&ptr, real_align, size);
@@ -2341,9 +2344,15 @@ T* aligned_malloc(size_t size, size_t align)
  * @param  ptr   The buffer to free.
  */
 template<typename T>
-void aligned_free(T* ptr)
+void aligned_free(T* ptr, size_t align)
 {
-#if defined(_WIN32)
+#if (__cplusplus >= 201703L || _MSVC_LANG >= 201703L)
+	// Don't allow this to under-align a type
+	size_t min_align = astc::max(alignof(T), sizeof(void*));
+	size_t real_align = astc::max(min_align, align);
+
+	::operator delete(const_cast<typename std::remove_const<T>::type *>(ptr), std::align_val_t{real_align});
+#elif defined(_WIN32)
 	_aligned_free(const_cast<typename std::remove_const<T>::type *>(ptr));
 #else
 	free(const_cast<typename std::remove_const<T>::type *>(ptr));
