@@ -478,7 +478,7 @@ static inline void write_bits(
  *
  * @return The read value.
  */
-static inline unsigned int read_bits(
+[[maybe_unused]] static inline unsigned int read_bits(
 	unsigned int bitcount,
 	unsigned int bitoffset,
 	const uint8_t* ptr
