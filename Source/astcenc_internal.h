@@ -2265,6 +2265,29 @@ float compute_symbolic_block_difference_1plane_1partition(
 	const image_block& blk);
 
 /**
+ * @brief Compute the error between a symbolic block and the original input data, with per-texel weights.
+ *
+ * This function is specialized for 1 plane and 1 partition search.
+ *
+ * In RGBM mode this will reject blocks that attempt to encode a zero M value.
+ *
+ * @param config   The compressor config.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ * @param weights  The per-texel weights.
+ *
+ * @return Returns the computed error, or a negative value if the encoding
+ *         should be rejected for any reason.
+ */
+float compute_symbolic_block_difference_1plane_1partition_weighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk,
+	const float* weights);
+
+/**
  * @brief Convert a symbolic representation into a binary physical encoding.
  *
  * It is assumed that the symbolic encoding is valid and encodable, or
