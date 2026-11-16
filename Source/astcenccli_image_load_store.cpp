@@ -2346,35 +2346,11 @@ static bool store_dds_uncompressed_image(
 
 	// Collect image data to write
 	std::vector<uint8_t> pixel_data8;
-	std::vector<uint8_t*> row_data8;
-	std::vector<uint8_t**> row_pointers8;
-
 	std::vector<uint16_t> pixel_data16;
-	std::vector<uint16_t*> row_data16;
-	std::vector<uint16_t**> row_pointers16;
 
 	if (bitness == 8)
 	{
-		row_pointers8.resize(dim_z);
-		row_data8.resize(dim_y * dim_z);
 		pixel_data8.resize(dim_x * dim_y * dim_z * image_components);
-
-		row_pointers8[0] = row_data8.data();
-		row_pointers8[0][0] = pixel_data8.data();
-
-		for (size_t z = 1; z < dim_z; z++)
-		{
-			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
-		}
-
-		for (size_t z = 0; z < dim_z; z++)
-		{
-			for (size_t y = 1; y < dim_y; y++)
-			{
-				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
-			}
-		}
 
 		for (size_t z = 0; z < dim_z; z++)
 		{
@@ -2383,36 +2359,38 @@ static bool store_dds_uncompressed_image(
 			for (size_t y = 0; y < dim_y; y++)
 			{
 				size_t mod_y = y_flip ? dim_y - y - 1 : y;
+				uint8_t* src_row = data8 + 4 * dim_x * mod_y;
+				uint8_t* dest_row = &pixel_data8[(z * dim_y + y) * dim_x * image_components];
 				switch (image_components)
 				{
 				case 1:  // One component, treated as Luminance
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						dest_row[x] = src_row[4 * x    ];
 					}
 					break;
 				case 2:  // Two component, treated as Luminance-Alpha
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
+						dest_row[2 * x    ] = src_row[4 * x    ];
+						dest_row[2 * x + 1] = src_row[4 * x + 3];
 					}
 					break;
 				case 3:  // Three component, treated as RGB
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
-						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
+						dest_row[3 * x    ] = src_row[4 * x    ];
+						dest_row[3 * x + 1] = src_row[4 * x + 1];
+						dest_row[3 * x + 2] = src_row[4 * x + 2];
 					}
 					break;
 				case 4:  // Four component, treated as RGBA
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
-						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
-						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
+						dest_row[4 * x    ] = src_row[4 * x    ];
+						dest_row[4 * x + 1] = src_row[4 * x + 1];
+						dest_row[4 * x + 2] = src_row[4 * x + 2];
+						dest_row[4 * x + 3] = src_row[4 * x + 3];
 					}
 					break;
 				}
@@ -2421,26 +2399,7 @@ static bool store_dds_uncompressed_image(
 	}
 	else  // If bitness == 16
 	{
-		row_pointers16.resize(dim_z);
-		row_data16.resize(dim_y * dim_z);
 		pixel_data16.resize(dim_x * dim_y * dim_z * image_components);
-
-		row_pointers16[0] = row_data16.data();
-		row_pointers16[0][0] = pixel_data16.data();
-
-		for (size_t z = 1; z < dim_z; z++)
-		{
-			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
-		}
-
-		for (size_t z = 0; z < dim_z; z++)
-		{
-			for (size_t y = 1; y < dim_y; y++)
-			{
-				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
-			}
-		}
 
 		for (size_t z = 0; z < dim_z; z++)
 		{
@@ -2449,36 +2408,39 @@ static bool store_dds_uncompressed_image(
 			for (size_t y = 0; y < dim_y; y++)
 			{
 				size_t mod_y = y_flip ? dim_y - y - 1: y;
+				uint16_t* src_row = data16 + 4 * dim_x * mod_y;
+				uint16_t* dest_row = &pixel_data16[(y * dim_y + y) * dim_x * image_components];
+
 				switch (image_components)
 				{
 				case 1:  // One component, treated as Luminance
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						dest_row[x] = src_row[4 * x    ];
 					}
 					break;
 				case 2:  // Two component, treated as Luminance-Alpha
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
+						dest_row[2 * x    ] = src_row[4 * x    ];
+						dest_row[2 * x + 1] = src_row[4 * x + 3];
 					}
 					break;
 				case 3:  // Three component, treated as RGB
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
-						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
+						dest_row[3 * x    ] = src_row[4 * x    ];
+						dest_row[3 * x + 1] = src_row[4 * x + 1];
+						dest_row[3 * x + 2] = src_row[4 * x + 2];
 					}
 					break;
 				case 4:  // Four-component, treated as RGBA
 					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
-						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
-						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
-						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
+						dest_row[4 * x    ] = src_row[4 * x    ];
+						dest_row[4 * x + 1] = src_row[4 * x + 1];
+						dest_row[4 * x + 2] = src_row[4 * x + 2];
+						dest_row[4 * x + 3] = src_row[4 * x + 3];
 					}
 					break;
 				}
@@ -2494,8 +2456,8 @@ static bool store_dds_uncompressed_image(
 	if (file)
 	{
 		void *dataptr = (bitness == 16) ?
-			reinterpret_cast<void*>(row_pointers16[0][0]) :
-			reinterpret_cast<void*>(row_pointers8[0][0]);
+			reinterpret_cast<void*>(&pixel_data16[0]) :
+			reinterpret_cast<void*>(&pixel_data8[0]);
 
 		file.write(reinterpret_cast<const char*>(&dds_magic), sizeof(dds_magic));
 		file.write(reinterpret_cast<const char*>(&hdr), sizeof(dds_header));
