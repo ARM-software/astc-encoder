@@ -874,23 +874,24 @@ static ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 	vmask4 is_one = p == vint4(0xFFFF);
 	vmask4 is_small = p < vint4(4);
 
-	// Manually inline clz() on Visual Studio to avoid release build codegen bug
-	// see https://github.com/ARM-software/astc-encoder/issues/259
-#if !defined(__clang__) && defined(_MSC_VER)
-	vint4 a = (~lsr<8>(p)) & p;
-	a = float_as_int(int_to_float(a));
-	a = vint4(127 + 31) - lsr<23>(a);
-	vint4 lz = clamp(0, 32, a) - 16;
-#else
-	vint4 lz = clz(p) - 16;
-#endif
+	// Unbiased exponent of result guaranteed in [0,15] (if nonzero)
+	vint4 fp32 = float_as_int(int_to_float(p));
 
-	p = p * two_to_the_n(lz + 1);
-	p = p & vint4(0xFFFF);
-
-	p = lsr<6>(p);
-
-	p = p | lsl<10>(vint4(14) - lz);
+	// Adjust the exponent. The small-exponent cases (resulting in
+	// FP16 denormals) are handled separately in the is_small path.
+	//
+	// The adjustments here are:
+	//  +15 exponent bias in target FP16 format
+	// -127 exponent bias in source FP32 format
+	//  -16 to implicitly divide int value by 65536
+	//
+	// No need to worry about the sign bit because inputs are non-negative.
+	//
+	// This is a truncating conversion, which is mandated in the spec.
+	//
+	// *(1 << 23) instead of << 23 to avoid warning about shifting negative values.
+	p = fp32 + vint4((15 - 127 - 16) * (1 << 23));
+	p = lsr<13>(p);
 
 	vint4 r = select(p, fp16_one, is_one);
 	r = select(r, fp16_small, is_small);
