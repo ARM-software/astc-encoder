@@ -853,6 +853,12 @@ static bool init_astcenc_config(
 			}
 			preprocess = ASTCENC_PP_PREMULTIPLY;
 		}
+		else if (!strcmp(argv[argidx], "-rdo-lambda"))
+		{
+			// Skip over the data value for now
+			argidx++;
+			flags |= ASTCENC_FLG_USE_LZ_RDO;
+		}
 		argidx ++;
 	}
 
@@ -1586,6 +1592,74 @@ static bool edit_astcenc_config(
 			cli_config.diagnostic_images = true;
 		}
 #endif
+		else if (!strcmp(argv[argidx], "-rdo-lambda"))
+		{
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
+			{
+				return true;
+			}
+
+			float value;
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
+			{
+				return true;
+			}
+
+			config.lz_rdo_lambda = value;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-endpoints"))
+		{
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
+			{
+				return true;
+			}
+
+			unsigned int value;
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
+			{
+				return true;
+			}
+
+			config.tune_lz_rdo_endpoint_history_size = value;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-weights"))
+		{
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
+			{
+				return true;
+			}
+
+			unsigned int value;
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
+			{
+				return true;
+			}
+
+			config.tune_lz_rdo_weight_history_size = value;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-passes"))
+		{
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
+			{
+				return true;
+			}
+
+			unsigned int value;
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
+			{
+				return true;
+			}
+
+			config.tune_lz_rdo_num_passes = value;
+		}
 		else
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1677,6 +1751,14 @@ static void print_astcenc_config(
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %u\n", cli_config.thread_count);
+
+		if ((config.flags & ASTCENC_FLG_USE_LZ_RDO))
+		{
+			printf("    LZ-RDO endpoint history:    %u elements\n", config.tune_lz_rdo_endpoint_history_size);
+			printf("    LZ-RDO weight history:      %u elements\n", config.tune_lz_rdo_weight_history_size);
+			printf("    LZ-RDO num passes:          %u\n", config.tune_lz_rdo_num_passes);
+		}
+
 		printf("\n");
 	}
 }

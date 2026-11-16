@@ -93,6 +93,15 @@ struct astcenc_preset_config
 
 	/** @brief The enable threshold for the mode0 fast-path search. */
 	float tune_search_mode0_enable;
+
+	/** @brief The endpoint history window size for LZ-RDO. */
+	unsigned int tune_lz_rdo_endpoint_history_size;
+
+	/** @brief The weight history window size for LZ-RDO.  */
+	unsigned int tune_lz_rdo_weight_history_size;
+
+	/** @brief The number of passes for LZ-RDO. */
+	unsigned int tune_lz_rdo_num_passes;
 };
 
 /**
@@ -120,6 +129,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.85f,
 		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 16,
+		.tune_lz_rdo_weight_history_size         = 4,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for high bitrate, fast
 	{
@@ -142,6 +154,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.90f,
 		.tune_2plane_component_limit_factor      = 0.97f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 32,
+		.tune_lz_rdo_weight_history_size         = 16,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for high bitrate, medium
 	{
@@ -164,6 +179,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.95f,
 		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 64,
+		.tune_lz_rdo_weight_history_size         = 40,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for high bitrate, thorough
 	{
@@ -186,6 +204,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.97f,
 		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 256,
+		.tune_lz_rdo_weight_history_size         = 80,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for high bitrate, very thorough
 	{
@@ -208,6 +229,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.98f,
 		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 320,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for high bitrate, exhaustive
 	{
@@ -230,6 +254,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		.tune_2plane_early_out_limit_correlation = 0.99f,
 		.tune_2plane_component_limit_factor      = 0.80f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 512,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 2,
 	}
 }};
 
@@ -258,6 +285,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.80f,
 		.tune_2plane_component_limit_factor      = 0.99f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 16,
+		.tune_lz_rdo_weight_history_size         = 4,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for medium bitrate, fast
 	{
@@ -280,6 +310,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.85f,
 		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 32,
+		.tune_lz_rdo_weight_history_size         = 16,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for medium bitrate, medium
 	{
@@ -302,6 +335,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.90f,
 		.tune_2plane_component_limit_factor      = 0.96f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 64,
+		.tune_lz_rdo_weight_history_size         = 40,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for medium bitrate, thorough
 	{
@@ -324,6 +360,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.95f,
 		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 256,
+		.tune_lz_rdo_weight_history_size         = 80,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for medium bitrate, very thorough
 	{
@@ -346,6 +385,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.98f,
 		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 320,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for medium bitrate, exhaustive
 	{
@@ -368,6 +410,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		.tune_2plane_early_out_limit_correlation = 0.99f,
 		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 0.0f,
+		.tune_lz_rdo_endpoint_history_size       = 512,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 2,
 	}
 }};
 
@@ -396,6 +441,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.80f,
 		.tune_2plane_component_limit_factor      = 0.99f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 16,
+		.tune_lz_rdo_weight_history_size         = 4,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for low bitrate, fast
 	{
@@ -418,6 +466,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.85f,
 		.tune_2plane_component_limit_factor      = 0.98f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 32,
+		.tune_lz_rdo_weight_history_size         = 16,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for low bitrate, medium
 	{
@@ -440,6 +491,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.90f,
 		.tune_2plane_component_limit_factor      = 0.96f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 64,
+		.tune_lz_rdo_weight_history_size         = 40,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for low bitrate, thorough
 	{
@@ -462,6 +516,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.97f,
 		.tune_2plane_component_limit_factor      = 0.95f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 256,
+		.tune_lz_rdo_weight_history_size         = 80,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for low bitrate, very thorough
 	{
@@ -484,6 +541,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.98f,
 		.tune_2plane_component_limit_factor      = 0.90f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 320,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 1,
 	},
 	// Settings for low bitrate, exhaustive
 	{
@@ -506,6 +566,9 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		.tune_2plane_early_out_limit_correlation = 0.99f,
 		.tune_2plane_component_limit_factor      = 0.85f,
 		.tune_search_mode0_enable                = 1.0f,
+		.tune_lz_rdo_endpoint_history_size       = 512,
+		.tune_lz_rdo_weight_history_size         = 160,
+		.tune_lz_rdo_num_passes                  = 2,
 	}
 }};
 

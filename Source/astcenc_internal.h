@@ -641,6 +641,11 @@ struct block_size_descriptor
 	uint64_t coverage_bitmaps_4[BLOCK_MAX_PARTITIONINGS][4];
 #endif
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	/** @brief The weight bits for each block mode, used for LZ-RDO encoding. */
+	uint8_t weight_bits_for_mode[WEIGHTS_MAX_BLOCK_MODES];
+#endif
+
 	/**
 	 * @brief Get the block mode structure for index @c block_mode.
 	 *
@@ -1274,6 +1279,12 @@ struct astcenc_contexti
 	compression_working_buffers* working_buffers;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
+	/** @brief LZ-RDO restricted block encodings. Stores blocks encoded with restricted mode set. */
+	uint8_t* lz_rdo_restricted_blocks;
+
+	/** @brief LZ-RDO per-texel importance weights determined during RDO setup pass. bsd->texel_count values per block. */
+	float* lz_rdo_per_texel_weights;
+
 	/** @brief The pixel region and variance worker arguments. */
 	avg_args avg_preprocess_args;
 #endif
@@ -2168,15 +2179,17 @@ void compute_angular_endpoints_2planes(
 /**
  * @brief Compress an image block into a physical block.
  *
- * @param      ctx      The compressor context and configuration.
- * @param      blk      The image block color data to compress.
- * @param[out] pcb      The physical compressed block output.
- * @param[out] tmpbuf   Preallocated scratch buffers for the compressor.
+ * @param      ctx              The compressor context and configuration.
+ * @param      blk              The image block color data to compress.
+ * @param[out] pcb              The physical compressed block output.
+ * @param[out] restricted_pcb   The physical compressed block output with restricted mode set (@c nullptr if not desired).
+ * @param[out] tmpbuf           Preallocated scratch buffers for the compressor.
  */
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
 	uint8_t pcb[16],
+	uint8_t* restricted_pcb,
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2316,6 +2329,52 @@ void physical_to_symbolic(
 	const block_size_descriptor& bsd,
 	const uint8_t pcb[16],
 	symbolic_compressed_block& scb);
+
+/**
+ * @brief Perform setup calculations for LZ-RDO compression.
+ *
+ * This is a preparation pass before the main LZ-RDO optimization
+ * that analyzes the image to determine error weights per texel
+ * depending on context. Noisy areas (approximated as those with
+ * significant high-frequency energy) are more visually forgiving
+ * than increased quantization errors in smooth areas or gradients,
+ * which tend to be much more jarring.
+ *
+ * @param      ctx   The compressor context and configuration.
+ * @param      img   The image being compressed.
+ * @param      swz   The component swizzle for compression.
+ */
+void lz_rdo_setup(
+	astcenc_context& ctx,
+	const astcenc_image& img,
+	const astcenc_swizzle& swz
+);
+
+/**
+ * @brief The main LZ-RDO optimization function.
+ *
+ * This function examines alternative encodings of target blocks
+ * obtained by splicing together endpoint and weight bits from
+ * nearby blocks in several ways. While crude, this often finds
+ * encodings that are much cheaper after subsequent LZ compression
+ * (which can compress the repeated bytes) at a relatively
+ * moderate PSNR increase.
+ *
+ * @param         ctx           The compressor context and configuration.
+ * @param         thread_index  Index for the thread doing the work.
+ * @param         img           The image being compressed.
+ * @param         swz           The component swizzle for compression.
+ * @param         init_pct      Initial progress callback percentage.
+ * @param[in,out] data          The current encoding (modified in place).
+ */
+void lz_rdo_optimize(
+	astcenc_context& ctx,
+	size_t thread_index,
+	astcenc_image& img,
+	const astcenc_swizzle& swz,
+	float init_pct,
+	uint8_t* data
+);
 
 /* ============================================================================
 Platform-specific functions.

@@ -249,6 +249,13 @@ static astcenc_error validate_flags(
 		return ASTCENC_ERR_BAD_DECODE_MODE;
 	}
 
+	// LZ-RDO mode is only supported for LDR data
+	bool is_lz_rdo = flags & ASTCENC_FLG_USE_LZ_RDO;
+	if (is_lz_rdo && is_hdr)
+	{
+		return ASTCENC_ERR_NOT_IMPLEMENTED;
+	}
+
 	return ASTCENC_SUCCESS;
 }
 
@@ -435,6 +442,11 @@ static astcenc_error validate_config(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
+	config.lz_rdo_lambda = astc::max(config.lz_rdo_lambda, 0.0f);
+	config.tune_lz_rdo_endpoint_history_size = astc::max(config.tune_lz_rdo_endpoint_history_size, 1u);
+	config.tune_lz_rdo_weight_history_size = astc::max(config.tune_lz_rdo_weight_history_size, 1u);
+	config.tune_lz_rdo_num_passes = astc::max(config.tune_lz_rdo_num_passes, 1u);
+
 	return ASTCENC_SUCCESS;
 }
 
@@ -534,6 +546,10 @@ astcenc_error astcenc_config_init(
 		config.tune_2plane_early_out_limit_correlation = (*preset_configs)[start].tune_2plane_early_out_limit_correlation;
 		config.tune_2plane_component_limit_factor = (*preset_configs)[start].tune_2plane_component_limit_factor;
 		config.tune_search_mode0_enable = (*preset_configs)[start].tune_search_mode0_enable;
+
+		config.tune_lz_rdo_endpoint_history_size = (*preset_configs)[start].tune_lz_rdo_endpoint_history_size;
+		config.tune_lz_rdo_weight_history_size = (*preset_configs)[start].tune_lz_rdo_weight_history_size;
+		config.tune_lz_rdo_num_passes = (*preset_configs)[start].tune_lz_rdo_num_passes;
 	}
 	// Start and end node are not the same - so interpolate between them
 	else
@@ -574,6 +590,11 @@ astcenc_error astcenc_config_init(
 		config.tune_2plane_early_out_limit_correlation = LERP(tune_2plane_early_out_limit_correlation);
 		config.tune_2plane_component_limit_factor = LERP(tune_2plane_component_limit_factor);
 		config.tune_search_mode0_enable = LERP(tune_search_mode0_enable);
+
+		config.tune_lz_rdo_endpoint_history_size = LERPUI(tune_lz_rdo_endpoint_history_size);
+		config.tune_lz_rdo_weight_history_size = LERPUI(tune_lz_rdo_weight_history_size);
+		config.tune_lz_rdo_num_passes = LERPUI(tune_lz_rdo_num_passes);
+
 		#undef LERP
 		#undef LERPI
 		#undef LERPUI
@@ -590,6 +611,7 @@ astcenc_error astcenc_config_init(
 	config.rgbm_m_scale = 0.0f;
 
 	config.profile = profile;
+	config.lz_rdo_lambda = 0.0f;
 
 	// Values from an external user, so not guaranteed to be bounded to the enum values
 	switch (static_cast<int>(profile))
@@ -774,6 +796,9 @@ astcenc_error astcenc_context_alloc(
 	}
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
+	ctx->lz_rdo_restricted_blocks = nullptr;
+	ctx->lz_rdo_per_texel_weights = nullptr;
+
 	// Do setup only needed by compression
 	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
@@ -853,17 +878,19 @@ void astcenc_context_free(
 /**
  * @brief Compress an image, after any preflight has completed.
  *
- * @param[in,out] ctxo           The compressor context.
- * @param         thread_index   The thread index.
- * @param         image          The input image.
- * @param         swizzle        The input swizzle.
- * @param[out]    buffer         The output array for the compressed data.
+ * @param[in,out] ctxo             The compressor context.
+ * @param         thread_index     The thread index.
+ * @param         image            The input image.
+ * @param         swizzle          The input swizzle.
+ * @param         compression_pct  The percentage of encode time expected to be spent in this pass. (For progress reporting only.)
+ * @param[out]    buffer           The output array for the compressed data.
  */
 static void compress_image(
 	astcenc_context& ctxo,
 	size_t thread_index,
 	const astcenc_image& image,
 	const astcenc_swizzle& swizzle,
+	float compression_pct,
 	uint8_t* buffer
 ) {
 	astcenc_contexti& ctx = ctxo.context;
@@ -916,7 +943,7 @@ static void compress_image(
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread runs initialization
-	ctxo.manage_compress.init(block_count, ctx.config.progress_callback);
+	ctxo.manage_compress.init(block_count, ctx.config.progress_callback, 0.0f, compression_pct);
 
 	// Select the optimized loader when supported
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
@@ -1037,7 +1064,14 @@ static void compress_image(
 
 			size_t offset = ((z * blocks_y + y) * blocks_x + x) * 16;
 			uint8_t *bp = buffer + offset;
-			compress_block(ctx, blk, bp, temp_buffers);
+			uint8_t *restricted_bp = nullptr;
+
+			if (ctx.lz_rdo_restricted_blocks)
+			{
+				restricted_bp = ctx.lz_rdo_restricted_blocks + offset;
+			}
+
+			compress_block(ctx, blk, bp, restricted_bp, temp_buffers);
 		}
 
 		ctxo.manage_compress.complete_task_assignment(count);
@@ -1151,6 +1185,15 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
+	bool enable_lz_rdo = (ctx->config.flags & ASTCENC_FLG_USE_LZ_RDO) && ctx->config.lz_rdo_lambda > 0.0f;
+
+	// When LZ-RDO is enabled, rescale progress reporting so the initial encode occupies 33%
+	float compression_pct = 100.0f;
+	if (enable_lz_rdo)
+	{
+		compression_pct = 33.0f;
+	}
+
 	size_t dim_x = image.dim_x;
 	size_t dim_y = image.dim_y;
 	size_t dim_z = image.dim_z;
@@ -1213,7 +1256,17 @@ astcenc_error astcenc_compress_image(
 	// Wait for compute_averages to complete before compressing
 	ctxo->manage_avg.wait();
 
-	compress_image(*ctxo, thread_index, image, *swizzle, data_out);
+	if (enable_lz_rdo)
+	{
+		// LZ-RDO setup needs to go before main compress_image
+		// because LZ-RDO init is what allocates "lz_rdo_restricted_blocks"
+		// which compress_image needs.
+
+		// All threads will enter this function and dynamically grab work
+		lz_rdo_setup(*ctxo, image, *swizzle);
+	}
+
+	compress_image(*ctxo, thread_index, image, *swizzle, compression_pct, data_out);
 
 	// Wait for compress to complete before freeing memory
 	ctxo->manage_compress.wait();
@@ -1225,6 +1278,19 @@ astcenc_error astcenc_compress_image(
 
 	// Only the first thread performs cleanup
 	ctxo->manage_compress.term(term_compress);
+
+	if (enable_lz_rdo)
+	{
+		// This is already implied by having waited for manage_compress
+		// earlier, but be explict: LZ-RDO optimization passes depend
+		// on setup pass having completed (but baseline compression
+		// does not).
+		ctxo->manage_lz_rdo_setup.wait();
+
+		// All threads will enter this function and dynamically grab work
+		// this function calls wait() and term() on ctxo->manage_lz_rdo_optimize.
+		lz_rdo_optimize(*ctxo, thread_index, image, *swizzle, compression_pct, data_out);
+	}
 
 	return ASTCENC_SUCCESS;
 #endif
@@ -1567,3 +1633,4 @@ const char* astcenc_get_error_string(
 		return nullptr;
 	}
 }
+

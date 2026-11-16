@@ -1531,6 +1531,7 @@ void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
 	uint8_t pcb[16],
+	uint8_t* restricted_pcb,
 	compression_working_buffers& tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
@@ -1612,6 +1613,11 @@ void compress_block(
 		trace_add_data("exit", "quality hit");
 
 		symbolic_to_physical(bsd, scb, pcb);
+		if (restricted_pcb)
+		{
+			memcpy(restricted_pcb, pcb, 16);
+		}
+
 		return;
 	}
 
@@ -1650,6 +1656,26 @@ void compress_block(
 	};
 
 	const float errorval_overshoot = 1.0f / ctx.config.tune_mse_overshoot;
+
+	// If restricted encoding was requested, do an extra encode with the most
+	// likely candidate mode, and write it to restricted_pcb.
+	//
+	// This is basically the same as the restricted MODE0 fast path trial when enabled,
+	// but we run it with slightly different parameters and a different purpose.
+	// LZ-RDO encoding is a relatively expensive feature anyway that does not make much
+	// sense to combine with fast encode levels; at the quality levels it's likely to get
+	// used at, one extra trial here isn't a major expense, and it keeps concerns separated.
+	if (restricted_pcb)
+	{
+		symbolic_compressed_block workscb = scb;
+
+		// Can't enable "only_always" for 3D blocks since no "always" block modes are available
+		(void)compress_symbolic_block_for_partition_1plane(
+		    ctx.config, bsd, blk, bsd.dim_z == 1,
+		    error_threshold * errorval_mult[1] * errorval_overshoot,
+		    1, 0,  workscb, tmpbuf, QUANT_32);
+		symbolic_to_physical(bsd, workscb, restricted_pcb);
+	}
 
 	// Only enable MODE0 fast path if enabled
 	// Never enable for 3D blocks as no "always" block modes are available

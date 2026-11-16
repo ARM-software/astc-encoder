@@ -112,7 +112,7 @@ TEST(compress, mean_color_fallback)
 
 		// Grayscale with constant alpha skips the dual-plane search
 		uint8_t physical[16];
-		compress_block(ctx, blk, physical, *working_buffers);
+		compress_block(ctx, blk, physical, nullptr, *working_buffers);
 		symbolic_compressed_block symbolic;
 		physical_to_symbolic(*bsd, physical, symbolic);
 		EXPECT_EQ(symbolic.block_type, expected_type);

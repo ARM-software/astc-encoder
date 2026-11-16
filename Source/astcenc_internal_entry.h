@@ -363,6 +363,12 @@ struct astcenc_context
 
 	/** @brief The parallel manager for compression. */
 	ParallelManager manage_compress;
+
+	/** @brief The parallel manager for the LZ-RDO setup pass. */
+	ParallelManager manage_lz_rdo_setup;
+
+	/** @brief The parallel manager for LZ-RDO optimization passes. */
+	ParallelManager manage_lz_rdo_optimize;
 #endif
 
 	/** @brief The parallel manager for decompression. */

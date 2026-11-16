@@ -1211,4 +1211,20 @@ void init_block_size_descriptor(
 	}
 
 	init_partition_tables(bsd, can_omit_modes, partition_count_cutoff);
+
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	// Initialize weight bits table for RDO encoding
+	for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
+	{
+		unsigned int packed_index = bsd.block_mode_packed_index[i];
+		if (packed_index != BLOCK_BAD_BLOCK_MODE)
+		{
+			bsd.weight_bits_for_mode[i] = bsd.block_modes[packed_index].weight_bits;
+		}
+		else
+		{
+			bsd.weight_bits_for_mode[i] = 0;
+		}
+	}
+#endif
 }
