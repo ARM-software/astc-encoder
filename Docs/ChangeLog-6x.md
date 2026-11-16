@@ -43,6 +43,7 @@ header from the same release to avoid compatibility issues.
     13, and Visual Studio 2022. Minimum supported CMake version increased to
     3.21.
 * **Codec library updates:**
+  * **Bug fix:** Disable dual-plane encoding at a zero correlation cutoff.
   * **Bug fix:** Preserve HDR endpoint mode bits when quantization rounds down
     across a mode bit boundary.
   * **Bug fix:** Wait for outstanding tasks to finish before releasing shared

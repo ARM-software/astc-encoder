@@ -574,7 +574,7 @@ struct astcenc_config
 	/**
 	 * @brief The threshold for skipping two weight planes (-2planelimitcorrelation).
 	 *
-	 * This option is ineffective for normal maps.
+	 * Set to zero to disable two planes. This option is ineffective for normal maps.
 	 */
 	float tune_2plane_early_out_limit_correlation;
 
