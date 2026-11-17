@@ -813,6 +813,23 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 	_mm_store_ss(reinterpret_cast<float*>(p), _mm_castsi128_ps(a.m));
 }
 
+#if ASTCENC_AVX >= 3
+#define ASTCENC_HAS_NATIVE_STORE_NBYTES_COUNT
+
+/**
+ * @brief Store the lowest packed bytes to an unaligned address.
+ *
+ * @param[in]  a       The vector to store.
+ * @param[out] p       The destination address.
+ * @param[in]  count   The number of bytes to store, in [0, 16].
+ */
+ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p, unsigned int count)
+{
+	__mmask16 mask = static_cast<__mmask16>((1u << count) - 1);
+	_mm_mask_storeu_epi8(p, mask, a.m);
+}
+#endif
+
 /**
  * @brief Pack the low 8 bits of each lane and store to an unaligned address.
  *
@@ -1460,6 +1477,54 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	             tbl.data[idx.lane<3>()]);
 #endif
 }
+
+#if ASTCENC_AVX >= 2
+#define ASTCENC_HAS_NATIVE_BIT_EXTRACT
+#define ASTCENC_HAS_NATIVE_BIT_PERMUTE
+
+/**
+ * @brief Extract a contiguous bit range from a word.
+ *
+ * @param[in] value    The source word.
+ * @param[in] offset   The first bit, in [0, 63].
+ * @param[in] count    The number of bits, in [0, 64 - offset].
+ *
+ * @return The extracted bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t extract_bit_range(
+	uint64_t value,
+	unsigned int offset,
+	unsigned int count
+) {
+	return _bextr_u64(value, offset, count);
+}
+
+/**
+ * @brief Compress selected bits into consecutive low bits, preserving their order.
+ *
+ * @param[in] value   The source word.
+ * @param[in] mask    The source bit positions to select.
+ *
+ * @return The selected bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t compress_bits(uint64_t value, uint64_t mask)
+{
+	return _pext_u64(value, mask);
+}
+
+/**
+ * @brief Deposit consecutive low bits into selected positions, preserving their order.
+ *
+ * @param[in] value   The source word.
+ * @param[in] mask    The destination bit positions to fill.
+ *
+ * @return The deposited bits, with all other positions zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t deposit_bits(uint64_t value, uint64_t mask)
+{
+	return _pdep_u64(value, mask);
+}
+#endif
 
 /**
  * @brief Return a vector of interleaved RGBA data.

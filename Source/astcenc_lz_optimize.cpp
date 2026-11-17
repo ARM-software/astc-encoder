@@ -63,7 +63,8 @@ static constexpr unsigned int MAX_BLOCKS_PER_ITEM{4096};
 /** @brief Cache size for block decompression results, must be a power of 2. */
 static constexpr unsigned int CACHE_SIZE{MAX_BLOCKS_PER_ITEM};
 
-// Check for known little-endian platforms. Windows is always LE.
+// Check for known little-endian platforms. Windows is always LE
+// TODO: Standardize vs ASTCENC_BIG_ENDIAN vs C++20 std::endian::native == std::endian::little
 #if defined(_WIN32) || defined(__LITTLE_ENDIAN__) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 
 /**

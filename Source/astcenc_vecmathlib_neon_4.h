@@ -791,6 +791,26 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 	vst1q_lane_s32(reinterpret_cast<int32_t*>(p), a.m, 0);
 }
 
+#if ASTCENC_SVE != 0
+#define ASTCENC_HAS_NATIVE_STORE_NBYTES_COUNT
+
+/**
+ * @brief Store the lowest packed bytes to an unaligned address.
+ *
+ * @param[in]  a       The vector to store.
+ * @param[out] p       The destination address.
+ * @param[in]  count   The number of bytes to store, in [0, 16].
+ */
+ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p, unsigned int count)
+{
+	// Predicate only the defined NEON bytes, even when SVE vectors are wider than 128 bits
+	uint8x16_t bytes = vreinterpretq_u8_s32(a.m);
+	svuint8_t data = svset_neonq_u8(svundef_u8(), bytes);
+	svbool_t mask = svwhilelt_b8_u32(0, count);
+	svst1_u8(mask, p, data);
+}
+#endif
+
 /**
  * @brief Pack the low 8 bits of each lane and store to an unaligned address.
  *
@@ -1367,6 +1387,27 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
 	return vint4(vreinterpretq_s32_u8(vqtbl4q_u8(tbl.t0123, idx_bytes)));
+}
+
+#define ASTCENC_HAS_NATIVE_BIT_EXTRACT
+
+/**
+ * @brief Extract a contiguous bit range from a word.
+ *
+ * @param[in] value    The source word.
+ * @param[in] offset   The first bit, in [0, 63].
+ * @param[in] count    The number of bits, in [0, 64 - offset].
+ *
+ * @return The extracted bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t extract_bit_range(
+	uint64_t value,
+	unsigned int offset,
+	unsigned int count
+) {
+	// NEON shifts by 64 produce zero, defining the mask for both empty and full-width fields
+	uint64_t mask = ~vshld_u64(~0ull, static_cast<int64_t>(count));
+	return (value >> offset) & mask;
 }
 
 /**
