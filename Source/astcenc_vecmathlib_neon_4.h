@@ -530,6 +530,23 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 // vint4 operators and functions
 // ============================================================================
 
+#define ASTCENC_HAS_NATIVE_MATCH8
+
+/**
+ * @brief Compare eight consecutive bytes against a value.
+ *
+ * @param p       The unaligned source array of eight bytes.
+ * @param value   The byte to match.
+ *
+ * @return An eight-bit mask, with bit i set when p[i] equals value.
+ */
+ASTCENC_SIMD_INLINE unsigned int match8(const uint8_t* p, uint8_t value)
+{
+	static const uint8_t lane_bits[8] { 1, 2, 4, 8, 16, 32, 64, 128 };
+	uint8x8_t matches = vceq_u8(vld1_u8(p), vdup_n_u8(value));
+	return vaddv_u8(vand_u8(matches, vld1_u8(lane_bits)));
+}
+
 /**
  * @brief Overload: vector by vector addition.
  *

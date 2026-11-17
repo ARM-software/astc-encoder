@@ -274,6 +274,24 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 #endif
 
+#if !defined(ASTCENC_HAS_NATIVE_MATCH8)
+
+/**
+ * @brief Compare eight consecutive bytes against a value.
+ *
+ * @param p       The unaligned source array of eight bytes.
+ * @param value   The byte to match.
+ *
+ * @return An eight-bit mask, with bit i set when p[i] equals value.
+ */
+ASTCENC_SIMD_INLINE unsigned int match8(const uint8_t* p, uint8_t value)
+{
+	vint4 target(value);
+	return mask(vint4(p) == target) | (mask(vint4(p + 4) == target) << 4);
+}
+
+#endif
+
 #if !defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
 
 /**
