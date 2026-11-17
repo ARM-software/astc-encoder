@@ -269,6 +269,18 @@ bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename);
 
+#if defined(ASTCENC_RDO_SIZE)
+/**
+ * @brief Report the ASTC payload size before and after level 9 raw DEFLATE compression.
+ *
+ * @param img   The compressed image to measure.
+ *
+ * @return @c true on error, @c false on success.
+ */
+bool print_compression_metrics(
+	const astc_compressed_image& img);
+#endif
+
 /**
  * @brief Load a compressed .ktx image.
  *

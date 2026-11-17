@@ -3127,6 +3127,17 @@ int astcenc_main(
 		}
 	}
 
+#if defined(ASTCENC_RDO_SIZE)
+	if ((operation & ASTCENC_STAGE_COMPARE) && (config.lz_rdo_lambda > 0.0f))
+	{
+		bool is_metrics_error = print_compression_metrics(image_comp);
+		if (is_metrics_error)
+		{
+			return 1;
+		}
+	}
+#endif
+
 	if (is_decompression_warning)
 	{
 		return 2;

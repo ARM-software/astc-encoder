@@ -224,6 +224,7 @@ It covers:
 * How to efficiently encode data with fewer than 4 channels.
 * How to efficiently encode normal maps, sRGB data, and HDR data.
 * Coding equivalents to other compression formats.
+* [Using rate-distortion optimization](./Docs/RDO.md).
 
 The [ASTC Developer Guide][5] document (external link) provides a more detailed
 guide for developers using the `astcenc` compressor.

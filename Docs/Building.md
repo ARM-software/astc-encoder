@@ -262,6 +262,22 @@ cd build
 ctest --verbose
 ```
 
+### RDO deflate size reporting
+
+Enable `-DASTCENC_RDO_SIZE=ON` to report ASTC payload size and level 9 raw
+DEFLATE size in CLI test mode for an LDR image (`-tl`, or `-ts`) when the RDO
+lambda is non-zero. This option is disabled by default and requires the system
+to have the zlib development library installed when building the CLI.
+
+To link zlib statically, use CMake 3.24 or newer and add
+`-DZLIB_USE_STATIC_LIBS=ON` when configuring a new build directory. This
+requires the zlib static library to be installed and avoids a shared zlib
+dependency.
+
+The measurement compresses only the ASTC block data, excluding file headers
+and ZIP container metadata. It runs after the codec timing measurements, and
+does not actually change the encoded image or output file format.
+
 ### Sanitizer builds
 
 We support building with sanitizers on Linux and macOS when using Clang.
