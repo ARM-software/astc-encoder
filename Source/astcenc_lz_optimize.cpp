@@ -869,9 +869,22 @@ static void decompress_symbolic_block_raw(
   * Rows also keep tag bytes. Each entry has a corresponding tag byte storing some extra hash
   * bits (to catch most hash collisions before looking at "entries"), and we use one extra byte per
   * hash table row to keep track of the FIFO evict position.
+  *
+  * Each entry also caches its error for the current target block. A target generation invalidates
+  * errors when the source pixels or error weights change, while preserving decoded pixels.
   */
 struct block_error_calculator
 {
+	/** @brief A cached error and the target block it was computed against. */
+	struct cached_error
+	{
+		/** @brief The target generation, or zero if no error has been computed. */
+		unsigned int generation;
+
+		/** @brief The weighted squared error for this target generation. */
+		float value;
+	};
+
 	/** @brief Determines row size. Rows have (1 << ROW_SHIFT) elements. */
 	static const unsigned int ROW_SHIFT = 3;
 
@@ -906,6 +919,12 @@ struct block_error_calculator
 	/** @brief The decoded pixel values. floats_per_entry values per hash table entry. */
 	float* pixels;
 
+	/** @brief The cached errors for the decoded blocks. */
+	cached_error* errors;
+
+	/** @brief The current target generation; zero is reserved for invalid errors. */
+	unsigned int error_generation = 0;
+
 	/** @brief Activity weights replicated across RGBA channels, with zero SIMD padding. */
 	float rgba_weights[BLOCK_MAX_TEXELS * 4];
 
@@ -938,6 +957,7 @@ struct block_error_calculator
 		tags = new uint8_t[tag_count];
 		entries = new physical_block[entry_count];
 		pixels = new float[entry_count * floats_per_entry];
+		errors = new cached_error[entry_count] {};
 
 		// Clear padding once; cached decodes only overwrite active texels
 		for (unsigned int padding_offset = bsd->texel_count * 4;
@@ -960,6 +980,7 @@ struct block_error_calculator
 		delete[] tags;
 		delete[] entries;
 		delete[] pixels;
+		delete[] errors;
 	}
 
 	/**
@@ -972,6 +993,14 @@ struct block_error_calculator
 		const image_block& blk,
 		const float* weights
 	) {
+		// Errors depend on the source pixels, activity weights, and channel weights
+		error_generation++;
+		if (error_generation == 0)
+		{
+			std::memset(errors, 0, row_count * ITEMS_PER_ROW * sizeof(*errors));
+			error_generation = 1;
+		}
+
 		// Copy interleaved texels and replicate their activity weights
 		const float* source_rgba = reinterpret_cast<const float*>(blk.data_rgba);
 		vint texel_lanes = asr<2>(vint::lane_id());
@@ -1009,6 +1038,7 @@ struct block_error_calculator
 		uint8_t our_tag = (uint8_t) ((hash >> 25) | 0x80);
 		unsigned int row = hash & (row_count - 1);
 		float* matched_pixels = nullptr;
+		unsigned int matched_entry = 0;
 
 		uint8_t* row_tags = tags + row * TAGS_PER_ROW;
 		physical_block* row_entries = entries + row * ITEMS_PER_ROW;
@@ -1020,7 +1050,13 @@ struct block_error_calculator
 			unsigned int i = std::countr_zero(tag_matches);
 			if (row_entries[i] == candidate_bits)
 			{
-				matched_pixels = pixels + (row * ITEMS_PER_ROW + i) * floats_per_entry;
+				matched_entry = row * ITEMS_PER_ROW + i;
+				if (errors[matched_entry].generation == error_generation)
+				{
+					return errors[matched_entry].value;
+				}
+
+				matched_pixels = pixels + matched_entry * floats_per_entry;
 				break;
 			}
 
@@ -1035,7 +1071,8 @@ struct block_error_calculator
 
 			row_tags[lru_slot] = our_tag;
 			row_entries[lru_slot] = candidate_bits;
-			matched_pixels = pixels + (row * ITEMS_PER_ROW + lru_slot) * floats_per_entry;
+			matched_entry = row * ITEMS_PER_ROW + lru_slot;
+			matched_pixels = pixels + matched_entry * floats_per_entry;
 
 			// Turn the physical encoding back to symbolic
 			symbolic_compressed_block scb;
@@ -1045,7 +1082,11 @@ struct block_error_calculator
 			decompress_symbolic_block_raw(config, *bsd, scb, matched_pixels);
 		}
 
-		return calculate_ssd_weighted(original_rgba, matched_pixels, floats_per_entry, rgba_weights, channel_weights);
+		float error = calculate_ssd_weighted(original_rgba, matched_pixels, floats_per_entry, rgba_weights, channel_weights);
+		errors[matched_entry].value = error;
+		errors[matched_entry].generation = error_generation;
+
+		return error;
 	}
 };
 
