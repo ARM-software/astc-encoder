@@ -96,7 +96,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx512_16.h"
 
-	#define ASTCENC_SIMD_WIDTH 16
+	#define ASTCENC_SIMD_WIDTH 16u
 
 	using vfloat = vfloat16;
 
@@ -124,7 +124,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_avx2_8.h"
 	#include "astcenc_vecmathlib_common_8.h"
 
-	#define ASTCENC_SIMD_WIDTH 8
+	#define ASTCENC_SIMD_WIDTH 8u
 
 	using vfloat = vfloat8;
 
@@ -150,7 +150,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
-	#define ASTCENC_SIMD_WIDTH 4
+	#define ASTCENC_SIMD_WIDTH 4u
 
 	using vfloat = vfloat4;
 	using vfloatacc = vfloat4;
@@ -177,7 +177,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_sve_8.h"
 	#include "astcenc_vecmathlib_common_8.h"
 
-	#define ASTCENC_SIMD_WIDTH 8
+	#define ASTCENC_SIMD_WIDTH 8u
 
 	using vfloat = vfloat8;
 
@@ -203,7 +203,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
-	#define ASTCENC_SIMD_WIDTH 4
+	#define ASTCENC_SIMD_WIDTH 4u
 
 	using vfloat = vfloat4;
 	using vfloatacc = vfloat4;
@@ -258,7 +258,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_none_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
-	#define ASTCENC_SIMD_WIDTH 4
+	#define ASTCENC_SIMD_WIDTH 4u
 
 	using vfloat = vfloat4;
 	using vfloatacc = vfloat4;
@@ -273,6 +273,9 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto load1 = vfloat4::load1;
 	constexpr auto vint_from_size = vint4_from_size;
 #endif
+
+/** @brief The number of four-lane quads in a SIMD vector. */
+#define ASTCENC_SIMD_BATCH_WIDTH (ASTCENC_SIMD_WIDTH / 4u)
 
 #if !defined(ASTCENC_HAS_NATIVE_MATCH8)
 
@@ -298,7 +301,7 @@ ASTCENC_SIMD_INLINE unsigned int match8(const uint8_t* p, uint8_t value)
  * @brief Store lane zero from each quad as consecutive floats.
  *
  * @param      a   The input vector.
- * @param[out] p   The unaligned output array of ASTCENC_SIMD_WIDTH / 4 floats.
+ * @param[out] p   The unaligned output array of ASTCENC_SIMD_BATCH_WIDTH floats.
  */
 ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat a, float* p)
 {
@@ -307,7 +310,7 @@ ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat a, float* p)
 #else
 	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
 	storea(a, values);
-	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		p[c] = values[c * 4];
 	}
@@ -320,7 +323,7 @@ ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat a, float* p)
  * A quad is four consecutive lanes. Quad c occupies lanes 4*c through 4*c+3.
  * Four-wide backends return quad zero.
  *
- * @param groups   The ASTCENC_SIMD_WIDTH / 4 source groups.
+ * @param groups   The ASTCENC_SIMD_BATCH_WIDTH source groups.
  *
  * @return The packed vector with source groups in consecutive quads.
  */
@@ -330,7 +333,7 @@ ASTCENC_SIMD_INLINE vfloat pack_quads(const vfloat4* groups)
 	return groups[0];
 #else
 	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
-	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		storea(groups[c], values + c * 4);
 	}
@@ -344,7 +347,7 @@ ASTCENC_SIMD_INLINE vfloat pack_quads(const vfloat4* groups)
  * A quad is four consecutive lanes. Quad c occupies lanes 4*c through 4*c+3.
  * Four-wide backends return quad zero.
  *
- * @param groups   The ASTCENC_SIMD_WIDTH / 4 source groups.
+ * @param groups   The ASTCENC_SIMD_BATCH_WIDTH source groups.
  *
  * @return The packed vector with source groups in consecutive quads.
  */
@@ -354,7 +357,7 @@ ASTCENC_SIMD_INLINE vint pack_quads(const vint4* groups)
 	return groups[0];
 #else
 	ASTCENC_ALIGNAS int values[ASTCENC_SIMD_WIDTH];
-	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		storea(groups[c], values + c * 4);
 	}
@@ -442,6 +445,18 @@ ASTCENC_SIMD_INLINE vint broadcast_quad(vint4 a)
 }
 
 #endif
+
+/**
+ * @brief Replicate a four-lane float vector into every quad.
+ *
+ * @param a   The source quad.
+ *
+ * @return The vector with the source quad repeated.
+ */
+ASTCENC_SIMD_INLINE vfloat broadcast_quad(vfloat4 a)
+{
+	return int_as_float(broadcast_quad(float_as_int(a)));
+}
 
 /**
  * @brief Sum each quad independently, replicating the result within its four lanes.

@@ -195,8 +195,8 @@ TEST(SuiteVint, match8)
 /** @brief Pack four-lane float groups in order at every VLA width. */
 TEST(SuiteVfloat, pack_quads)
 {
-	vfloat4 groups[ASTCENC_SIMD_WIDTH / 4];
-	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	vfloat4 groups[ASTCENC_SIMD_BATCH_WIDTH];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		float base = static_cast<float>(c * 4);
 		groups[c] = vfloat4(base, base + 1, base + 2, base + 3);
@@ -213,7 +213,7 @@ TEST(SuiteVfloat, pack_quads)
 /** @brief Load unaligned consecutive floats and replicate each into a four-lane group. */
 TEST(SuiteVfloat, load1_quads)
 {
-	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	constexpr unsigned int count = ASTCENC_SIMD_BATCH_WIDTH;
 	ASTCENC_ALIGNAS float values[count + 1];
 	for (unsigned int i = 0; i < count + 1; i++)
 	{
@@ -239,7 +239,7 @@ TEST(SuiteVfloat, store_lane0_quads)
 		values[i] = static_cast<float>(i) + 0.5f;
 	}
 
-	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	constexpr unsigned int count = ASTCENC_SIMD_BATCH_WIDTH;
 	constexpr float sentinel = -1.0f;
 	ASTCENC_ALIGNAS float result[count + 2];
 	for (float& value : result)
@@ -261,7 +261,7 @@ TEST(SuiteVfloat, store_lane0_quads)
 /** @brief Load unaligned consecutive integers and replicate each into a four-lane group. */
 TEST(SuiteVint, load1_quads)
 {
-	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	constexpr unsigned int count = ASTCENC_SIMD_BATCH_WIDTH;
 	ASTCENC_ALIGNAS int values[count + 1];
 	for (unsigned int i = 0; i < count + 1; i++)
 	{
@@ -295,8 +295,8 @@ TEST(SuiteVint, broadcast_quad)
 /** @brief Pack four-lane integer groups in order at every VLA width. */
 TEST(SuiteVint, pack_quads)
 {
-	vint4 groups[ASTCENC_SIMD_WIDTH / 4];
-	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	vint4 groups[ASTCENC_SIMD_BATCH_WIDTH];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		int base = static_cast<int>(c * 4) - 8;
 		groups[c] = vint4(base, base + 1, base + 2, base + 3);
@@ -355,7 +355,7 @@ TEST(SuiteVfloat, group_reductions)
 	{
 		ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
 		storea(reduced[test], result);
-		for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 		{
 			vfloat4 group = vfloat4::loada(values + c * 4);
 			float expected[] { hadd_s(group), hadd_rgb_s(group), hmin_s(group), hmax_s(group) };

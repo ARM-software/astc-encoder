@@ -824,7 +824,7 @@ static void decompress_symbolic_block_raw(
 			vint lane_id = vint::lane_id();
 			vint float_count(bsd.texel_count * 4);
 
-			for (unsigned int j = 0; j < bsd.texel_count; j += ASTCENC_SIMD_WIDTH / 4)
+			for (unsigned int j = 0; j < bsd.texel_count; j += ASTCENC_SIMD_BATCH_WIDTH)
 			{
 				vint weight = load1_quads(plane1_weights + j);
 				vint colori = base + asr<6>(delta * weight + vint(32));
@@ -1017,7 +1017,7 @@ struct block_error_calculator
 			store(select(vfloat::zero(), pixels_rgba, mask), original_rgba + i);
 			store(select(vfloat::zero(), weights_rgba, mask), rgba_weights + i);
 
-			texel_lanes += vint(ASTCENC_SIMD_WIDTH / 4);
+			texel_lanes += vint(ASTCENC_SIMD_BATCH_WIDTH);
 		}
 
 		channel_weights = blk.channel_weight;

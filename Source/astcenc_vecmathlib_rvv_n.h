@@ -351,7 +351,7 @@ ASTCENC_SIMD_INLINE vint broadcast_quad(vint4 a)
 /**
  * @brief Load consecutive integers, replicating each into a four-lane group.
  *
- * @param p   The unaligned source array of ASTCENC_SIMD_WIDTH / 4 integers.
+ * @param p   The unaligned source array of ASTCENC_SIMD_BATCH_WIDTH integers.
  *
  * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
  */
@@ -366,7 +366,7 @@ ASTCENC_SIMD_INLINE vint load1_quads(const int* p)
 /**
  * @brief Load consecutive floats, replicating each into a four-lane group.
  *
- * @param p   The unaligned source array of ASTCENC_SIMD_WIDTH / 4 floats.
+ * @param p   The unaligned source array of ASTCENC_SIMD_BATCH_WIDTH floats.
  *
  * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
  */

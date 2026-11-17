@@ -1339,23 +1339,18 @@ void compute_partition_errors_rgb_batch(
 	// partitions, using (s0 + s2) + (s1 + s3), matching the original hadd_s() reduction. Weight
 	// quantization errors are then added in the original partition order.
 
-	constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
 	unsigned int partition_count = candidates[0]->partition_count;
 
 	// Reuse the original per-channel texel accumulation and reduction for partition averages
-	vfloat4 averages[batch_size][BLOCK_MAX_PARTITIONS];
-	vfloat4 units[batch_size];
-	vfloat4 channel_weights[batch_size];
+	vfloat4 averages[ASTCENC_SIMD_BATCH_WIDTH][BLOCK_MAX_PARTITIONS];
 
-	for (unsigned int c = 0; c < batch_size; c++)
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		compute_partition_averages_rgb(*candidates[c], blk, averages[c]);
-		units[c] = unit3();
-		channel_weights[c] = blk.channel_weight;
 	}
 
-	vfloat safe = pack_quads(units);
-	vfloat channel_weight = pack_quads(channel_weights);
+	vfloat safe = broadcast_quad(unit3());
+	vfloat channel_weight = broadcast_quad(blk.channel_weight);
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
@@ -1377,10 +1372,10 @@ void compute_partition_errors_rgb_batch(
 	// partition order
 	for (unsigned int p = 0; p < partition_count; p++)
 	{
-		vfloat4 colors[batch_size];
-		vfloat4 counts[batch_size];
+		vfloat4 colors[ASTCENC_SIMD_BATCH_WIDTH];
+		vfloat4 counts[ASTCENC_SIMD_BATCH_WIDTH];
 		unsigned int max_count = 0;
-		for (unsigned int c = 0; c < batch_size; c++)
+		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 		{
 			unsigned int count = candidates[c]->partition_texel_count[p];
 			max_count = astc::max(max_count, count);
@@ -1399,7 +1394,7 @@ void compute_partition_errors_rgb_batch(
 
 		for (unsigned int i = 0; i < max_count; i++)
 		{
-			for (unsigned int c = 0; c < batch_size; c++)
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
 				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
@@ -1455,9 +1450,9 @@ void compute_partition_errors_rgb_batch(
 
 		for (unsigned int i = 0; i < max_count; i += 4)
 		{
-			vint4 indices[batch_size];
+			vint4 indices[ASTCENC_SIMD_BATCH_WIDTH];
 
-			for (unsigned int c = 0; c < batch_size; c++)
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				// Repeat the final padded quad for exhausted candidates to preserve min/max
 				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
@@ -1539,23 +1534,18 @@ void compute_partition_errors_rgba_grayscale_batch(
 
 	assert(blk.grayscale);
 
-	constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
 	unsigned int partition_count = candidates[0]->partition_count;
 
 	// Reuse the original per-channel texel accumulation and reduction for partition averages
-	vfloat4 averages[batch_size][BLOCK_MAX_PARTITIONS];
-	vfloat4 units[batch_size];
-	vfloat4 channel_weights[batch_size];
+	vfloat4 averages[ASTCENC_SIMD_BATCH_WIDTH][BLOCK_MAX_PARTITIONS];
 
-	for (unsigned int c = 0; c < batch_size; c++)
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 	{
 		compute_partition_averages_rgba_grayscale(*candidates[c], blk, averages[c]);
-		units[c] = unit4();
-		channel_weights[c] = blk.channel_weight;
 	}
 
-	vfloat safe = pack_quads(units);
-	vfloat channel_weight = pack_quads(channel_weights);
+	vfloat safe = broadcast_quad(unit4());
+	vfloat channel_weight = broadcast_quad(blk.channel_weight);
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
@@ -1577,10 +1567,10 @@ void compute_partition_errors_rgba_grayscale_batch(
 	// partition order
 	for (unsigned int p = 0; p < partition_count; p++)
 	{
-		vfloat4 colors[batch_size];
-		vfloat4 counts[batch_size];
+		vfloat4 colors[ASTCENC_SIMD_BATCH_WIDTH];
+		vfloat4 counts[ASTCENC_SIMD_BATCH_WIDTH];
 		unsigned int max_count = 0;
-		for (unsigned int c = 0; c < batch_size; c++)
+		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 		{
 			unsigned int count = candidates[c]->partition_texel_count[p];
 			max_count = astc::max(max_count, count);
@@ -1597,7 +1587,7 @@ void compute_partition_errors_rgba_grayscale_batch(
 
 		for (unsigned int i = 0; i < max_count; i++)
 		{
-			for (unsigned int c = 0; c < batch_size; c++)
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
 				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
@@ -1641,9 +1631,9 @@ void compute_partition_errors_rgba_grayscale_batch(
 
 		for (unsigned int i = 0; i < max_count; i += 4)
 		{
-			vint4 indices[batch_size];
+			vint4 indices[ASTCENC_SIMD_BATCH_WIDTH];
 
-			for (unsigned int c = 0; c < batch_size; c++)
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				// Repeat the final padded quad for exhausted candidates to preserve min/max
 				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
