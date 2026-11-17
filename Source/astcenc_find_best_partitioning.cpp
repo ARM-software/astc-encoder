@@ -621,29 +621,29 @@ unsigned int find_best_partition_candidates(
 
 	if (blk.grayscale && uses_alpha)
 	{
-		constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
-
-		unsigned int padded_limit = (partition_search_limit + batch_size - 1) & ~(batch_size - 1);
+		unsigned int padded_limit = partition_search_limit + ASTCENC_SIMD_BATCH_WIDTH - 1;
+		padded_limit &= ~(ASTCENC_SIMD_BATCH_WIDTH - 1);
 		for (unsigned int i = partition_search_limit; i < padded_limit; i++)
 		{
 			partition_sequence[i] = partition_sequence[partition_search_limit - 1];
 		}
 
-		for (unsigned int i = 0; i < partition_search_limit; i += batch_size)
+		for (unsigned int i = 0; i < partition_search_limit; i += ASTCENC_SIMD_BATCH_WIDTH)
 		{
-			const partition_info* candidates[batch_size];
-			for (unsigned int c = 0; c < batch_size; c++)
+			const partition_info* candidates[ASTCENC_SIMD_BATCH_WIDTH];
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
 			}
 
-			float uncor_errors[batch_size];
-			float samec_errors[batch_size];
+			float uncor_errors[ASTCENC_SIMD_BATCH_WIDTH];
+			float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
 			compute_partition_errors_rgba_grayscale_batch(candidates, blk, weight_imprecision_estim,
 			                                              uncor_errors, samec_errors);
 
 			// Keep candidate insertion order and exclude padded results from the rankings
-			unsigned int active_count = astc::min(batch_size, partition_search_limit - i);
+			unsigned int active_count = astc::min(ASTCENC_SIMD_BATCH_WIDTH,
+			                                      partition_search_limit - i);
 			for (unsigned int c = 0; c < active_count; c++)
 			{
 				unsigned int partition = partition_sequence[i + c];
@@ -749,29 +749,29 @@ unsigned int find_best_partition_candidates(
 	else
 	{
 #if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
-		constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
-
-		unsigned int padded_limit = (partition_search_limit + batch_size - 1) & ~(batch_size - 1);
+		unsigned int padded_limit = partition_search_limit + ASTCENC_SIMD_BATCH_WIDTH - 1;
+		padded_limit &= ~(ASTCENC_SIMD_BATCH_WIDTH - 1);
 		for (unsigned int i = partition_search_limit; i < padded_limit; i++)
 		{
 			partition_sequence[i] = partition_sequence[partition_search_limit - 1];
 		}
 
-		for (unsigned int i = 0; i < partition_search_limit; i += batch_size)
+		for (unsigned int i = 0; i < partition_search_limit; i += ASTCENC_SIMD_BATCH_WIDTH)
 		{
-			const partition_info* candidates[batch_size];
-			for (unsigned int c = 0; c < batch_size; c++)
+			const partition_info* candidates[ASTCENC_SIMD_BATCH_WIDTH];
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
 			}
 
-			float uncor_errors[batch_size];
-			float samec_errors[batch_size];
+			float uncor_errors[ASTCENC_SIMD_BATCH_WIDTH];
+			float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
 			compute_partition_errors_rgb_batch(candidates, blk, weight_imprecision_estim,
 			                                   uncor_errors, samec_errors);
 
 			// Ignore padded candidates so they cannot displace real results or change tie ordering
-			unsigned int active_count = astc::min(batch_size, partition_search_limit - i);
+			unsigned int active_count = astc::min(ASTCENC_SIMD_BATCH_WIDTH,
+			                                      partition_search_limit - i);
 			for (unsigned int c = 0; c < active_count; c++)
 			{
 				unsigned int partition = partition_sequence[i + c];

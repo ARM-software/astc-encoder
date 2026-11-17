@@ -1587,7 +1587,7 @@ void compute_error_squared_rgb(
  *
  * All candidates have the same partition count.
  *
- * @param      candidates           The ASTCENC_SIMD_WIDTH / 4 partition candidates.
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
  * @param      blk                  The source image block.
  * @param      weight_imprecision   The squared weight quantization error estimate.
  * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
@@ -1606,7 +1606,7 @@ void compute_partition_errors_rgb_batch(
  * All candidates have the same partition count. RGB components must be identical;
  * channel weights may differ.
  *
- * @param      candidates           The ASTCENC_SIMD_WIDTH / 4 partition candidates.
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
  * @param      blk                  The source grayscale RGB image block with alpha.
  * @param      weight_imprecision   The squared weight quantization error estimate.
  * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
