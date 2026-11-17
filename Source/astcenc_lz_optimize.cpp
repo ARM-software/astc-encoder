@@ -73,7 +73,7 @@ static inline uint64_t load64le(const uint8_t* p)
 	uint64_t result = 0;
 	for (int i = 0; i < 8; i++)
 	{
-		result |= p[i] << (i * 8);
+		result |= static_cast<uint64_t>(p[i]) << (i * 8);
 	}
 
 	return result;
