@@ -640,8 +640,8 @@ unsigned int find_best_partition_candidates(
 			float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
 			if (blk.grayscale)
 			{
-				compute_partition_errors_rgba_grayscale_batch(candidates, blk, weight_imprecision_estim,
-				                                              uncor_errors, samec_errors);
+				compute_partition_errors_luminance_alpha_batch(candidates, blk, weight_imprecision_estim,
+				                                               uncor_errors, samec_errors);
 			}
 			else
 			{
@@ -756,100 +756,119 @@ unsigned int find_best_partition_candidates(
 	}
 	else
 	{
+#if !defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+		if (blk.grayscale)
+#endif
+		{
+			unsigned int padded_limit = partition_search_limit + ASTCENC_SIMD_BATCH_WIDTH - 1;
+			padded_limit &= ~(ASTCENC_SIMD_BATCH_WIDTH - 1);
+			for (unsigned int i = partition_search_limit; i < padded_limit; i++)
+			{
+				partition_sequence[i] = partition_sequence[partition_search_limit - 1];
+			}
+
+			for (unsigned int i = 0; i < partition_search_limit; i += ASTCENC_SIMD_BATCH_WIDTH)
+			{
+				const partition_info* candidates[ASTCENC_SIMD_BATCH_WIDTH];
+				for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+				{
+					candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
+				}
+
+				float uncor_errors[ASTCENC_SIMD_BATCH_WIDTH];
+				float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
 #if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
-		unsigned int padded_limit = partition_search_limit + ASTCENC_SIMD_BATCH_WIDTH - 1;
-		padded_limit &= ~(ASTCENC_SIMD_BATCH_WIDTH - 1);
-		for (unsigned int i = partition_search_limit; i < padded_limit; i++)
-		{
-			partition_sequence[i] = partition_sequence[partition_search_limit - 1];
-		}
+				if (blk.grayscale)
+#endif
+				{
+					compute_partition_errors_luminance_batch(candidates, blk, weight_imprecision_estim,
+					                                         uncor_errors, samec_errors);
+				}
+#if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+				else
+				{
+					compute_partition_errors_rgb_batch(candidates, blk, weight_imprecision_estim,
+					                                   uncor_errors, samec_errors);
+				}
+#endif
 
-		for (unsigned int i = 0; i < partition_search_limit; i += ASTCENC_SIMD_BATCH_WIDTH)
-		{
-			const partition_info* candidates[ASTCENC_SIMD_BATCH_WIDTH];
-			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
-			{
-				candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
-			}
-
-			float uncor_errors[ASTCENC_SIMD_BATCH_WIDTH];
-			float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
-			compute_partition_errors_rgb_batch(candidates, blk, weight_imprecision_estim,
-			                                   uncor_errors, samec_errors);
-
-			// Ignore padded candidates so they cannot displace real results or change tie ordering
-			unsigned int active_count = astc::min(ASTCENC_SIMD_BATCH_WIDTH,
-			                                      partition_search_limit - i);
-			for (unsigned int c = 0; c < active_count; c++)
-			{
-				unsigned int partition = partition_sequence[i + c];
-				insert_result(requested_candidates, uncor_errors[c], partition,
-				              uncor_best_errors, uncor_best_partitions);
-				insert_result(requested_candidates, samec_errors[c], partition,
-				              samec_best_errors, samec_best_partitions);
+				// Ignore padded candidates so they cannot displace real results or change tie ordering
+				unsigned int active_count = astc::min(ASTCENC_SIMD_BATCH_WIDTH,
+				                                      partition_search_limit - i);
+				for (unsigned int c = 0; c < active_count; c++)
+				{
+					unsigned int partition = partition_sequence[i + c];
+					insert_result(requested_candidates, uncor_errors[c], partition,
+					              uncor_best_errors, uncor_best_partitions);
+					insert_result(requested_candidates, samec_errors[c], partition,
+					              samec_best_errors, samec_best_partitions);
+				}
 			}
 		}
-#else
-		for (unsigned int i = 0; i < partition_search_limit; i++)
+#if !defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+		else
 		{
-			unsigned int partition = partition_sequence[i];
-			const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
-
-			// Compute weighting to give to each component in each partition
-			partition_metrics pms[BLOCK_MAX_PARTITIONS];
-			compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
-
-			partition_lines3 plines[BLOCK_MAX_PARTITIONS];
-
-			for (unsigned int j = 0; j < partition_count; j++)
+			for (unsigned int i = 0; i < partition_search_limit; i++)
 			{
-				partition_metrics& pm = pms[j];
-				partition_lines3& pl = plines[j];
+				unsigned int partition = partition_sequence[i];
+				const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
 
-				pl.uncor_line.a = pm.avg;
-				pl.uncor_line.b = normalize_safe(pm.dir, unit3());
+				// Compute weighting to give to each component in each partition
+				partition_metrics pms[BLOCK_MAX_PARTITIONS];
+				compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
 
-				pl.samec_line.a = vfloat4::zero();
-				pl.samec_line.b = normalize_safe(pm.avg, unit3());
+				partition_lines3 plines[BLOCK_MAX_PARTITIONS];
 
-				pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b);
-				pl.uncor_pline.bs   = pl.uncor_line.b;
+				for (unsigned int j = 0; j < partition_count; j++)
+				{
+					partition_metrics& pm = pms[j];
+					partition_lines3& pl = plines[j];
 
-				pl.samec_pline.amod = vfloat4::zero();
-				pl.samec_pline.bs   = pl.samec_line.b;
+					pl.uncor_line.a = pm.avg;
+					pl.uncor_line.b = normalize_safe(pm.dir, unit3());
+
+					pl.samec_line.a = vfloat4::zero();
+					pl.samec_line.b = normalize_safe(pm.avg, unit3());
+
+					pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b);
+					pl.uncor_pline.bs   = pl.uncor_line.b;
+
+					pl.samec_pline.amod = vfloat4::zero();
+					pl.samec_pline.bs   = pl.samec_line.b;
+				}
+
+				float uncor_error = 0.0f;
+				float samec_error = 0.0f;
+
+				compute_error_squared_rgb(pi,blk, plines, uncor_error, samec_error);
+
+				// Compute an estimate of error introduced by weight quantization imprecision. This
+				// error is computed as follows, for each partition:
+				//     1: compute the principal-axis vector (full length) in error-space
+				//     2: convert the principal-axis vector to regular RGB-space
+				//     3: scale the vector by a constant that estimates average quantization error
+				//     4: for each texel, square the vector, then do a dot-product with the texel's
+				//        error weight; sum up the results across all texels.
+				//     4(optimized): square the vector once, then do a dot-product with the average
+				//        texel error, then multiply by the number of texels.
+
+				for (unsigned int j = 0; j < partition_count; j++)
+				{
+					partition_lines3& pl = plines[j];
+
+					float tpp = static_cast<float>(pi.partition_texel_count[j]);
+					vfloat4 error_weights = blk.channel_weight * (tpp * weight_imprecision_estim);
+
+					vfloat4 uncor_vector = pl.uncor_line.b * pl.line_length;
+					vfloat4 samec_vector = pl.samec_line.b * pl.line_length;
+
+					uncor_error += dot3_s(uncor_vector * uncor_vector, error_weights);
+					samec_error += dot3_s(samec_vector * samec_vector, error_weights);
+				}
+
+				insert_result(requested_candidates, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
+				insert_result(requested_candidates, samec_error, partition, samec_best_errors, samec_best_partitions);
 			}
-
-			float uncor_error = 0.0f;
-			float samec_error = 0.0f;
-
-			compute_error_squared_rgb(pi,blk, plines, uncor_error, samec_error);
-
-			// Compute an estimate of error introduced by weight quantization imprecision. This
-			// error is computed as follows, for each partition:
-			//     1: compute the principal-axis vector (full length) in error-space
-			//     2: convert the principal-axis vector to regular RGB-space
-			//     3: scale the vector by a constant that estimates average quantization error
-			//     4: for each texel, square the vector, then do a dot-product with the texel's
-			//        error weight; sum up the results across all texels.
-			//     4(optimized): square the vector once, then do a dot-product with the average
-			//        texel error, then multiply by the number of texels.
-
-			for (unsigned int j = 0; j < partition_count; j++)
-			{
-				partition_lines3& pl = plines[j];
-
-				float tpp = static_cast<float>(pi.partition_texel_count[j]);
-				vfloat4 error_weights = blk.channel_weight * (tpp * weight_imprecision_estim);
-
-				vfloat4 uncor_vector = pl.uncor_line.b * pl.line_length;
-				vfloat4 samec_vector = pl.samec_line.b * pl.line_length;
-
-				uncor_error += dot3_s(uncor_vector * uncor_vector, error_weights);
-				samec_error += dot3_s(samec_vector * samec_vector, error_weights);
-			}
-
-			insert_result(requested_candidates, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
-			insert_result(requested_candidates, samec_error, partition, samec_best_errors, samec_best_partitions);
 		}
 #endif
 	}

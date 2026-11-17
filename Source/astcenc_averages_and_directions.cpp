@@ -1299,7 +1299,253 @@ void compute_error_squared_rgb(
 	samec_error = hadd_s(samec_errorsumv);
 }
 
+/* See header for documentation. */
+void compute_partition_errors_luminance_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	// Luminance texels lie on the line (L, L, L) through the origin. Both endpoint models
+	// fit this line exactly, so only the range-dependent weight quantization error remains.
+	// Compute it directly from luminance ranges, avoiding averages, directions, and projections
+
+	assert(blk.grayscale);
+	assert(blk.is_constant_channel(3));
+
+	unsigned int partition_count = candidates[0]->partition_count;
+	vfloat error_sum = vfloat::zero();
+	vfloat ew_r(blk.channel_weight.lane<0>());
+	vfloat ew_g(blk.channel_weight.lane<1>());
+	vfloat ew_b(blk.channel_weight.lane<2>());
+
+	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
+
+	// Process partition p from every candidate together, preserving each candidate's
+	// partition order
+	for (unsigned int p = 0; p < partition_count; p++)
+	{
+		vfloat4 counts[ASTCENC_SIMD_BATCH_WIDTH];
+		unsigned int max_count = 0;
+		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+		{
+			unsigned int count = candidates[c]->partition_texel_count[p];
+			max_count = astc::max(max_count, count);
+			counts[c] = vfloat4(static_cast<float>(count));
+		}
+
+		vfloat low(1e10f);
+		vfloat high(-1e10f);
+
+		for (unsigned int i = 0; i < max_count; i += 4)
+		{
+			vint4 indices[ASTCENC_SIMD_BATCH_WIDTH];
+
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+			{
+				// Repeat the final padded quad for exhausted candidates to preserve min/max
+				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+			}
+
+			vfloat r = gatherf(tr, pack_quads(indices));
+			low = min(r, low);
+			high = max(r, high);
+		}
+
+		// Keep the channel weights separate and retain the RGB addition order
+		vfloat length = max_quads(high) - min_quads(low);
+		vfloat length_squared = length * length;
+		vfloat error_weight = pack_quads(counts) * vfloat(weight_imprecision);
+		vfloat error = (length_squared * (ew_r * error_weight))
+		             + (length_squared * (ew_g * error_weight))
+		             + (length_squared * (ew_b * error_weight));
+		error_sum += error;
+	}
+
+	store_lane0_quads(error_sum, uncor_errors);
+	store_lane0_quads(error_sum, samec_errors);
+}
+
 #if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+
+/* See header for documentation. */
+void compute_partition_errors_luminance_alpha_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	// Apply the RGB batch strategy to luminance with alpha. Direction finding uses
+	// RRRA lanes per candidate, while error scoring uses four texels per candidate quad.
+	//
+	// Identical RGB components share direction and distance calculations, but retain separate
+	// channel weights. Keep the original addition order, four running error sums, and partition
+	// order for quantization errors to preserve floating-point invariance
+
+	assert(blk.grayscale);
+
+	unsigned int partition_count = candidates[0]->partition_count;
+
+	// Reuse the original per-channel texel accumulation and reduction for partition averages
+	vfloat4 averages[ASTCENC_SIMD_BATCH_WIDTH][BLOCK_MAX_PARTITIONS];
+
+	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+	{
+		compute_partition_averages_rgba_grayscale(*candidates[c], blk, averages[c]);
+	}
+
+	vfloat safe = broadcast_quad(unit4());
+	vfloat channel_weight = broadcast_quad(blk.channel_weight);
+	vfloat zero = vfloat::zero();
+
+	// Preserve four running texel-error sums per candidate across partition boundaries
+	vfloat uncor_sum = zero;
+	vfloat samec_sum = zero;
+
+	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
+	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
+
+	vfloat ew_r(blk.channel_weight.lane<0>());
+	vfloat ew_g(blk.channel_weight.lane<1>());
+	vfloat ew_b(blk.channel_weight.lane<2>());
+	vfloat ew_a(blk.channel_weight.lane<3>());
+
+	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
+	vgatherf_table ta = vgatherf_load(blk.data_a, blk.texel_count);
+
+	// Process partition p from every candidate together, preserving each candidate's
+	// partition order
+	for (unsigned int p = 0; p < partition_count; p++)
+	{
+		vfloat4 colors[ASTCENC_SIMD_BATCH_WIDTH];
+		vfloat4 counts[ASTCENC_SIMD_BATCH_WIDTH];
+		unsigned int max_count = 0;
+		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+		{
+			unsigned int count = candidates[c]->partition_texel_count[p];
+			max_count = astc::max(max_count, count);
+			colors[c] = averages[c][p];
+			counts[c] = vfloat4(static_cast<float>(count));
+		}
+
+		// Direction estimation uses RRRA lanes within each candidate quad
+		vfloat mean = pack_quads(colors);
+		vfloat countv = pack_quads(counts);
+		vfloat sum_xp = zero;
+		vfloat sum_wp = zero;
+		vfloat index = zero;
+
+		for (unsigned int i = 0; i < max_count; i++)
+		{
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+			{
+				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
+				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
+				float r = blk.data_r[texel];
+				colors[c] = vfloat4(r, r, r, blk.data_a[texel]);
+			}
+
+			// Preserve texel order and mask exhausted candidates without rebuilding RGB vectors
+			vfloat datum = select(zero, pack_quads(colors) - mean, index < countv);
+			index += vfloat(1.0f);
+
+			sum_xp += select(zero, datum, swizzle_quads<0, 0, 0, 0>(datum) > zero);
+			sum_wp += select(zero, datum, swizzle_quads<3, 3, 3, 3>(datum) > zero);
+		}
+
+		// Select the dominant direction independently for each candidate
+		vfloat prod_xp = dot_quads(sum_xp, sum_xp);
+		vfloat best = sum_xp;
+
+		vfloat prod_wp = dot_quads(sum_wp, sum_wp);
+		best = select(best, sum_wp, prod_wp > prod_xp);
+
+		// Keep direction selection, normalization, and line setup in the same candidate groups
+		vfloat bs = normalize_safe_quads(best, safe);
+		vfloat samec_bs = normalize_safe_quads(mean, safe);
+		vfloat amod = mean - bs * dot_quads(mean, bs);
+
+		// Scoring uses four texels per candidate quad, with separate channel vectors
+		vfloat bs0 = swizzle_quads<0, 0, 0, 0>(bs);
+		vfloat bs3 = swizzle_quads<3, 3, 3, 3>(bs);
+
+		vfloat amod0 = swizzle_quads<0, 0, 0, 0>(amod);
+		vfloat amod3 = swizzle_quads<3, 3, 3, 3>(amod);
+
+		vfloat samec0 = swizzle_quads<0, 0, 0, 0>(samec_bs);
+		vfloat samec3 = swizzle_quads<3, 3, 3, 3>(samec_bs);
+		vfloat lane_ids = int_to_float(vint::lane_id() & vint(3));
+
+		vfloat low(1e10f);
+		vfloat high(-1e10f);
+
+		for (unsigned int i = 0; i < max_count; i += 4)
+		{
+			vint4 indices[ASTCENC_SIMD_BATCH_WIDTH];
+
+			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
+			{
+				// Repeat the final padded quad for exhausted candidates to preserve min/max
+				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+			}
+
+			vint texels = pack_quads(indices);
+			vmask active = lane_ids < countv;
+			lane_ids += vfloat(4.0f);
+
+			vfloat r = gatherf(tr, texels);
+			vfloat a = gatherf(ta, texels);
+
+			// Retain the three RGB additions and separately weighted channel errors
+			vfloat rgb_param = r * bs0;
+			vfloat param = rgb_param + rgb_param + rgb_param + (a * bs3);
+
+			low = min(param, low);
+			high = max(param, high);
+
+			vfloat dr = (amod0 - r) + (param * bs0);
+			vfloat da = (amod3 - a) + (param * bs3);
+			vfloat error = (ew_r * dr * dr) + (ew_g * dr * dr)
+			             + (ew_b * dr * dr) + (ew_a * da * da);
+			uncor_sum += select(zero, error, active);
+
+			rgb_param = r * samec0;
+			param = rgb_param + rgb_param + rgb_param + (a * samec3);
+
+			dr = param * samec0 - r;
+			da = param * samec3 - a;
+			error = (ew_r * dr * dr) + (ew_g * dr * dr)
+			      + (ew_b * dr * dr) + (ew_a * da * da);
+			samec_sum += select(zero, error, active);
+		}
+
+		// Defer adding quantization errors until after the texel sums are reduced
+		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
+		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
+
+		vfloat uncor_vector = bs * length;
+		vfloat samec_vector = samec_bs * length;
+		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
+		samec_quant[p] = sum_quads((samec_vector * samec_vector) * error_weights);
+	}
+
+	// Reduce each candidate's texel sums as (s0 + s2) + (s1 + s3), matching hadd_s(vfloat4)
+	// Then add quantization errors in the original partition order
+	uncor_sum = sum_quads(uncor_sum);
+	samec_sum = sum_quads(samec_sum);
+	for (unsigned int p = 0; p < partition_count; p++)
+	{
+		uncor_sum += uncor_quant[p];
+		samec_sum += samec_quant[p];
+	}
+
+	store_lane0_quads(uncor_sum, uncor_errors);
+	store_lane0_quads(samec_sum, samec_errors);
+}
 
 /* See header for documentation. */
 void compute_partition_errors_rgb_batch(
@@ -1726,182 +1972,6 @@ void compute_partition_errors_rgba_batch(
 	store_lane0_quads(samec_sum, samec_errors);
 }
 
-/* See header for documentation. */
-void compute_partition_errors_rgba_grayscale_batch(
-	const partition_info* const* candidates,
-	const image_block& blk,
-	float weight_imprecision,
-	float* uncor_errors,
-	float* samec_errors
-) {
-	// Apply the RGB batch strategy above to grayscale RGB with alpha. Direction finding uses
-	// RRRA lanes per candidate, while error scoring uses four texels per candidate quad.
-	//
-	// Identical RGB components share direction and distance calculations, but retain separate
-	// channel weights. Keep the original addition order, four running error sums, and partition
-	// order for quantization errors to preserve floating-point invariance
-
-	assert(blk.grayscale);
-
-	unsigned int partition_count = candidates[0]->partition_count;
-
-	// Reuse the original per-channel texel accumulation and reduction for partition averages
-	vfloat4 averages[ASTCENC_SIMD_BATCH_WIDTH][BLOCK_MAX_PARTITIONS];
-
-	for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
-	{
-		compute_partition_averages_rgba_grayscale(*candidates[c], blk, averages[c]);
-	}
-
-	vfloat safe = broadcast_quad(unit4());
-	vfloat channel_weight = broadcast_quad(blk.channel_weight);
-	vfloat zero = vfloat::zero();
-
-	// Preserve four running texel-error sums per candidate across partition boundaries
-	vfloat uncor_sum = zero;
-	vfloat samec_sum = zero;
-
-	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
-	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
-
-	vfloat ew_r(blk.channel_weight.lane<0>());
-	vfloat ew_g(blk.channel_weight.lane<1>());
-	vfloat ew_b(blk.channel_weight.lane<2>());
-	vfloat ew_a(blk.channel_weight.lane<3>());
-
-	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
-	vgatherf_table ta = vgatherf_load(blk.data_a, blk.texel_count);
-
-	// Process partition p from every candidate together, preserving each candidate's
-	// partition order
-	for (unsigned int p = 0; p < partition_count; p++)
-	{
-		vfloat4 colors[ASTCENC_SIMD_BATCH_WIDTH];
-		vfloat4 counts[ASTCENC_SIMD_BATCH_WIDTH];
-		unsigned int max_count = 0;
-		for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
-		{
-			unsigned int count = candidates[c]->partition_texel_count[p];
-			max_count = astc::max(max_count, count);
-			colors[c] = averages[c][p];
-			counts[c] = vfloat4(static_cast<float>(count));
-		}
-
-		// Direction estimation uses RRRA lanes within each candidate quad
-		vfloat mean = pack_quads(colors);
-		vfloat countv = pack_quads(counts);
-		vfloat sum_xp = zero;
-		vfloat sum_wp = zero;
-		vfloat index = zero;
-
-		for (unsigned int i = 0; i < max_count; i++)
-		{
-			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
-			{
-				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
-				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
-				float r = blk.data_r[texel];
-				colors[c] = vfloat4(r, r, r, blk.data_a[texel]);
-			}
-
-			// Preserve texel order and mask exhausted candidates without rebuilding RGB vectors
-			vfloat datum = select(zero, pack_quads(colors) - mean, index < countv);
-			index += vfloat(1.0f);
-
-			sum_xp += select(zero, datum, swizzle_quads<0, 0, 0, 0>(datum) > zero);
-			sum_wp += select(zero, datum, swizzle_quads<3, 3, 3, 3>(datum) > zero);
-		}
-
-		// Select the dominant direction independently for each candidate
-		vfloat prod_xp = dot_quads(sum_xp, sum_xp);
-		vfloat best = sum_xp;
-
-		vfloat prod_wp = dot_quads(sum_wp, sum_wp);
-		best = select(best, sum_wp, prod_wp > prod_xp);
-
-		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat bs = normalize_safe_quads(best, safe);
-		vfloat samec_bs = normalize_safe_quads(mean, safe);
-		vfloat amod = mean - bs * dot_quads(mean, bs);
-
-		// Scoring uses four texels per candidate quad, with separate channel vectors
-		vfloat bs0 = swizzle_quads<0, 0, 0, 0>(bs);
-		vfloat bs3 = swizzle_quads<3, 3, 3, 3>(bs);
-
-		vfloat amod0 = swizzle_quads<0, 0, 0, 0>(amod);
-		vfloat amod3 = swizzle_quads<3, 3, 3, 3>(amod);
-
-		vfloat samec0 = swizzle_quads<0, 0, 0, 0>(samec_bs);
-		vfloat samec3 = swizzle_quads<3, 3, 3, 3>(samec_bs);
-		vfloat lane_ids = int_to_float(vint::lane_id() & vint(3));
-
-		vfloat low(1e10f);
-		vfloat high(-1e10f);
-
-		for (unsigned int i = 0; i < max_count; i += 4)
-		{
-			vint4 indices[ASTCENC_SIMD_BATCH_WIDTH];
-
-			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
-			{
-				// Repeat the final padded quad for exhausted candidates to preserve min/max
-				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
-				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
-			}
-
-			vint texels = pack_quads(indices);
-			vmask active = lane_ids < countv;
-			lane_ids += vfloat(4.0f);
-
-			vfloat r = gatherf(tr, texels);
-			vfloat a = gatherf(ta, texels);
-
-			// Retain the three RGB additions and separately weighted channel errors
-			vfloat rgb_param = r * bs0;
-			vfloat param = rgb_param + rgb_param + rgb_param + (a * bs3);
-
-			low = min(param, low);
-			high = max(param, high);
-
-			vfloat dr = (amod0 - r) + (param * bs0);
-			vfloat da = (amod3 - a) + (param * bs3);
-			vfloat error = (ew_r * dr * dr) + (ew_g * dr * dr)
-			             + (ew_b * dr * dr) + (ew_a * da * da);
-			uncor_sum += select(zero, error, active);
-
-			rgb_param = r * samec0;
-			param = rgb_param + rgb_param + rgb_param + (a * samec3);
-
-			dr = param * samec0 - r;
-			da = param * samec3 - a;
-			error = (ew_r * dr * dr) + (ew_g * dr * dr)
-			      + (ew_b * dr * dr) + (ew_a * da * da);
-			samec_sum += select(zero, error, active);
-		}
-
-		// Defer adding quantization errors until after the texel sums are reduced
-		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
-		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
-
-		vfloat uncor_vector = bs * length;
-		vfloat samec_vector = samec_bs * length;
-		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
-		samec_quant[p] = sum_quads((samec_vector * samec_vector) * error_weights);
-	}
-
-	// Reduce each candidate's texel sums as (s0 + s2) + (s1 + s3), matching hadd_s(vfloat4)
-	// Then add quantization errors in the original partition order
-	uncor_sum = sum_quads(uncor_sum);
-	samec_sum = sum_quads(samec_sum);
-	for (unsigned int p = 0; p < partition_count; p++)
-	{
-		uncor_sum += uncor_quant[p];
-		samec_sum += samec_quant[p];
-	}
-
-	store_lane0_quads(uncor_sum, uncor_errors);
-	store_lane0_quads(samec_sum, samec_errors);
-}
 #endif
 
 #endif
