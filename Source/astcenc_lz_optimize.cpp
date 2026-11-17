@@ -635,7 +635,7 @@ static float calculate_bit_cost_simple(
 }
 
 /**
- * @brief Calculate Sum of Squared Differenced (SSD) with per-texel weights.
+ * @brief Calculate Sum of Squared Differences (SSD) with per-texel weights.
  *
  * @param[in] img1              Interleaved RGBA data for the first block, padded to SIMD width.
  * @param[in] img2              Interleaved RGBA data for the second block, padded to SIMD width.
@@ -648,16 +648,18 @@ static float calculate_bit_cost_simple(
 static inline float calculate_ssd_weighted(
 	const float* img1,
 	const float* img2,
-	unsigned int texel_count,
+	unsigned int float_count,
 	const float* weights,
 	const vfloat4& channel_weights
 ) {
 	vfloat4 sum = vfloat4::zero();
-	for (unsigned int i = 0; i < texel_count; i++)
+	for (unsigned int i = 0; i < float_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat4 diff = vfloat4(img1 + i*4) - vfloat4(img2 + i*4);
-		haccumulate(sum, diff * diff * vfloat4::load1(weights + i));
+		vfloat diff = vfloat(img1 + i) - vfloat(img2 + i);
+		// Fold RGBA groups in texel order to preserve the four-wide accumulation
+		haccumulate(sum, diff * diff * vfloat(weights + i));
 	}
+
 	return dot_s(sum, channel_weights);
 }
 
