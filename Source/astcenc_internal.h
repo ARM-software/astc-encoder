@@ -2340,9 +2340,9 @@ void physical_to_symbolic(
  * than increased quantization errors in smooth areas or gradients,
  * which tend to be much more jarring.
  *
- * @param      ctx   The compressor context and configuration.
- * @param      img   The image being compressed.
- * @param      swz   The component swizzle for compression.
+ * @param[in,out] ctx   The compressor context and configuration.
+ * @param[in]     img   The image being compressed.
+ * @param[in]     swz   The component swizzle for compression.
  */
 void lz_rdo_setup(
 	astcenc_context& ctx,
@@ -2358,14 +2358,14 @@ void lz_rdo_setup(
  * nearby blocks in several ways. While crude, this often finds
  * encodings that are much cheaper after subsequent LZ compression
  * (which can compress the repeated bytes) at a relatively
- * moderate PSNR increase.
+ * moderate PSNR decrease.
  *
- * @param         ctx           The compressor context and configuration.
- * @param         thread_index  Index for the thread doing the work.
- * @param         img           The image being compressed.
- * @param         swz           The component swizzle for compression.
- * @param         init_pct      Initial progress callback percentage.
- * @param[in,out] data          The current encoding (modified in place).
+ * @param[in,out] ctx            The compressor context and configuration.
+ * @param[in]     thread_index   Index for the thread doing the work.
+ * @param[in]     img            The image being compressed.
+ * @param[in]     swz            The component swizzle for compression.
+ * @param[in]     init_pct       Initial progress callback percentage.
+ * @param[in,out] data           The current encoding (modified in place).
  */
 void lz_rdo_optimize(
 	astcenc_context& ctx,

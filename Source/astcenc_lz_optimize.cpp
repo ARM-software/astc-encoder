@@ -53,10 +53,13 @@
 
 /** @brief Size of an ASTC block in bytes. */
 static constexpr unsigned int ASTC_BLOCK_BYTES{16};
+
 /** @brief Number of best candidates to keep for each block during optimization. */
 static constexpr unsigned int BEST_CANDIDATES_COUNT{8};
+
 /** @brief Maximum number of blocks to process per worker thread item, should be a power of 2. */
 static constexpr unsigned int MAX_BLOCKS_PER_ITEM{4096};
+
 /** @brief Cache size for block decompression results, must be a power of 2. */
 static constexpr unsigned int CACHE_SIZE{MAX_BLOCKS_PER_ITEM};
 
@@ -65,6 +68,10 @@ static constexpr unsigned int CACHE_SIZE{MAX_BLOCKS_PER_ITEM};
 
 /**
  * @brief Load a 64-bit little-endian value.
+ *
+ * @param[in] p   The eight input bytes.
+ *
+ * @return The decoded little-endian value.
  */
 static inline uint64_t load64le(const uint8_t* p)
 {
@@ -75,6 +82,9 @@ static inline uint64_t load64le(const uint8_t* p)
 
 /**
  * @brief Store a 64-bit little-endian value.
+ *
+ * @param[in]  value   The value to store.
+ * @param[out] p       The eight output bytes.
  */
 static inline void store64le(uint64_t value, uint8_t* p)
 {
@@ -85,6 +95,10 @@ static inline void store64le(uint64_t value, uint8_t* p)
 
 /**
  * @brief Load a 64-bit little-endian value.
+ *
+ * @param[in] p   The eight input bytes.
+ *
+ * @return The decoded little-endian value.
  */
 static inline uint64_t load64le(const uint8_t* p)
 {
@@ -99,6 +113,9 @@ static inline uint64_t load64le(const uint8_t* p)
 
 /**
  * @brief Store a 64-bit little-endian value.
+ *
+ * @param[in]  value   The value to store.
+ * @param[out] p       The eight output bytes.
  */
 static inline void store64le(uint64_t value, uint8_t* p)
 {
@@ -126,20 +143,28 @@ struct physical_block
 	/**
 	 * @brief Construct an all-zero physical block.
 	 */
-	physical_block() : uint64 { 0, 0 }
+	physical_block() :
+		uint64 { 0, 0 }
 	{
 	}
 
 	/**
 	 * @brief Construct from raw byte data.
+	 *
+	 * @param[in] data   The 16 encoded block bytes.
 	 */
-	explicit physical_block(const uint8_t* data)
-	{
+	explicit physical_block(
+		const uint8_t* data
+	) {
 		std::memcpy(bytes, data, 16);
 	}
 
 	/**
-	 * @brief Creates a bit mask for the specified "count" top-most bits.
+	 * @brief Create a mask of the most significant bits.
+	 *
+	 * @param[in] count   The number of most significant bits to set, clamped to 128.
+	 *
+	 * @return The block bit mask.
 	 */
 	static physical_block top_bits_mask(unsigned int count)
 	{
@@ -170,7 +195,11 @@ struct physical_block
 	// endian-agnostic.
 
 	/**
-	 * @brief Bitwise AND
+	 * @brief Compute the bitwise AND of two blocks.
+	 *
+	 * @param[in] other   The other block.
+	 *
+	 * @return The bitwise intersection.
 	 */
 	physical_block operator &(const physical_block& other) const
 	{
@@ -178,7 +207,11 @@ struct physical_block
 	}
 
 	/**
-	 * @brief Bitwise OR
+	 * @brief Compute the bitwise OR of two blocks.
+	 *
+	 * @param[in] other   The other block.
+	 *
+	 * @return The bitwise union.
 	 */
 	physical_block operator |(const physical_block& other) const
 	{
@@ -186,7 +219,9 @@ struct physical_block
 	}
 
 	/**
-	 * @brief Bitwise NOT
+	 * @brief Compute the bitwise complement of a block.
+	 *
+	 * @return The bitwise complement.
 	 */
 	physical_block operator ~() const
 	{
@@ -194,7 +229,11 @@ struct physical_block
 	}
 
 	/**
-	 * @brief Equality comparison
+	 * @brief Compare two blocks for equality.
+	 *
+	 * @param[in] other   The other block.
+	 *
+	 * @return True if the block bits are identical.
 	 */
 	bool operator ==(const physical_block& other) const
 	{
@@ -202,7 +241,11 @@ struct physical_block
 	}
 
 	/**
-	 * @brief Inequality comparison
+	 * @brief Compare two blocks for inequality.
+	 *
+	 * @param[in] other   The other block.
+	 *
+	 * @return True if the block bits differ.
 	 */
 	bool operator !=(const physical_block& other) const
 	{
@@ -210,7 +253,9 @@ struct physical_block
 	}
 
 	/**
-	 * @brief Compute hash for block
+	 * @brief Compute a hash of the block.
+	 *
+	 * @return The 32-bit block hash.
 	 */
 	uint32_t hash() const
 	{
@@ -251,20 +296,44 @@ private:
 	 * @brief Constructor from 64-bit halves.
 	 *
 	 * This is endian-dependent, so for internal use only.
+	 *
+	 * @param[in] lo   The first internal 64-bit word.
+	 * @param[in] hi   The second internal 64-bit word.
 	 */
-	physical_block(uint64_t lo, uint64_t hi)
-		: uint64 { lo, hi }
+	physical_block(
+		uint64_t lo,
+		uint64_t hi
+	) :
+		uint64 { lo, hi }
 	{
 	}
 };
 
-/** @brief Division that rounds up. */
+/**
+ * @brief Division that rounds up.
+ *
+ * @param[in] a   The dividend.
+ * @param[in] b   The nonzero divisor.
+ *
+ * @return The quotient rounded up.
+ */
 static size_t ceil_div(size_t a, size_t b)
 {
 	return (a + b - 1) / b;
 }
 
-/** @brief Decode a raster-scan order index into 3D coordinates given X/Y dimension of an array. */
+/**
+ * @brief Decode a raster-scan order index into 3D coordinates given X/Y dimension of an array.
+ *
+ * @tparam T   The integer coordinate type.
+ *
+ * @param[in]  index   The raster-scan index.
+ * @param[in]  xdim    The array size in the X dimension.
+ * @param[in]  ydim    The array size in the Y dimension.
+ * @param[out] x       The X coordinate.
+ * @param[out] y       The Y coordinate.
+ * @param[out] z       The Z coordinate.
+ */
 template<typename T>
 static void decode_index_to_coords(
 	T index,
@@ -280,7 +349,13 @@ static void decode_index_to_coords(
 	y = quot % ydim;
 }
 
-/** @brief Approximate log2, same approximation as astcenc_vecmathlib.h log2 (but scalar). */
+/**
+ * @brief Approximate log2, same approximation as astcenc_vecmathlib.h log2 (but scalar).
+ *
+ * @param[in] v   The positive normalized input value.
+ *
+ * @return The approximate base-2 logarithm.
+ */
 static inline float log2_approx(float v)
 {
 	union { float f; int i; } u;
@@ -312,7 +387,7 @@ struct mode_byte_histogram
 	/** @brief Number of initial bytes to histogram. */
 	static constexpr unsigned int NHISTO = 2;
 
-	/** @brief Everyt his many updates, decay existing frequncies for adaptation. */
+	/** @brief Number of updates between frequency decays. */
 	static constexpr unsigned int DECAY_PERIOD = 256;
 
 	/** @brief Implicit count in every bucket so nothing has 0 frequency. */
@@ -335,7 +410,11 @@ struct mode_byte_histogram
 		counter = 0;
 	}
 
-	/** @brief Update the histogram with the stats for a given block. */
+	/**
+	 * @brief Update the histogram with the stats for a given block.
+	 *
+	 * @param[in] value   The block to add to the histogram.
+	 */
 	void update(const physical_block& value)
 	{
 		// Periodically decay the histogram
@@ -365,14 +444,20 @@ struct mode_byte_histogram
 
 	}
 
-	/** @brief Estimates the cost of the histogrammed bytes for a given block. */
+	/**
+	 * @brief Estimates the cost of the histogrammed bytes for a given block.
+	 *
+	 * @param[in] value   The block to estimate.
+	 *
+	 * @return The estimated cost in bits.
+	 */
 	float cost(const physical_block& value) const
 	{
 		float cost_numer = 1.0f;
 		float cost_denom = 1.0f;
 		for (unsigned int i = 0; i < NHISTO; i++)
 		{
-			cost_numer *= totals[i] + 256 * BIAS; // implicit extra count of BIAS in every bucket
+			cost_numer *= totals[i] + 256 * BIAS;  // Implicit extra count of BIAS in every bucket
 			cost_denom *= counts[i][value.bytes[i]] + BIAS;
 		}
 
@@ -396,12 +481,22 @@ struct mtf_list
 	/** @brief Maximum number of items in the list. */
 	unsigned int capacity;
 
-	explicit mtf_list(unsigned int list_capacity)
-		: list(nullptr), size(0), capacity(list_capacity)
+	/**
+	 * @brief Initialize an empty list with the given capacity.
+	 *
+	 * @param[in] list_capacity   The maximum number of blocks in the list.
+	 */
+	explicit mtf_list(
+		unsigned int list_capacity
+	) :
+		list(nullptr),
+		size(0),
+		capacity(list_capacity)
 	{
 		list = new physical_block[capacity];
 	}
 
+	/** @brief Release the list storage. */
 	~mtf_list()
 	{
 		delete[] list;
@@ -413,7 +508,14 @@ struct mtf_list
 		size = 0;
 	}
 
-	/** @brief Find a given value in the list (masked by "mask"), return index or -1 if not found. */
+	/**
+	 * @brief Find a block using a masked comparison.
+	 *
+	 * @param[in] value   The block to find.
+	 * @param[in] mask    The mask of bits to compare.
+	 *
+	 * @return The first matching index, or -1 if no match is found.
+	 */
 	int search(const physical_block& value, const physical_block& mask) const
 	{
 		physical_block masked_value = value & mask;
@@ -425,10 +527,17 @@ struct mtf_list
 			}
 		}
 
-		return -1; // Not found
+		return -1;  // Not found
 	}
 
-	/** @brief Update MTF list after using a given value. pos is the value returned by search. */
+	/**
+	 * @brief Update the list after using a block.
+	 *
+	 * @param[in] value   The block to move to the front.
+	 * @param[in] pos     The search result, or -1 if no match was found.
+	 *
+	 * @return The block position before moving it to the front.
+	 */
 	int update(const physical_block& value, int pos)
 	{
 		if (pos == -1)
@@ -451,7 +560,14 @@ struct mtf_list
 		return pos;
 	}
 
-	/** @brief Performs a combined "search" and "update". */
+	/**
+	 * @brief Search for a block and move it to the front.
+	 *
+	 * @param[in] value   The block to encode.
+	 * @param[in] mask    The mask of bits to compare.
+	 *
+	 * @return The block position before moving it to the front.
+	 */
 	int encode(const physical_block& value, const physical_block& mask)
 	{
 		return update(value, search(value, mask));
@@ -461,11 +577,13 @@ struct mtf_list
 /**
  * @brief Computes approximate cost in bits for encoding a block.
  *
- * @param mtf_pos_endpoints  MTF list position for endpoints/config portion of block.
- * @param mtf_pos_weights    MTF list position for weights portion of block.
- * @param block              The block itself.
- * @param weight_bits        Size of weights portion of the block in bits.
- * @param mode_histo         The mode byte histogram used to estimate cost of the first few bytes.
+ * @param[in] mtf_pos_endpoints   The MTF position for the endpoint and configuration bits.
+ * @param[in] mtf_pos_weights     The MTF position for the weight bits.
+ * @param[in] block               The encoded block.
+ * @param[in] weight_bits         The number of weight bits.
+ * @param[in] mode_histo          The histogram used to estimate the cost of the first bytes.
+ *
+ * @return The estimated encoding cost in bits.
  */
 static float calculate_bit_cost_simple(
 	int mtf_pos_endpoints,
@@ -519,11 +637,13 @@ static float calculate_bit_cost_simple(
 /**
  * @brief Calculate Sum of Squared Differenced (SSD) with per-texel weights.
  *
- * @param img1             Interleaved RGBA data for the first block.
- * @param img2             Interleaved RGBA data for the second block.
- * @param texel_count      Number of texels in the block.
- * @param weights          The per-texel weights (from activity calculation).
- * @param channel_weights  Per-channel importance weights.
+ * @param[in] img1              Interleaved RGBA data for the first block, padded to SIMD width.
+ * @param[in] img2              Interleaved RGBA data for the second block, padded to SIMD width.
+ * @param[in] float_count       The number of floats in each block, including zero padding.
+ * @param[in] weights           Activity weights replicated across RGBA channels, with zero padding.
+ * @param[in] channel_weights   The per-channel importance weights.
+ *
+ * @return The weighted squared error.
  */
 static inline float calculate_ssd_weighted(
 	const float* img1,
@@ -541,7 +661,13 @@ static inline float calculate_ssd_weighted(
 	return dot_s(sum, channel_weights);
 }
 
-/** @brief Extracts the block mode ID from an encoded block. */
+/**
+ * @brief Extracts the block mode ID from an encoded block.
+ *
+ * @param[in] block   The encoded block.
+ *
+ * @return The block mode ID.
+ */
 static inline unsigned int get_block_mode(const uint8_t* block)
 {
 	return (block[0] | (block[1] << 8)) & 0x7ff;
@@ -550,8 +676,10 @@ static inline unsigned int get_block_mode(const uint8_t* block)
 /**
  * @brief Determine the weight bits count for an encoded block.
  *
- * @param block   The encoded block.
- * @param bsd     The block size descriptor.
+ * @param[in] block   The encoded block.
+ * @param[in] bsd     The block size descriptor.
+ *
+ * @return The number of weight bits.
  */
 static inline int get_weight_bits(
 	const uint8_t* block,
@@ -560,7 +688,13 @@ static inline int get_weight_bits(
 	return bsd->weight_bits_for_mode[get_block_mode(block)];
 }
 
-/** @brief Simple Xorshift32 RNG used for block seeding. */
+/**
+ * @brief Simple Xorshift32 RNG used for block seeding.
+ *
+ * @param[in,out] state   The nonzero random number generator state.
+ *
+ * @return The next pseudorandom value.
+ */
 static inline uint32_t xorshift32(uint32_t& state)
 {
 	state ^= state << 13;
@@ -572,9 +706,10 @@ static inline uint32_t xorshift32(uint32_t& state)
 /**
  * @brief Applies UNORM8-style rounding to 16-bit integer values.
  *
- * @param colori The input color value (ints in [0,65535])
- * @param u8_mask The mask of channels that should have 8-bit rounding applied.
- * @return The rounded color value in [0,65535]
+ * @param[in] colori    The input color values in [0, 65535].
+ * @param[in] u8_mask   The mask of channels requiring UNORM8 rounding.
+ *
+ * @return The rounded color values in [0, 65535].
  */
 static inline vint4 apply_u8_rounding(
 	vint4 colori,
@@ -597,10 +732,10 @@ static inline vint4 apply_u8_rounding(
  * a deinterleaved RGBA result; for our purposes, interleaved RGBA without the final
  * conversion is actually better.
  *
- * @param config         The encoder config to use.
- * @param bsd            The block size descriptor.
- * @param scb            The symbolic compressed block we want to decode.
- * @param[out] out_rgba  Where to write the output texels, 4 floats (R, G, B, A) per texel.
+ * @param[in]  config     The encoder configuration.
+ * @param[in]  bsd        The block size descriptor.
+ * @param[in]  scb        The symbolic compressed block to decode.
+ * @param[out] out_rgba   Interleaved RGBA output, padded to a multiple of the SIMD width.
  */
 static void decompress_symbolic_block_raw(
 	const astcenc_config& config,
@@ -751,9 +886,9 @@ struct block_error_calculator
 	/**
 	 * @brief Initializes the block error calculator.
 	 *
-	 * @param in_config        The encoder configuration being used.
-	 * @param num_entries      The number of entries in the hash table (must be pow2).
-	 * @param in_bsd           The block size descriptor.
+	 * @param[in] in_config     The encoder configuration.
+	 * @param[in] num_entries   The cache capacity, a power of two and at least ITEMS_PER_ROW.
+	 * @param[in] in_bsd        The block size descriptor.
 	 */
 	block_error_calculator(
 		const astcenc_config& in_config,
@@ -779,6 +914,7 @@ struct block_error_calculator
 
 	}
 
+	/** @brief Release the error cache storage. */
 	~block_error_calculator()
 	{
 		delete[] tags;
@@ -789,8 +925,8 @@ struct block_error_calculator
 	/**
 	 * @brief Changes the current active block being encoded.
 	 *
-	 * @param blk      Source pixel data in image_block format.
-	 * @param weights  The per-texel weights.
+	 * @param[in] blk       The source pixel data.
+	 * @param[in] weights   The per-texel activity weights, with storage for SIMD over-fetch.
 	 */
 	void set_current_block(
 		const image_block& blk,
@@ -812,7 +948,9 @@ struct block_error_calculator
 	/**
 	 * @brief Evaluate the error for the given input block against the current target pixels.
 	 *
-	 * @param candidate_bits       The block being evaluated.
+	 * @param[in] candidate_bits   The encoded block to evaluate.
+	 *
+	 * @return The weighted squared error against the current target block.
 	 */
 	float eval(const physical_block& candidate_bits)
 	{
@@ -887,7 +1025,9 @@ struct candidate_list
 	 * If the candidate list is full and the provided cost lower bound is
 	 * bigger than our current worst, can skip further evaluation.
 	 *
-	 * @param cost_lower_bound  The cost lower bound to check for a candidate.
+	 * @param[in] cost_lower_bound   The lower bound on the candidate cost.
+	 *
+	 * @return True if the candidate cannot improve the list.
 	 */
 	bool quick_reject(float cost_lower_bound) const
 	{
@@ -901,10 +1041,11 @@ struct candidate_list
 	 *
 	 * Candidates are kept in order of increasing cost.
 	 *
-	 * @param bits          The candidate encoding.
-	 * @param rd_cost       The encoding's rate-distortion cost.
-	 * @param mtf_position  The MTF list position for the endpoint/weight set used to make this candidate.
-	 * @param bsd           The block size descriptor.
+	 * @param[in] bits           The candidate encoding.
+	 * @param[in] rd_cost        The rate-distortion cost.
+	 * @param[in] mtf_position   The MTF position of the endpoint or weight set used for the
+	 *                           candidate.
+	 * @param[in] bsd            The block size descriptor.
 	 */
 	void add(
 		const physical_block& bits,
@@ -939,13 +1080,21 @@ struct candidate_list
 		}
 	}
 
-	/** @brief Iterator begin() for range-based loops. */
+	/**
+	 * @brief Iterator begin() for range-based loops.
+	 *
+	 * @return A pointer to the first candidate.
+	 */
 	const item* begin() const
 	{
 		return list;
 	}
 
-	/** @brief Iterator end() for range-based loops. */
+	/**
+	 * @brief Iterator end() for range-based loops.
+	 *
+	 * @return A pointer past the last candidate.
+	 */
 	const item* end() const
 	{
 		return list + count;
@@ -956,7 +1105,7 @@ struct candidate_list
  * @brief Compact representation of a simple symbolic block for endpoint substitution,
  * without its weights.
  *
- * "Simple" blocks are non-constant, 1-plane, 1-partition blocks
+ * "Simple" blocks are non-constant, 1-plane, 1-partition blocks.
  */
 struct compact_simple_endpoints
 {
@@ -972,7 +1121,11 @@ struct compact_simple_endpoints
 	/** @brief The quantized endpoint color pairs. */
 	uint8_t color_values[8];
 
-	/** @brief Initialize from an appropriate symbolic_compressed_block. */
+	/**
+	 * @brief Initialize from an appropriate symbolic_compressed_block.
+	 *
+	 * @param[in] blk   The non-constant, single-plane, single-partition source block.
+	 */
 	void from_symbolic(const symbolic_compressed_block& blk)
 	{
 		assert(blk.block_type == SYM_BTYPE_NONCONST);
@@ -997,7 +1150,11 @@ struct compact_simple_endpoints
 		}
 	}
 
-	/** @brief Convert back to symbolic_compressed_block form. */
+	/**
+	 * @brief Convert back to symbolic_compressed_block form.
+	 *
+	 * @param[in,out] blk   The block to receive mode and endpoint data, preserving its weights.
+	 */
 	void to_symbolic(symbolic_compressed_block& blk) const
 	{
 		blk.block_type = SYM_BTYPE_NONCONST;
@@ -1010,7 +1167,13 @@ struct compact_simple_endpoints
 		std::memcpy(blk.color_values[0], color_values, sizeof(blk.color_values[0]));
 	}
 
-	/** @brief Compare two compact simple endpoints for equality. */
+	/**
+	 * @brief Compare two compact simple endpoints for equality.
+	 *
+	 * @param[in] x   The other endpoint encoding.
+	 *
+	 * @return True if the block modes and endpoint encodings are identical.
+	 */
 	bool operator ==(const compact_simple_endpoints& x) const
 	{
 		if (block_mode != x.block_mode ||
@@ -1031,6 +1194,8 @@ struct compact_simple_endpoints
 	 * @brief Determine normalized endpoint axis direction.
 	 *
 	 * Used for an early-out to quickly rule out endpoint pairs.
+	 *
+	 * @return The normalized endpoint direction, or zero for coincident endpoints.
 	 */
 	vfloat4 normalized_axis() const
 	{
@@ -1050,22 +1215,33 @@ struct endpoint_subst_mtf
 	{
 		/** @brief The endpoints and block mode etc., in compact form. */
 		compact_simple_endpoints endpoints;
+
 		/** @brief Cached normalized_axis() for this candidate. */
 		vfloat4 normalized_axis;
 	};
 
 	/** @brief The list of entries in the list. Entries don't move after inserting. */
 	entry* entries;
+
 	/** @brief List of indices defining an index permutation. We shuffle indices instead of elements. */
 	unsigned int* order;
+
 	/** @brief Number of elements currently in the move-to-front list. */
 	unsigned int size;
+
 	/** @brief Maximum capacity of move-to-front list. */
 	unsigned int capacity;
 
-	/** @brief Initializes the list with a given capacity. */
-	explicit endpoint_subst_mtf(unsigned int in_capacity)
-		: size(0), capacity(in_capacity)
+	/**
+	 * @brief Initializes the list with a given capacity.
+	 *
+	 * @param[in] in_capacity   The maximum number of endpoint encodings in the list.
+	 */
+	explicit endpoint_subst_mtf(
+		unsigned int in_capacity
+	) :
+		size(0),
+		capacity(in_capacity)
 	{
 		entries = new entry[capacity];
 		order = new unsigned int[capacity];
@@ -1077,6 +1253,7 @@ struct endpoint_subst_mtf
 		}
 	}
 
+	/** @brief Release the endpoint and ordering storage. */
 	~endpoint_subst_mtf()
 	{
 		delete[] entries;
@@ -1089,14 +1266,26 @@ struct endpoint_subst_mtf
 		size = 0;
 	}
 
-	/** @brief Indexes entries in their logical order. */
+	/**
+	 * @brief Indexes entries in their logical order.
+	 *
+	 * @param[in] index   The logical index, which must be less than size.
+	 *
+	 * @return The entry at the logical index.
+	 */
 	const entry& operator[](size_t index) const
 	{
 		assert(index < size);
 		return entries[order[index]];
 	}
 
-	/** @brief Searches for a compact endpoint encoding in the list. */
+	/**
+	 * @brief Searches for a compact endpoint encoding in the list.
+	 *
+	 * @param[in] endpoints   The endpoint encoding to find.
+	 *
+	 * @return The first matching index, or -1 if no match is found.
+	 */
 	int search(const compact_simple_endpoints& endpoints)
 	{
 		for (unsigned int i = 0; i < size; i++)
@@ -1113,8 +1302,8 @@ struct endpoint_subst_mtf
 	/**
 	 * @brief Update the MTF list after using an element.
 	 *
-	 * @param mtf_index    The MTF index (search() result) for the new element, or -1 if it wasn't a match.
-	 * @param endpoints    The new endpoints. Ignored unless mtf_index == -1.
+	 * @param[in] mtf_index   The search result, or -1 if no match was found.
+	 * @param[in] endpoints   The new endpoints, used only when mtf_index is -1.
 	 */
 	void update(
 		int mtf_index,
@@ -1148,14 +1337,25 @@ struct endpoint_subst_mtf
 		order[0] = id;
 	}
 
-	/** @brief Combined search and update. */
+	/**
+	 * @brief Combined search and update.
+	 *
+	 * @param[in] endpoints   The endpoint encoding to move to the front.
+	 */
 	void encode(const compact_simple_endpoints& endpoints)
 	{
 		update(search(endpoints), endpoints);
 	}
 };
 
-/** @brief Determines whether a physical block is "simple" (1-plane, 1-partition). */
+/**
+ * @brief Determines whether a physical block is "simple" (1-plane, 1-partition).
+ *
+ * @param[in] bytes   The encoded block.
+ * @param[in] bsd     The block size descriptor.
+ *
+ * @return True if the block has one weight plane and one partition.
+ */
 static bool is_simple_block(
 	const uint8_t* bytes,
 	const block_size_descriptor* bsd
@@ -1177,10 +1377,10 @@ static bool is_simple_block(
  *
  * Only supports "simple" blocks (1-plane, 1-partition).
  *
- * @param profile    The encoder profile being used.
- * @param blk        The block to be encoded.
- * @param scb        The symbolic compressed block holding the mode and endpoints.
- * @param[out] ei    The output weights (as well as endpoints in the expected form) get written here.
+ * @param[in]  profile   The encoder profile.
+ * @param[in]  blk       The source block.
+ * @param[in]  scb       The symbolic block holding the mode and endpoints.
+ * @param[out] ei        The output weights and endpoints.
  */
 static void compute_known_endpoint_weights(
 	astcenc_profile profile,
@@ -1245,13 +1445,13 @@ static void compute_known_endpoint_weights(
  * try encoding blocks of the image by reusing previous endpoints or weights, using the
  * result if they score favorably in our combined rate-distortion metric.
  *
- * @param ctxo                 The compression context.
- * @param thread_index         Index for the thread this runs on.
- * @param data                 Pointer to the encoded blocks, initially contains results of regular ASTC encode.
- * @param lambda               Lambda parameter for rate-distortion optimization.
- * @param init_pct             Initial progress callback percentage.
- * @param img                  The image being encoded.
- * @param swz                  The component swizzle for the image being encoded.
+ * @param[in,out] ctxo           The compression context.
+ * @param[in]     thread_index   The worker thread index.
+ * @param[in,out] data           The encoded blocks, initially produced by regular ASTC compression.
+ * @param[in]     lambda         The rate-distortion optimization strength.
+ * @param[in]     init_pct       The initial progress callback percentage.
+ * @param[in]     img            The source image.
+ * @param[in]     swz            The source component swizzle.
  */
 static void lz_rdo_optimization_passes(
 	astcenc_context& ctxo,
@@ -1289,10 +1489,10 @@ static void lz_rdo_optimization_passes(
 
 	// Allocate thread-local resources
 	uint8_t* original_blocks = new uint8_t[MAX_BLOCKS_PER_ITEM * ASTC_BLOCK_BYTES];
-	mtf_list mtf_weights { config.tune_lz_rdo_weight_history_size }; // MTF list for weights
-	mtf_list mtf_endpoints { config.tune_lz_rdo_endpoint_history_size * 2 }; // MTF list for endpoints and constant block bits
-	endpoint_subst_mtf mtf_simple_endpoints { config.tune_lz_rdo_endpoint_history_size }; // MTF list for simple endpoints
-	mode_byte_histogram hist; // Histogram for mode bytes.
+	mtf_list mtf_weights { config.tune_lz_rdo_weight_history_size };  // MTF list for weights
+	mtf_list mtf_endpoints { config.tune_lz_rdo_endpoint_history_size * 2 };  // MTF list for endpoints and constant block bits
+	endpoint_subst_mtf mtf_simple_endpoints { config.tune_lz_rdo_endpoint_history_size };  // MTF list for simple endpoints
+	mode_byte_histogram hist;  // Histogram for mode bytes.
 
 	// Determine channel weights
 	blk.channel_weight = vfloat4 { config.cw_r_weight, config.cw_g_weight, config.cw_b_weight, config.cw_a_weight };
@@ -1661,15 +1861,21 @@ struct filter_kernel
 /** @brief Gaussian kernel with sigma=2.20. */
 static const filter_kernel kernel_initial_lpf {
 	7,
-	{1.14907966e-03f, 4.40146100e-03f, 1.37123950e-02f, 3.47455753e-02f, 7.16069925e-02f, 1.20027593e-01f, 1.63635110e-01f, 1.81443588e-01f,
-	 1.63635110e-01f, 1.20027593e-01f, 7.16069925e-02f, 3.47455753e-02f, 1.37123950e-02f, 4.40146100e-03f, 1.14907966e-03f}
+	{
+		1.14907966e-03f, 4.40146100e-03f, 1.37123950e-02f, 3.47455753e-02f, 7.16069925e-02f,
+		1.20027593e-01f, 1.63635110e-01f, 1.81443588e-01f, 1.63635110e-01f, 1.20027593e-01f,
+		7.16069925e-02f, 3.47455753e-02f, 1.37123950e-02f, 4.40146100e-03f, 1.14907966e-03f
+	}
 };
 
 /** @brief Gaussian kernel with sigma=1.25. */
 static const filter_kernel kernel_spread {
 	4,
-	{1.90769133e-03f, 1.79195767e-02f, 8.87562444e-02f, 2.31804370e-01f, 3.19224234e-01f, 2.31804370e-01f, 8.87562444e-02f, 1.79195767e-02f,
-	 1.90769133e-03f}
+	{
+		1.90769133e-03f, 1.79195767e-02f, 8.87562444e-02f,
+		2.31804370e-01f, 3.19224234e-01f, 2.31804370e-01f,
+		8.87562444e-02f, 1.79195767e-02f, 1.90769133e-03f
+	}
 };
 
 /**
@@ -1678,13 +1884,13 @@ static const filter_kernel kernel_spread {
  * All arrays are xdim * ydim * zdim values and are expected to have
  * at least ASTCENC_SIMD_WIDTH floats of padding at the end.
  *
- * @param input        The input values.
- * @param[out] output  Where output values get written.
- * @param xdim         Size of the array in the X dimension.
- * @param ydim         Size of the array in the Y dimension.
- * @param zdim         Size of the array in the Z dimension.
- * @param filter       The filter kernel to use.
- * @param direction    The direction to work in (0=X, 1=Y, 2=Z).
+ * @param[in,out] input       The input values; padding is cleared for Y and Z filtering.
+ * @param[out]    output      The filtered output values.
+ * @param[in]     xdim        The array size in the X dimension.
+ * @param[in]     ydim        The array size in the Y dimension.
+ * @param[in]     zdim        The array size in the Z dimension.
+ * @param[in]     filter      The filter kernel.
+ * @param[in]     direction   The filtering direction: 0 for X, 1 for Y, or 2 for Z.
  */
 static void apply_1d_convolution_3d(
 	float* input,
@@ -1826,13 +2032,13 @@ static void apply_1d_convolution_3d(
  * All arrays are xdim * ydim * zdim values and are expected to have
  * at least ASTCENC_SIMD_WIDTH floats of padding at the end.
  *
- * @param input			   The input values.
- * @param[out] output	   Where the output values are written.
- * @param[out] workspace   Workspace memory.
- * @param xdim             Size of the array in the X dimension.
- * @param ydim             Size of the array in the Y dimension.
- * @param zdim             Size of the array in the Z dimension.
- * @param filter           The filter kernel to use.
+ * @param[in]  input       The input values.
+ * @param[out] output      The filtered output values.
+ * @param[out] workspace   The scratch storage for intermediate filtering results.
+ * @param[in]  xdim        The array size in the X dimension.
+ * @param[in]  ydim        The array size in the Y dimension.
+ * @param[in]  zdim        The array size in the Z dimension.
+ * @param[in]  filter      The filter kernel.
  */
 static void separable_convolve_3d(
 	float* input,
@@ -1862,17 +2068,19 @@ static void separable_convolve_3d(
 /** @brief Maximum number of texels in a tile. */
 static constexpr unsigned int WEIGHTS_TILE_MAX_TEXELS { 256 * 256 };
 
-/** @brief Actual size of a tile buffer, intentionally larger to allow for padding and avoid pow2 aliasing conflicts. */
+/**
+ * @brief Tile buffer size, including padding to allow SIMD over-fetch and avoid power-of-two aliasing.
+ */
 static constexpr unsigned int WEIGHTS_TILE_BUFFER_TEXELS { WEIGHTS_TILE_MAX_TEXELS + 128 + ASTCENC_SIMD_WIDTH };
 
 /** @brief Tile buffers for per-texel weight calculation. */
 struct weights_tile_buffers
 {
-	/** @brief Input pixels organized by color channel */
+	/** @brief Input pixels organized by color channel. */
 	ASTCENC_ALIGNAS float chan[4][WEIGHTS_TILE_BUFFER_TEXELS];
-	/** @brief Filter work space */
+	/** @brief Filter work space. */
 	ASTCENC_ALIGNAS float work[WEIGHTS_TILE_BUFFER_TEXELS];
-	/** @brief Filter result space */
+	/** @brief Filter result space. */
 	ASTCENC_ALIGNAS float filtered[WEIGHTS_TILE_BUFFER_TEXELS];
 };
 
@@ -1887,9 +2095,9 @@ struct weights_tile_buffers
  * (flat areas or slow gradients). Where the image is noisy or has sharp edges,
  * small differences in pixel values are less apparent.
  *
- * @param ctxo    The ASTC encoder context.
- * @param img     The image being encoded.
- * @param swz     The component swizzle for the image being encoded.
+ * @param[in,out] ctxo   The compression context receiving working buffers and weights.
+ * @param[in]     img    The source image.
+ * @param[in]     swz    The source component swizzle.
  */
 void lz_rdo_setup(
 	astcenc_context& ctxo,
@@ -2167,7 +2375,7 @@ void lz_rdo_optimize(
 	astcenc_contexti& ctx = ctxo.context;
 
 	float lambda = ctx.config.lz_rdo_lambda;
-	assert(lambda > 0.0f); // Caller must ensure this.
+	assert(lambda > 0.0f);  // Caller must ensure this.
 
 	// Global lambda scaling fudge factor
 	lambda *= 0.75f;
@@ -2177,8 +2385,7 @@ void lz_rdo_optimize(
 	lambda *= static_cast<float>(ctx.bsd->texel_count) / 16.0f;
 
 	// Run the optimization passes!
-	// calls ctxo.manage_lz_rdo_optimize.wait()
-	// so all work completed on return
+	// Calls ctxo.manage_lz_rdo_optimize.wait() so all work completed on return
 	lz_rdo_optimization_passes(
 		ctxo, thread_index, data, lambda, init_pct,
 		img, swz
