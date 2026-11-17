@@ -283,6 +283,34 @@ struct vmask16
 
 #define ASTCENC_HAS_NATIVE_QUAD_OPS
 #define ASTCENC_HAS_NATIVE_LOAD1_QUADS
+#define ASTCENC_HAS_NATIVE_BROADCAST_QUAD
+
+/**
+ * @brief Replicate a four-lane integer vector into all four quads.
+ *
+ * @param a   The source quad.
+ *
+ * @return The vector with the source quad repeated.
+ */
+ASTCENC_SIMD_INLINE vint16 broadcast_quad(vint4 a)
+{
+	return vint16(_mm512_broadcast_i32x4(a.m));
+}
+
+/**
+ * @brief Load four consecutive integers, replicating each into a four-lane group.
+ *
+ * @param p   The unaligned source array of four integers.
+ *
+ * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
+ */
+ASTCENC_SIMD_INLINE vint16 load1_quads(const int* p)
+{
+	__m512i values = _mm512_castsi128_si512(_mm_loadu_si128(reinterpret_cast<const __m128i*>(p)));
+	__m512i indices = _mm512_setr_epi32(0, 0, 0, 0, 1, 1, 1, 1,
+	                                    2, 2, 2, 2, 3, 3, 3, 3);
+	return vint16(_mm512_permutexvar_epi32(indices, values));
+}
 
 /**
  * @brief Load four consecutive floats, replicating each into a four-lane group.

@@ -384,6 +384,18 @@ ASTCENC_SIMD_INLINE vfloat swizzle_quads(vfloat a)
 #if !defined(ASTCENC_HAS_NATIVE_LOAD1_QUADS)
 
 /**
+ * @brief Load one integer, replicating it into a four-lane group.
+ *
+ * @param p   The source integer.
+ *
+ * @return The vector containing p[0] in all four lanes.
+ */
+ASTCENC_SIMD_INLINE vint load1_quads(const int* p)
+{
+	return vint4::load1(p);
+}
+
+/**
  * @brief Load one float, replicating it into a four-lane group.
  *
  * @param p   The source float.
@@ -393,6 +405,22 @@ ASTCENC_SIMD_INLINE vfloat swizzle_quads(vfloat a)
 ASTCENC_SIMD_INLINE vfloat load1_quads(const float* p)
 {
 	return vfloat4::load1(p);
+}
+
+#endif
+
+#if !defined(ASTCENC_HAS_NATIVE_BROADCAST_QUAD)
+
+/**
+ * @brief Return a four-lane integer vector as its only quad.
+ *
+ * @param a   The source quad.
+ *
+ * @return The source quad.
+ */
+ASTCENC_SIMD_INLINE vint broadcast_quad(vint4 a)
+{
+	return a;
 }
 
 #endif

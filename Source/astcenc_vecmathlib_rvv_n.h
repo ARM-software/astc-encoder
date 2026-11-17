@@ -312,6 +312,37 @@ struct vmask
 // ============================================================================
 
 #define ASTCENC_HAS_NATIVE_LOAD1_QUADS
+#define ASTCENC_HAS_NATIVE_BROADCAST_QUAD
+
+/**
+ * @brief Replicate a four-lane integer vector into every quad.
+ *
+ * @param a   The source quad.
+ *
+ * @return The vector with the source quad repeated.
+ */
+ASTCENC_SIMD_INLINE vint broadcast_quad(vint4 a)
+{
+	size_t width = vint::vl();
+	vint32m1_t values = __riscv_vle32_v_i32m1(a.m, 4);
+	vuint32m1_t indices = __riscv_vand_vx_u32m1(__riscv_vid_v_u32m1(width), 3, width);
+	return vint(__riscv_vrgather_vv_i32m1(values, indices, width));
+}
+
+/**
+ * @brief Load consecutive integers, replicating each into a four-lane group.
+ *
+ * @param p   The unaligned source array of ASTCENC_SIMD_WIDTH / 4 integers.
+ *
+ * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
+ */
+ASTCENC_SIMD_INLINE vint load1_quads(const int* p)
+{
+	size_t width = vint::vl();
+	vint32m1_t values = __riscv_vle32_v_i32m1(p, width / 4);
+	vuint32m1_t indices = __riscv_vsrl_vx_u32m1(__riscv_vid_v_u32m1(width), 2, width);
+	return vint(__riscv_vrgather_vv_i32m1(values, indices, width));
+}
 
 /**
  * @brief Load consecutive floats, replicating each into a four-lane group.

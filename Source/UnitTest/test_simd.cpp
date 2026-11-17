@@ -157,6 +157,40 @@ TEST(SuiteVfloat, store_lane0_quads)
 	EXPECT_EQ(result[count + 1], sentinel);
 }
 
+/** @brief Load unaligned consecutive integers and replicate each into a four-lane group. */
+TEST(SuiteVint, load1_quads)
+{
+	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	ASTCENC_ALIGNAS int values[count + 1];
+	for (unsigned int i = 0; i < count + 1; i++)
+	{
+		values[i] = static_cast<int>(i) * 12345 - 32768;
+	}
+
+	vint loaded = load1_quads(values + 1);
+	ASTCENC_ALIGNAS int result[ASTCENC_SIMD_WIDTH];
+	storea(loaded, result);
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		int expected = values[i / 4 + 1];
+		EXPECT_EQ(result[i], expected);
+	}
+}
+
+/** @brief Repeat all four lanes of an integer quad in order at every VLA width. */
+TEST(SuiteVint, broadcast_quad)
+{
+	int values[4] { -65535, 0, 32, 65535 };
+	vint source = broadcast_quad(vint4(values));
+	ASTCENC_ALIGNAS int result[ASTCENC_SIMD_WIDTH];
+	storea(source, result);
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		int expected = values[i % 4];
+		EXPECT_EQ(result[i], expected);
+	}
+}
+
 /** @brief Pack four-lane integer groups in order at every VLA width. */
 TEST(SuiteVint, pack_quads)
 {
