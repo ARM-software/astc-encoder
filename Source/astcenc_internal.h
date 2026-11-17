@@ -1601,6 +1601,24 @@ void compute_partition_errors_rgb_batch(
 	float* samec_errors);
 
 /**
+ * @brief Estimate partition errors for general RGBA data in candidate quads.
+ *
+ * All candidates have the same partition count.
+ *
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
+ * @param      blk                  The source image block.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+void compute_partition_errors_rgba_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors);
+
+/**
  * @brief Estimate partition errors for grayscale RGB with alpha in candidate quads.
  *
  * All candidates have the same partition count. RGB components must be identical;
