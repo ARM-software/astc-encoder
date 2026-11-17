@@ -2151,7 +2151,7 @@ void lz_rdo_setup(
 	// Clean up
 	if (buffers)
 	{
-		aligned_free<weights_tile_buffers>(buffers);
+		aligned_free<weights_tile_buffers>(buffers, ASTCENC_VECALIGN);
 	}
 }
 
