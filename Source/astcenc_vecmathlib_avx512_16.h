@@ -282,6 +282,22 @@ struct vmask16
 // ============================================================================
 
 #define ASTCENC_HAS_NATIVE_QUAD_OPS
+#define ASTCENC_HAS_NATIVE_LOAD1_QUADS
+
+/**
+ * @brief Load four consecutive floats, replicating each into a four-lane group.
+ *
+ * @param p   The unaligned source array of four floats.
+ *
+ * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
+ */
+ASTCENC_SIMD_INLINE vfloat16 load1_quads(const float* p)
+{
+	__m512 values = _mm512_castps128_ps512(_mm_loadu_ps(p));
+	__m512i indices = _mm512_setr_epi32(0, 0, 0, 0, 1, 1, 1, 1,
+	                                    2, 2, 2, 2, 3, 3, 3, 3);
+	return vfloat16(_mm512_permutexvar_ps(indices, values));
+}
 
 /**
  * @brief Store lane zero from each quad as four consecutive floats.
