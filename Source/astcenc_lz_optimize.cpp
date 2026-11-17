@@ -1964,9 +1964,16 @@ void lz_rdo_setup(
 		size_t tile_xpos = tx * tile_texels_x;
 		size_t tile_ypos = ty * tile_texels_y;
 		size_t tile_zpos = tz * tile_texels_z;
-		size_t tile_xdim = astc::min(tile_texels_x, img.dim_x - tile_xpos);
-		size_t tile_ydim = astc::min(tile_texels_y, img.dim_y - tile_ypos);
-		size_t tile_zdim = astc::min(tile_texels_z, img.dim_z - tile_zpos);
+
+		// Number of active texels in a tile ...
+		size_t tile_active_texels_x = astc::min(tile_texels_x, img.dim_x - tile_xpos);
+		size_t tile_active_texels_y = astc::min(tile_texels_y, img.dim_y - tile_ypos);
+		size_t tile_active_texels_z = astc::min(tile_texels_z, img.dim_z - tile_zpos);
+
+		// ... rounded up to an integer block multiple
+		size_t tile_xdim = ceil_div(tile_active_texels_x, bsd->dim_x) * bsd->dim_x;
+		size_t tile_ydim = ceil_div(tile_active_texels_y, bsd->dim_y) * bsd->dim_y;
+		size_t tile_zdim = ceil_div(tile_active_texels_z, bsd->dim_z) * bsd->dim_z;
 
 		// Load input pixels
 		for (size_t bz = 0; bz < tile_zdim; bz += bsd->dim_z)
@@ -1985,7 +1992,7 @@ void lz_rdo_setup(
 						swz
 					);
 
-					// Copy to tile input buffers
+					// Copy complete blocks; the loader extrudes texels beyond the image edge
 					size_t src_index = 0;
 
 					for (size_t z = 0; z < bsd->dim_z; z++)
@@ -2073,9 +2080,9 @@ void lz_rdo_setup(
 		size_t tile_bx = tile_xpos / bsd->dim_x;
 		size_t tile_by = tile_ypos / bsd->dim_y;
 		size_t tile_bz = tile_zpos / bsd->dim_z;
-		size_t tile_blocks_x = ceil_div(tile_xdim, bsd->dim_x);
-		size_t tile_blocks_y = ceil_div(tile_ydim, bsd->dim_y);
-		size_t tile_blocks_z = ceil_div(tile_zdim, bsd->dim_z);
+		size_t tile_blocks_x = tile_xdim / bsd->dim_x;
+		size_t tile_blocks_y = tile_ydim / bsd->dim_y;
+		size_t tile_blocks_z = tile_zdim / bsd->dim_z;
 
 		for (size_t bz = 0; bz < tile_blocks_z; bz++)
 		{
@@ -2100,7 +2107,9 @@ void lz_rdo_setup(
 							for (size_t x = 0; x < bsd->dim_x; x++)
 							{
 								size_t xt = bx * bsd->dim_x + x;
-								if (xt < tile_xdim && yt < tile_ydim && zt < tile_zdim)
+								if (((tile_xpos + xt) < img.dim_x) &&
+								    ((tile_ypos + yt) < img.dim_y) &&
+								    ((tile_zpos + zt) < img.dim_z))
 								{
 									// Copy over weight
 									block_weights[block_weight_index] = tile_output[src_row_idx + xt];
