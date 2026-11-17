@@ -37,6 +37,78 @@
 namespace astcenc
 {
 
+/** @brief Scalar bit operations handle empty, full-width, and sparse fields. */
+TEST(SuiteMath, bit_permute)
+{
+	uint64_t value = 0xFEDCBA9876543210ull;
+	for (unsigned int offset = 0; offset < 64; offset++)
+	{
+		for (unsigned int count = 0; count <= 64 - offset; count++)
+		{
+			uint64_t expected = value >> offset;
+			if (count != 64)
+			{
+				expected &= (1ull << count) - 1;
+			}
+
+			uint64_t extracted = extract_bit_range(value, offset, count);
+			EXPECT_EQ(extracted, expected);
+		}
+	}
+
+	uint64_t masks[] { 0, ~0ull, 1ull << 63, 1, 0x5555555555555555ull,
+	                   0x8080808080808080ull, 0x000000000000FFFFull,
+	                   ~1ull, ~0ull >> 1, 0xFF0000000000FFFFull, 0x33330F0F7F7F1F1Full };
+	for (uint64_t mask : masks)
+	{
+		uint64_t expected_compressed = 0;
+		uint64_t expected_deposited = 0;
+		unsigned int dense_bit = 0;
+		for (unsigned int bit = 0; bit < 64; bit++)
+		{
+			if ((mask & (1ull << bit)) != 0)
+			{
+				expected_compressed |= ((value >> bit) & 1) << dense_bit;
+				expected_deposited |= ((value >> dense_bit) & 1) << bit;
+				dense_bit++;
+			}
+		}
+
+		uint64_t compressed = compress_bits(value, mask);
+		uint64_t deposited = deposit_bits(value, mask);
+		EXPECT_EQ(compressed, expected_compressed);
+		EXPECT_EQ(deposited, expected_deposited);
+	}
+}
+
+/** @brief Partial packed-byte stores preserve bytes outside the requested count. */
+TEST(SuiteVint4, store_nbytes_count)
+{
+	uint8_t source[16];
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		source[i] = static_cast<uint8_t>(i * 17);
+	}
+
+	vint4 data = vint4::load(source);
+	for (unsigned int count = 0; count <= 16; count++)
+	{
+		uint8_t output[18];
+		std::memset(output, 0xA5, sizeof(output));
+		store_nbytes(data, output + 1, count);
+		EXPECT_EQ(output[0], 0xA5);
+		for (unsigned int i = 0; i < count; i++)
+		{
+			EXPECT_EQ(output[i + 1], source[i]);
+		}
+
+		for (unsigned int i = count + 1; i < sizeof(output); i++)
+		{
+			EXPECT_EQ(output[i], 0xA5);
+		}
+	}
+}
+
 // Misc utility tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #if ASTCENC_SIMD_WIDTH == 8
 /**

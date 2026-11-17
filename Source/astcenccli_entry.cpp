@@ -47,6 +47,12 @@ static bool g_init { false };
 /** Does this CPU support SSE 4.1? Set to -1 if not yet initialized. */
 static bool g_cpu_has_sse41 { false };
 
+/** @brief Does this CPU support BMI1? */
+static bool g_cpu_has_bmi1 { false };
+
+/** @brief Does this CPU support BMI2? */
+static bool g_cpu_has_bmi2 { false };
+
 /** Does this CPU support AVX2? Set to -1 if not yet initialized. */
 static bool g_cpu_has_avx2 { false };
 
@@ -103,6 +109,9 @@ static void detect_cpu_isa()
 	if (num_id >= 7)
 	{
 		__cpuidex(data, 7, 0);
+		// BMI1 and BMI2 = Bank 7, EBX, bits 3 and 8
+		g_cpu_has_bmi1 = (data[1] & (1 << 3)) != 0;
+		g_cpu_has_bmi2 = (data[1] & (1 << 8)) != 0;
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
 		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them before the leaf 1 read
@@ -171,6 +180,9 @@ static void detect_cpu_isa()
 	g_cpu_has_avx512vbmi = 0;
 	if (__get_cpuid_count(7, 0, &data[0], &data[1], &data[2], &data[3]))
 	{
+		// BMI1 and BMI2 = Bank 7, EBX, bits 3 and 8
+		g_cpu_has_bmi1 = (data[1] & (1 << 3)) != 0;
+		g_cpu_has_bmi2 = (data[1] & (1 << 8)) != 0;
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
 		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them before the leaf 1 read
@@ -334,6 +346,21 @@ static bool cpu_supports_avx512vbmi()
 
 #if ASTCENC_AVX >= 2
 /**
+ * @brief Run-time detection of the BMI1 and BMI2 extensions.
+ *
+ * @return True if both extensions are supported, false otherwise.
+ */
+static bool cpu_supports_bmi()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_bmi1 && g_cpu_has_bmi2;
+}
+
+/**
  * @brief Run-time detection if the host CPU supports AVX 2 extension.
  *
  * @return @c true if supported, @c false if not.
@@ -404,6 +431,12 @@ static bool validate_cpu_isa()
 	#endif
 
 	#if ASTCENC_AVX >= 2
+		if (!cpu_supports_bmi())
+		{
+			print_error("ERROR: Host does not support BMI1 and BMI2 ISA extensions\n");
+			return true;
+		}
+
 		if (!cpu_supports_avx2())
 		{
 			print_error("ERROR: Host does not support AVX2 ISA extension\n");

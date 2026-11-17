@@ -612,4 +612,140 @@ ASTCENC_SIMD_INLINE void print(vmask4 a)
 	print(select(vint4(0), vint4(1), a));
 }
 
+#if !defined(ASTCENC_HAS_NATIVE_BIT_EXTRACT)
+
+/**
+ * @brief Extract a contiguous bit range from a word.
+ *
+ * @param[in] value    The source word.
+ * @param[in] offset   The first bit, in [0, 63].
+ * @param[in] count    The number of bits, in [0, 64 - offset].
+ *
+ * @return The extracted bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t extract_bit_range(
+	uint64_t value,
+	unsigned int offset,
+	unsigned int count
+) {
+	if (count == 64)
+	{
+		return value;
+	}
+
+	return (value >> offset) & ((1ull << count) - 1);
+}
+
+#endif
+
+#if !defined(ASTCENC_HAS_NATIVE_BIT_PERMUTE)
+
+/**
+ * @brief Compress selected bits into consecutive low bits, preserving their order.
+ *
+ * @param[in] value   The source word.
+ * @param[in] mask    The source bit positions to select.
+ *
+ * @return The selected bits, starting at bit zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t compress_bits(uint64_t value, uint64_t mask)
+{
+	uint64_t result = 0;
+	uint64_t output_bit = 1;
+	while (mask != 0)
+	{
+		uint64_t input_bit = mask & (0ull - mask);
+		if ((value & input_bit) != 0)
+		{
+			result |= output_bit;
+		}
+
+		mask &= mask - 1;
+		output_bit <<= 1;
+	}
+
+	return result;
+}
+
+/**
+ * @brief Deposit consecutive low bits into selected positions, preserving their order.
+ *
+ * @param[in] value   The source word.
+ * @param[in] mask    The destination bit positions to fill.
+ *
+ * @return The deposited bits, with all other positions zero.
+ */
+ASTCENC_SIMD_INLINE uint64_t deposit_bits(uint64_t value, uint64_t mask)
+{
+	// Low contiguous masks need no permutation, including the empty and full-width cases
+	if ((mask & (mask + 1)) == 0)
+	{
+		return value & mask;
+	}
+
+	uint64_t result = 0;
+	unsigned int input_offset = 0;
+	while (mask != 0)
+	{
+		// Move each contiguous field together instead of depositing one bit at a time
+		unsigned int output_offset = std::countr_zero(mask);
+		uint64_t shifted_mask = mask >> output_offset;
+		uint64_t field_mask = shifted_mask & ~(shifted_mask + 1);
+		result |= ((value >> input_offset) & field_mask) << output_offset;
+
+		input_offset += std::countr_one(shifted_mask);
+		mask &= ~(field_mask << output_offset);
+	}
+
+	return result;
+}
+#endif
+
+#if !defined(ASTCENC_HAS_NATIVE_STORE_NBYTES_COUNT)
+
+/**
+ * @brief Store the lowest packed bytes to an unaligned address.
+ *
+ * @param[in]  a       The vector to store.
+ * @param[out] p       The destination address.
+ * @param[in]  count   The number of bytes to store, in [0, 16].
+ */
+ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p, unsigned int count)
+{
+	if (count == 16)
+	{
+		store(a, p);
+		return;
+	}
+
+	uint8_t bytes[16];
+	store(a, bytes);
+
+	// Fixed-size copies encourage inline stores; a variable-size memcpy can emit a library call
+	unsigned int offset = 0;
+	if (count & 8)
+	{
+		std::memcpy(p, bytes, 8);
+		offset += 8;
+	}
+
+	if (count & 4)
+	{
+		std::memcpy(p + offset, bytes + offset, 4);
+		offset += 4;
+	}
+
+	if (count & 2)
+	{
+		std::memcpy(p + offset, bytes + offset, 2);
+		offset += 2;
+	}
+
+	if (count & 1)
+	{
+		std::memcpy(p + offset, bytes + offset, 1);
+	}
+}
+#endif
+
 #endif  // #ifndef ASTC_VECMATHLIB_COMMON_4_H_INCLUDED

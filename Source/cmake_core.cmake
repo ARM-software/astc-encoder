@@ -447,7 +447,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
-                    -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c
+                    -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mbmi -mbmi2 -mpopcnt -mf16c
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
@@ -485,8 +485,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<${is_msvc_fe}:/arch:AVX2>
-                    $<${is_clangcl}:-mavx2 -mpopcnt -mf16c>
-                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c>
+                    $<${is_clangcl}:-mavx2 -mbmi -mbmi2 -mpopcnt -mf16c>
+                    $<${is_gnu_fe}:-mavx2 -mbmi -mbmi2 -mpopcnt -mf16c>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 

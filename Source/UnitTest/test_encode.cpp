@@ -765,4 +765,38 @@ TEST(compress, data_nan_hdr_ldra)
 	}
 }
 
+/** @brief ISE decoding preserves all QUANT levels, partial groups, and bit offsets. */
+TEST(ise, quant_levels)
+{
+	for (unsigned int q = 0; q < 21; q++)
+	{
+		quant_method quant_level = static_cast<quant_method>(q);
+		unsigned int levels = get_quant_level(quant_level);
+		for (unsigned int count = 1; count <= 64; count++)
+		{
+			uint8_t source[64];
+			for (unsigned int i = 0; i < count; i++)
+			{
+				source[i] = static_cast<uint8_t>((i * 37 + q * 13 + count) % levels);
+			}
+
+			for (unsigned int offset = 0; offset < 8; offset++)
+			{
+				uint8_t packed[66] {};
+				uint8_t decoded[66];
+				std::memset(decoded, 0xA5, sizeof(decoded));
+				encode_ise(quant_level, count, source, packed, offset);
+				decode_ise(quant_level, count, packed, decoded + 1, offset);
+				for (unsigned int i = 0; i < count; i++)
+				{
+					EXPECT_EQ(decoded[i + 1], source[i]);
+				}
+
+				EXPECT_EQ(decoded[0], 0xA5);
+				EXPECT_EQ(decoded[count + 1], 0xA5);
+			}
+		}
+	}
+}
+
 }

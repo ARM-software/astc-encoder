@@ -234,7 +234,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512|avx256")
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
             $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
-            -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c)
+            -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mbmi -mbmi2 -mpopcnt -mf16c)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(${ASTCENC_TEST}
@@ -248,7 +248,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
 
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mbmi -mbmi2 -mpopcnt -mf16c>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 
 endif()
