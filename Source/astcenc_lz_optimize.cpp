@@ -1311,7 +1311,22 @@ struct endpoint_subst_mtf
 
 		/** @brief Cached normalized_axis() for this candidate. */
 		vfloat4 normalized_axis;
+
+		/** @brief The unpacked first endpoint. */
+		vfloat4 endpoint0;
+
+		/** @brief The unpacked second endpoint. */
+		vfloat4 endpoint1;
+
+		/** @brief The endpoint direction divided by its squared length, unless near zero. */
+		vfloat4 projection;
+
+		/** @brief The squared endpoint distance used to scale weight errors. */
+		float weight_error_scale;
 	};
+
+	/** @brief The encoder profile used to unpack endpoints. */
+	const astcenc_profile profile;
 
 	/** @brief The list of entries in the list. Entries don't move after inserting. */
 	entry* entries;
@@ -1329,10 +1344,13 @@ struct endpoint_subst_mtf
 	 * @brief Initializes the list with a given capacity.
 	 *
 	 * @param[in] in_capacity   The maximum number of endpoint encodings in the list.
+	 * @param[in] in_profile    The encoder profile used to unpack endpoints.
 	 */
 	explicit endpoint_subst_mtf(
-		unsigned int in_capacity
+		unsigned int in_capacity,
+		astcenc_profile in_profile
 	) :
+		profile(in_profile),
 		size(0),
 		capacity(in_capacity)
 	{
@@ -1416,6 +1434,26 @@ struct endpoint_subst_mtf
 			id = order[mtf_index];
 			entries[id].endpoints = endpoints;
 			entries[id].normalized_axis = endpoints.normalized_axis();
+
+			// Projection data depends only on the endpoints and is reused across source blocks
+			vint4 ep0;
+			vint4 ep1;
+			bool rgb_hdr;
+			bool alpha_hdr;
+			unpack_color_endpoints(profile, endpoints.color_format, endpoints.color_values,
+			                       rgb_hdr, alpha_hdr, ep0, ep1);
+
+			entries[id].endpoint0 = int_to_float(ep0);
+			entries[id].endpoint1 = int_to_float(ep1);
+			vfloat4 direction = entries[id].endpoint1 - entries[id].endpoint0;
+			float length_squared = dot_s(direction, direction);
+			entries[id].weight_error_scale = length_squared;
+			if (length_squared > 1e-7f)
+			{
+				direction = direction * vfloat4(1.0f / length_squared);
+			}
+
+			entries[id].projection = direction;
 		}
 		else
 		{
@@ -1470,46 +1508,26 @@ static bool is_simple_block(
  *
  * Only supports "simple" blocks (1-plane, 1-partition).
  *
- * @param[in]  profile   The encoder profile.
- * @param[in]  blk       The source block.
- * @param[in]  scb       The symbolic block holding the mode and endpoints.
- * @param[out] ei        The output weights and endpoints.
+ * @param[in]  blk     The source block.
+ * @param[in]  entry   The cached endpoints and projection data.
+ * @param[out] ei      The output weights and endpoints.
  */
 static void compute_known_endpoint_weights(
-	astcenc_profile profile,
 	const image_block& blk,
-	const symbolic_compressed_block& scb,
+	const endpoint_subst_mtf::entry& entry,
 	endpoints_and_weights& ei
 ) {
-	bool rgb_hdr, alpha_hdr;
-	vint4 ep0, ep1;
-
-	unpack_color_endpoints(
-	    profile,
-	    scb.color_formats[0],
-	    scb.color_values[0],
-	    rgb_hdr, alpha_hdr,
-	    ep0, ep1);
-
 	ei.ep.partition_count = 1;
-	ei.ep.endpt0[0] = int_to_float(ep0);
-	ei.ep.endpt1[0] = int_to_float(ep1);
+	ei.ep.endpt0[0] = entry.endpoint0;
+	ei.ep.endpt1[0] = entry.endpoint1;
 
-	vfloat4 basef = ei.ep.endpt0[0];
-	vfloat4 dirf = ei.ep.endpt1[0] - basef;
-
-	float length_squared = dot_s(dirf, dirf);
-
-	if (length_squared > 1e-7f)
-	{
-		// Scale direction to cancel out squared length
-		dirf = dirf * vfloat4(1.0f / length_squared);
-	}
+	vfloat4 basef = entry.endpoint0;
+	vfloat4 dirf = entry.projection;
 
 	// NOTE: compare compute_ideal_colors_and_weights_4_comp;
 	// this path normalizes channel weights so hadd_s(blk.channel_weight) == 4.0f always
 	const float error_weight = 1.0f;
-	const float wes = length_squared * error_weight;
+	const float wes = entry.weight_error_scale * error_weight;
 
 	vfloat base_r(basef.lane<0>());
 	vfloat base_g(basef.lane<1>());
@@ -1595,7 +1613,7 @@ static void lz_rdo_optimization_passes(
 	uint8_t* original_blocks = new uint8_t[MAX_BLOCKS_PER_ITEM * ASTC_BLOCK_BYTES];
 	mtf_list mtf_weights { config.tune_lz_rdo_weight_history_size };  // MTF list for weights
 	mtf_list mtf_endpoints { config.tune_lz_rdo_endpoint_history_size * 2 };  // MTF list for endpoints and constant block bits
-	endpoint_subst_mtf mtf_simple_endpoints { config.tune_lz_rdo_endpoint_history_size };  // MTF list for simple endpoints
+	endpoint_subst_mtf mtf_simple_endpoints { config.tune_lz_rdo_endpoint_history_size, profile };  // MTF list for simple endpoints
 	mode_byte_histogram hist;  // Histogram for mode bytes.
 
 	// Determine channel weights
@@ -1809,7 +1827,7 @@ static void lz_rdo_optimization_passes(
 
 						// Compute weights for our block using those endpoints
 						endpoints_and_weights& ei = tmpbuf.ei1;
-						compute_known_endpoint_weights(profile, blk, scb, ei);
+						compute_known_endpoint_weights(blk, entry, ei);
 
 						// Compute ideal weights for our decimation mode
 						float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
