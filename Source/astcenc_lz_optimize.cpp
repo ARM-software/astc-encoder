@@ -879,8 +879,8 @@ struct block_error_calculator
 	/** @brief The decoded pixel values. floats_per_entry values per hash table entry. */
 	float* pixels;
 
-	/** @brief Pointer to the block texel weights. */
-	const float* block_texel_weights;
+	/** @brief Activity weights replicated across RGBA channels, with zero SIMD padding. */
+	float rgba_weights[BLOCK_MAX_TEXELS * 4];
 
 	/** @brief Interleaved RGBA values for the original pixels in the current block. */
 	float original_rgba[BLOCK_MAX_TEXELS * 4];
@@ -901,7 +901,7 @@ struct block_error_calculator
 		assert((num_entries & (num_entries - 1)) == 0);
 		assert(num_entries >= ITEMS_PER_ROW);
 		row_count = num_entries >> ROW_SHIFT;
-		floats_per_entry = bsd->texel_count * 4;
+		floats_per_entry = static_cast<unsigned int>(round_up_to_simd_multiple_vla(bsd->texel_count * 4));
 
 		unsigned int entry_count = row_count * ITEMS_PER_ROW;
 		unsigned int tag_count = row_count * TAGS_PER_ROW;
@@ -909,7 +909,16 @@ struct block_error_calculator
 		tags = new uint8_t[tag_count];
 		entries = new physical_block[entry_count];
 		pixels = new float[entry_count * floats_per_entry];
-		block_texel_weights = nullptr;
+
+		// Clear padding once; cached decodes only overwrite active texels
+		for (unsigned int padding_offset = bsd->texel_count * 4;
+		     padding_offset < floats_per_entry; padding_offset += 4)
+		{
+			for (unsigned int entry = 0; entry < entry_count; entry++)
+			{
+				store(vfloat4::zero(), pixels + entry * floats_per_entry + padding_offset);
+			}
+		}
 
 		// Clear all the tags (marking entries as invalid)
 		std::memset(tags, 0, tag_count * sizeof(*tags));
@@ -934,17 +943,25 @@ struct block_error_calculator
 		const image_block& blk,
 		const float* weights
 	) {
-		// Convert to interleaved texels
-		for (unsigned int i = 0; i < bsd->texel_count; i++)
+		// Copy interleaved texels and replicate their activity weights
+		const float* source_rgba = reinterpret_cast<const float*>(blk.data_rgba);
+		vint texel_lanes = asr<2>(vint::lane_id());
+		vint texel_count(bsd->texel_count);
+		for (unsigned int i = 0; i < floats_per_entry; i += ASTCENC_SIMD_WIDTH)
 		{
-			original_rgba[i * 4 + 0] = blk.data_r[i];
-			original_rgba[i * 4 + 1] = blk.data_g[i];
-			original_rgba[i * 4 + 2] = blk.data_b[i];
-			original_rgba[i * 4 + 3] = blk.data_a[i];
+			vmask mask = texel_lanes < texel_count;
+
+			// Both source arrays allow over-fetch, and inactive texels are masked in the loop
+			vfloat pixels_rgba(source_rgba + i);
+			vfloat weights_rgba = load1_quads(weights + i / 4);
+
+			store(select(vfloat::zero(), pixels_rgba, mask), original_rgba + i);
+			store(select(vfloat::zero(), weights_rgba, mask), rgba_weights + i);
+
+			texel_lanes += vint(ASTCENC_SIMD_WIDTH / 4);
 		}
 
 		channel_weights = blk.channel_weight;
-		block_texel_weights = weights;
 	}
 
 	/**
@@ -995,7 +1012,7 @@ struct block_error_calculator
 			decompress_symbolic_block_raw(config, *bsd, scb, matched_pixels);
 		}
 
-		return calculate_ssd_weighted(original_rgba, matched_pixels, bsd->texel_count, block_texel_weights, channel_weights);
+		return calculate_ssd_weighted(original_rgba, matched_pixels, floats_per_entry, rgba_weights, channel_weights);
 	}
 };
 
@@ -2154,7 +2171,8 @@ void lz_rdo_setup(
 	auto init_func = [&ctxo, total_tile_count, num_blocks]()
 	{
 		ctxo.context.lz_rdo_restricted_blocks = new uint8_t[num_blocks * ASTC_BLOCK_BYTES];
-		ctxo.context.lz_rdo_per_texel_weights = new float[num_blocks * ctxo.context.bsd->texel_count + ASTCENC_SIMD_WIDTH]; // Padded
+		size_t weight_count = num_blocks * ctxo.context.bsd->texel_count;
+		ctxo.context.lz_rdo_per_texel_weights = new float[weight_count + ASTCENC_SIMD_WIDTH];
 		return total_tile_count;
 	};
 

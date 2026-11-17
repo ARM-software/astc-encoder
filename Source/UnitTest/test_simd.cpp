@@ -109,6 +109,26 @@ TEST(SuiteVfloat, pack_quads)
 	}
 }
 
+/** @brief Load unaligned consecutive floats and replicate each into a four-lane group. */
+TEST(SuiteVfloat, load1_quads)
+{
+	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	ASTCENC_ALIGNAS float values[count + 1];
+	for (unsigned int i = 0; i < count + 1; i++)
+	{
+		values[i] = static_cast<float>(i) + 0.5f;
+	}
+
+	vfloat loaded = load1_quads(values + 1);
+	ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
+	storea(loaded, result);
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		float expected = values[i / 4 + 1];
+		EXPECT_EQ(result[i], expected);
+	}
+}
+
 /** @brief Store only lane zero of each quad without overwriting adjacent floats. */
 TEST(SuiteVfloat, store_lane0_quads)
 {

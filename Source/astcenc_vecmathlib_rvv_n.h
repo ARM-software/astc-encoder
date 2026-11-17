@@ -308,6 +308,27 @@ struct vmask
 };
 
 // ============================================================================
+// Quad operations (four consecutive lanes)
+// ============================================================================
+
+#define ASTCENC_HAS_NATIVE_LOAD1_QUADS
+
+/**
+ * @brief Load consecutive floats, replicating each into a four-lane group.
+ *
+ * @param p   The unaligned source array of ASTCENC_SIMD_WIDTH / 4 floats.
+ *
+ * @return The vector containing p[0] in lanes 0-3, p[1] in lanes 4-7, and so on.
+ */
+ASTCENC_SIMD_INLINE vfloat load1_quads(const float* p)
+{
+	size_t width = vfloat::vl();
+	vfloat32m1_t values = __riscv_vle32_v_f32m1(p, width / 4);
+	vuint32m1_t indices = __riscv_vsrl_vx_u32m1(__riscv_vid_v_u32m1(width), 2, width);
+	return vfloat(__riscv_vrgather_vv_f32m1(values, indices, width));
+}
+
+// ============================================================================
 // vmask operators and functions
 // ============================================================================
 
