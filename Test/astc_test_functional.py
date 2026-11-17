@@ -2759,7 +2759,7 @@ def main() -> int:
         # Arm aarch64
         'neon', 'sve_128', 'sve_256',
         # x86-64
-        'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512'
+        'sse2', 'sse4.1', 'avx2', 'avx512'
     ]
 
     parser.add_argument(

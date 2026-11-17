@@ -90,8 +90,8 @@
  */
 template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indices);
 
-#if ASTCENC_AVX >= 4
-	// If we have 512-bit AVX-512, expose 16-wide VLA and 4-wide fixed width
+#if ASTCENC_AVX >= 3
+	// If we have AVX-512, expose 16-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx512_16.h"
@@ -118,7 +118,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint16_from_size;
 
 #elif ASTCENC_AVX >= 2
-	// If we have AVX2 or 256-bit AVX-512, expose 8-wide VLA and 4-wide fixed width
+	// If we have AVX2, expose 8-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx2_8.h"

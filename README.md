@@ -74,8 +74,6 @@ ISA, we ship:
 * `astcenc-sse2` - uses SSE2
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
 * `astcenc-avx2` - uses AVX2, SSE4.2, BMI1, BMI2, POPCNT, and F16C
-* `astcenc-avx256` - uses AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
-   AVX-512VBMI, BMI1, BMI2, POPCNT, and F16C
 * `astcenc-avx512` - uses AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
    AVX-512VBMI, BMI1, BMI2, POPCNT, and F16C
 

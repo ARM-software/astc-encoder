@@ -11,8 +11,8 @@ at 3.9 GHz, running `astcenc` using AVX2 and 12 threads.
 
 **Status:** In development.
 
-The 6.0.0 release is a major release, adding support for two flavors of AVX-512
-and making significant performance optimizations to all of the ISA variants.
+The 6.0.0 release is a major release, adding support for AVX-512 and making
+significant performance optimizations to all of the ISA variants.
 
 This release includes changes to the public interface in the `astcenc.h`
 header. We always recommend rebuilding your client-side code using the
@@ -32,11 +32,9 @@ header from the same release to avoid compatibility issues.
   * **CLI Change:** Writing to an LDR output file format, such as PNG, when
     testing HDR input is now supported. The tool will output multiple files,
     one for each active integer f-stop exposure level.
-  * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
-    command line tool variants. Implementation provides "AVX-256", which uses
-    an enhanced version of the AVX2 backend operating on 256-bit vectors, and
-    full AVX-512 operating on 512-bit vectors. Note that full AVX-512
-    performance can be slower than AVX2 for smaller block sizes.
+  * **Feature:** Add an AVX-512 SIMD backend to the library, with a
+    corresponding command line tool variant operating on 512-bit vectors.
+    AVX-512 performance can be slower than AVX2 for smaller block sizes.
   * **Change:** Require C++20 to build the codec, replacing local library
     functions with new standard library operations where possible.
   * **Change:** Minimum supported compiler versions increased to Clang 18, GCC

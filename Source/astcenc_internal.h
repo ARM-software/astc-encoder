@@ -68,7 +68,7 @@
 ============================================================================ */
 #if !defined(ASTCENC_BLOCK_MAX_TEXELS)
 	// 6x6x6 = 216 live texels. SIMD_WIDTH 16 needs a multiple of 16, so pad to 224.
-	#if ASTCENC_AVX >= 4
+	#if ASTCENC_AVX >= 3
 		#define ASTCENC_BLOCK_MAX_TEXELS 224
 	#else
 		#define ASTCENC_BLOCK_MAX_TEXELS 216
@@ -166,7 +166,7 @@ static constexpr unsigned int TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
 static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_TEXELS must be multiple of ASTCENC_SIMD_WIDTH");
 
-#if ASTCENC_AVX >= 4
+#if ASTCENC_AVX >= 3
 static_assert(BLOCK_MAX_TEXELS <= 224,
               "BLOCK_MAX_TEXELS must not be greater than 224");
 #else
