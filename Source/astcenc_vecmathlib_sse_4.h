@@ -522,6 +522,24 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 // vint4 operators and functions
 // ============================================================================
 
+#define ASTCENC_HAS_NATIVE_MATCH8
+
+/**
+ * @brief Compare eight consecutive bytes against a value.
+ *
+ * @param p       The unaligned source array of eight bytes.
+ * @param value   The byte to match.
+ *
+ * @return An eight-bit mask, with bit i set when p[i] equals value.
+ */
+ASTCENC_SIMD_INLINE unsigned int match8(const uint8_t* p, uint8_t value)
+{
+	__m128i bytes = _mm_setzero_si128();
+	std::memcpy(&bytes, p, sizeof(uint64_t));
+	__m128i matches = _mm_cmpeq_epi8(bytes, _mm_set1_epi8(static_cast<char>(value)));
+	return static_cast<unsigned int>(_mm_movemask_epi8(matches)) & 0xFF;
+}
+
 /**
  * @brief Overload: vector by vector addition.
  *

@@ -314,6 +314,25 @@ struct vmask
 #define ASTCENC_HAS_NATIVE_LOAD1_QUADS
 #define ASTCENC_HAS_NATIVE_BROADCAST_QUAD
 
+#define ASTCENC_HAS_NATIVE_MATCH8
+
+/**
+ * @brief Compare eight consecutive bytes against a value.
+ *
+ * @param p       The unaligned source array of eight bytes.
+ * @param value   The byte to match.
+ *
+ * @return An eight-bit mask, with bit i set when p[i] equals value.
+ */
+ASTCENC_SIMD_INLINE unsigned int match8(const uint8_t* p, uint8_t value)
+{
+	vuint8m1_t bytes = __riscv_vle8_v_u8m1(p, 8);
+	vbool8_t matches = __riscv_vmseq_vx_u8m1_b8(bytes, value, 8);
+	uint8_t bits = 0;
+	__riscv_vsm_v_b8(&bits, matches, 8);
+	return bits;
+}
+
 /**
  * @brief Replicate a four-lane integer vector into every quad.
  *

@@ -91,6 +91,35 @@ static vint8 vint8_lit(
 
 #endif
 
+/** @brief Match every byte pattern without including the adjacent FIFO byte. */
+TEST(SuiteVint, match8)
+{
+	for (unsigned int target : { 0u, 127u, 128u, 255u })
+	{
+		uint8_t value = static_cast<uint8_t>(target);
+		for (unsigned int expected = 0; expected < 256; expected++)
+		{
+			ASTCENC_ALIGNAS uint8_t values[10];
+			values[0] = value;
+			values[9] = value;
+			for (unsigned int i = 0; i < 8; i++)
+			{
+				if (expected & (1u << i))
+				{
+					values[i + 1] = value;
+				}
+				else
+				{
+					values[i + 1] = static_cast<uint8_t>(value ^ 0xFF);
+				}
+			}
+
+			unsigned int result = match8(values + 1, value);
+			EXPECT_EQ(result, expected);
+		}
+	}
+}
+
 /** @brief Pack four-lane float groups in order at every VLA width. */
 TEST(SuiteVfloat, pack_quads)
 {

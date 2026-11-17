@@ -877,6 +877,7 @@ struct block_error_calculator
 
 	/** @brief Items per row, derived from ROW_SHIFT. */
 	static const unsigned int ITEMS_PER_ROW = 1 << ROW_SHIFT;
+	static_assert(ITEMS_PER_ROW == 8, "Tag matching requires eight entries per row");
 
 	/** @brief Tag bytes per row, including the FIFO counter. */
 	static const unsigned int TAGS_PER_ROW = ITEMS_PER_ROW + 1;
@@ -922,7 +923,9 @@ struct block_error_calculator
 		const astcenc_config& in_config,
 		unsigned int num_entries,
 		const block_size_descriptor* in_bsd
-	) : bsd(in_bsd), config(in_config)
+	) :
+		bsd(in_bsd),
+		config(in_config)
 	{
 		assert((num_entries & (num_entries - 1)) == 0);
 		assert(num_entries >= ITEMS_PER_ROW);
@@ -1010,14 +1013,18 @@ struct block_error_calculator
 		uint8_t* row_tags = tags + row * TAGS_PER_ROW;
 		physical_block* row_entries = entries + row * ITEMS_PER_ROW;
 
-		// Look for matches in current hash row
-		for (unsigned int i = 0; i < ITEMS_PER_ROW; i++)
+		// Check full blocks only for matching tags, preserving the first-match order
+		unsigned int tag_matches = match8(row_tags, our_tag);
+		while (tag_matches != 0)
 		{
-			if (row_tags[i] == our_tag && row_entries[i] == candidate_bits)
+			unsigned int i = std::countr_zero(tag_matches);
+			if (row_entries[i] == candidate_bits)
 			{
 				matched_pixels = pixels + (row * ITEMS_PER_ROW + i) * floats_per_entry;
 				break;
 			}
+
+			tag_matches &= tag_matches - 1;
 		}
 
 		// If we got no match, insert a new entry
