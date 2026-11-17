@@ -518,12 +518,14 @@ float compute_symbolic_block_difference_1plane(
 	return summa.lane<0>();
 }
 
-/* See header for documentation. */
-float compute_symbolic_block_difference_1plane_1partition(
+/* Internal function that implements 1-plane 1-partition difference. */
+template<bool enable_weights>
+static float compute_symbolic_block_difference_1plane_1partition_impl(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const image_block& blk
+	const image_block& blk,
+	const float* weights
 ) {
 	// Reject error blocks
 	if (scb.block_type == SYM_BTYPE_ERROR)
@@ -621,6 +623,11 @@ float compute_symbolic_block_difference_1plane_1partition(
 		              + color_error_b * blk.channel_weight.lane<2>()
 		              + color_error_a * blk.channel_weight.lane<3>();
 
+		if (enable_weights)
+		{
+			metric = metric * vfloat(weights + i);
+		}
+
 		// Mask off bad lanes
 		vmask mask = lane_id < vint(texel_count);
 		lane_id += vint(ASTCENC_SIMD_WIDTH);
@@ -628,6 +635,39 @@ float compute_symbolic_block_difference_1plane_1partition(
 	}
 
 	return hadd_s(summav);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_1partition(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	return compute_symbolic_block_difference_1plane_1partition_impl<false>(
+		config,
+		bsd,
+		scb,
+		blk,
+		nullptr
+	);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_1partition_weighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk,
+	const float* weights
+) {
+	return compute_symbolic_block_difference_1plane_1partition_impl<true>(
+		config,
+		bsd,
+		scb,
+		blk,
+		weights
+	);
 }
 
 #endif

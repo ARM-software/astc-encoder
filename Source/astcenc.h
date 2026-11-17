@@ -406,6 +406,21 @@ static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
 static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
 
 /**
+ * @brief Enable LZ-RDO encoding.
+ *
+ * LZ-RDO encoding attempts to produce texture data that is more compressible with LZ-family
+ * codecs such as Zlib/Deflate, LZ4 or Zstd, at some decrease in quality as measured in PSNR.
+ * Spends more encode time to make compressed package sizes smaller.
+ *
+ * The target trade-off between compressed size and quality is configurable in @c lz_rdo_lambda
+ * in the configuration. Larger values will generally result in smaller compressed data but
+ * more visible quality degradation.
+ *
+ * LZ-RDO is currently only supported for LDR data.
+ */
+static const unsigned int ASTCENC_FLG_USE_LZ_RDO           = 1 << 7;
+
+/**
  * @brief The bit mask of all valid flags.
  */
 static const unsigned int ASTCENC_ALL_FLAGS =
@@ -415,7 +430,8 @@ static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_USE_PERCEPTUAL |
                               ASTCENC_FLG_USE_DECODE_UNORM8 |
                               ASTCENC_FLG_DECOMPRESS_ONLY |
-                              ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+                              ASTCENC_FLG_SELF_DECOMPRESS_ONLY |
+                              ASTCENC_FLG_USE_LZ_RDO;
 
 /**
  * @brief The config structure.
@@ -595,6 +611,43 @@ struct astcenc_config
 	 * search is enabled. This option is ineffective for 3D block sizes.
 	 */
 	float tune_search_mode0_enable;
+
+	/**
+	 * @brief The LZ RDO quality/size trade-off parameter (-rdo-lambda).
+	 *
+	 * This value only matters when LZ RDO mode is enabled. Large values decrease
+	 * quality (lower PSNR) but result in ASTC data that is more compressible with
+	 * LZ-family codecs like zlib/Deflate, LZ4 or Zstd.
+	 *
+	 * Tuned so meaningful (human-distinguishable) steps are roughly 10 units apart,
+	 * i.e. good values to try are 10, 20, etc. 20-40 are typically completely fine
+	 * for diffuse albedo maps, for normal maps you might want to stick with 10 or
+	 * below depending on your quality targets.
+	 *
+	 * A sensible default value for most content to start experimenting with is 20.
+	 */
+	float lz_rdo_lambda;
+
+	/**
+	 * @brief The endpoint history buffer size used in LZ-RDO optimization (-rdo-endpoints).
+	 *
+	 * Must be at least 1.
+	 */
+	unsigned int tune_lz_rdo_endpoint_history_size;
+
+	/**
+	 * @brief The weights history buffer size used in LZ-RDO optimization (-rdo-weights).
+	 *
+	 * Must be at least 1.
+	 */
+	unsigned int tune_lz_rdo_weight_history_size;
+
+	/**
+	 * @brief The number of consecutive LZ-RDO optimization passes to run when enabled (-rdo-passes).
+	 *
+	 * Must be at least 1.
+	 */
+	unsigned int tune_lz_rdo_num_passes;
 
 	/**
 	 * @brief The progress callback, can be @c nullptr.

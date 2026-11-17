@@ -438,6 +438,61 @@ ADVANCED COMPRESSION
 )"
 // This split in the literals needed for MSVC, compiler will concatenate
 R"(
+    LZ-RDO options
+    --------------
+
+       LZ-RDO attempts to produce more compressible ASTC data by trying to
+       reuse endpoints and weights between multiple blocks. This makes data
+       more compressible with LZ-family codecs like zlib/Deflate, LZ4 or
+       Zstd, but does increase error somewhat. In other words, this trades
+       compressed on-disk package size for quality. Has no effect on in-memory
+	   or uncompressed on-disk size.
+
+	   LZ-RDO is currently only supported for LDR data.
+
+       -rdo-lambda <number>
+           Optimize the compressed output for better LZ compression. Larger
+           lambda values decrease quality (PSNR) but give more compressible
+           output. Tuned so meaningful steps are roughly 10 units. A good
+           starting point is 20. 20-40 are normally fine for diffuse albedo
+           maps, for normal maps you might want to use smaller numbers.
+
+       -rdo-endpoints <number>
+           Sets the size of the endpoint history buffer to use, in blocks.
+           Preset defaults are:
+
+               -fastest      :  16
+               -fast         :  32
+               -medium       :  64
+               -thorough     : 256
+               -verythorough : 320
+               -exhaustive   : 512
+
+       -rdo-weights <number>
+           Sets the size of the weight history buffer to use, in blocks.
+           Preset defaults are:
+
+               -fastest      :   4
+               -fast         :  16
+               -medium       :  40
+               -thorough     :  80
+               -verythorough : 160
+               -exhaustive   : 160
+
+       -rdo-passes <number>
+           Iteratively performs RDO multiple times. This is expensive but
+           will improve results somewhat. Preset defaults are:
+
+               -fastest      : 1
+               -fast         : 1
+               -medium       : 1
+               -thorough     : 1
+               -verythorough : 1
+               -exhaustive   : 2
+)"
+// This split in the literals is needed for Visual Studio; the compiler
+// will concatenate these two strings together ...
+R"(
     Other options
     -------------
 

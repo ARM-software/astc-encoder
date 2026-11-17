@@ -21,6 +21,7 @@
 
 #include <limits>
 #include <memory>
+#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -28,6 +29,113 @@
 
 namespace astcenc
 {
+
+/** @brief State for cancellation from an LZ-RDO progress callback. */
+struct lz_rdo_cancel_state
+{
+	/** @brief The context to cancel. */
+	astcenc_context* context;
+
+	/** @brief The progress percentage at which to cancel. */
+	float cancel_at;
+
+	/** @brief The last reported progress percentage. */
+	float last_progress;
+
+	/** @brief Whether cancellation has been requested. */
+	bool is_cancelled;
+
+	/** @brief The result of the cancellation request. */
+	astcenc_error cancel_status;
+};
+
+/** @brief The active single-threaded cancellation test state. */
+static lz_rdo_cancel_state lz_rdo_cancel;
+
+/**
+ * @brief Cancel compression when progress reaches the requested stage.
+ *
+ * @param progress   The compression completion percentage.
+ */
+static void cancel_lz_rdo_progress(float progress)
+{
+	lz_rdo_cancel.last_progress = progress;
+	if (!lz_rdo_cancel.is_cancelled && (progress >= lz_rdo_cancel.cancel_at))
+	{
+		lz_rdo_cancel.is_cancelled = true;
+		lz_rdo_cancel.cancel_status = astcenc_compress_cancel(lz_rdo_cancel.context);
+	}
+}
+
+/** @brief Cancelling either encode stage stops pending LZ-RDO work and permits context reuse. */
+TEST(compress, lz_rdo_cancellation)
+{
+	// Enough blocks to report progress before the initial encode completes
+	constexpr size_t dim = 512;
+	std::vector<uint8_t> pixels(dim * dim * 4, 255);
+	std::vector<uint8_t> data((dim / 4) * (dim / 4) * 16);
+	void* slices[] { pixels.data() };
+
+	astcenc_image image {
+		.dim_x = dim,
+		.dim_y = dim,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = slices,
+		.row_stride = 0
+	};
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	// The initial encode reports up to 33%; later callbacks are from LZ-RDO
+	for (float cancel_at : { 0.0f, 34.0f })
+	{
+		astcenc_config config;
+		astcenc_error status = astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1,
+		                                           ASTCENC_PRE_FASTEST, ASTCENC_FLG_USE_LZ_RDO,
+		                                           &config);
+
+		ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+		config.lz_rdo_lambda = 20.0f;
+		config.progress_callback = cancel_lz_rdo_progress;
+
+		astcenc_context* context;
+		status = astcenc_context_alloc(&config, 1, &context, nullptr);
+
+		ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+		std::unique_ptr<astcenc_context, decltype(&astcenc_context_free)> context_guard(
+			context, astcenc_context_free);
+
+		lz_rdo_cancel = {
+			.context = context,
+			.cancel_at = cancel_at,
+			.last_progress = 0.0f,
+			.is_cancelled = false,
+			.cancel_status = ASTCENC_SUCCESS
+		};
+
+		status = astcenc_compress_image(context, &image, &swizzle, data.data(), data.size(), 0);
+
+		EXPECT_EQ(status, ASTCENC_SUCCESS);
+		EXPECT_TRUE(lz_rdo_cancel.is_cancelled);
+		EXPECT_EQ(lz_rdo_cancel.cancel_status, ASTCENC_SUCCESS);
+		EXPECT_GE(lz_rdo_cancel.last_progress, cancel_at);
+		EXPECT_LT(lz_rdo_cancel.last_progress, 100.0f);
+
+		// Reset must clear cancellation in every stage before the next image
+		status = astcenc_compress_reset(context);
+		EXPECT_EQ(status, ASTCENC_SUCCESS);
+		lz_rdo_cancel.cancel_at = 101.0f;
+		lz_rdo_cancel.last_progress = 0.0f;
+		status = astcenc_compress_image(context, &image, &swizzle, data.data(), data.size(), 0);
+		EXPECT_EQ(status, ASTCENC_SUCCESS);
+		EXPECT_EQ(lz_rdo_cancel.last_progress, 100.0f);
+	}
+}
 
 /** @brief Failed searches fall back to the block mean with profile-correct color encoding. */
 TEST(compress, mean_color_fallback)
@@ -112,7 +220,7 @@ TEST(compress, mean_color_fallback)
 
 		// Grayscale with constant alpha skips the dual-plane search
 		uint8_t physical[16];
-		compress_block(ctx, blk, physical, *working_buffers);
+		compress_block(ctx, blk, physical, nullptr, *working_buffers);
 		symbolic_compressed_block symbolic;
 		physical_to_symbolic(*bsd, physical, symbolic);
 		EXPECT_EQ(symbolic.block_type, expected_type);

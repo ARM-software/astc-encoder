@@ -132,6 +132,12 @@ private:
 	/** @brief Last progress callback value, protected by @c m_callback_lock. */
 	float m_callback_last_value;
 
+	/** @brief Starting percentage for progress report callback. */
+	float m_callback_start_percentage;
+
+	/** @brief Ending percentage for progress report callback. */
+	float m_callback_end_percentage;
+
 public:
 	/** @brief Create a new ParallelManager. */
 	ParallelManager()
@@ -159,6 +165,8 @@ public:
 		m_callback = nullptr;
 		m_callback_last_value = 0.0f;
 		m_callback_min_diff = 1.0f;
+		m_callback_start_percentage = 0.0f;
+		m_callback_end_percentage = 100.0f;
 	}
 
 	/**
@@ -203,8 +211,10 @@ public:
 	 *
 	 * @param task_count   Total number of tasks needing processing.
 	 * @param callback     Function pointer for progress status callbacks.
+	 * @param start_pct    Percentage completion reported when no tasks complete (default: 0).
+	 * @param end_pct      Percentage completion reported when all tasks complete (default: 100).
 	 */
-	void init(size_t task_count, astcenc_progress_callback callback)
+	void init(size_t task_count, astcenc_progress_callback callback, float start_pct=0.0f, float end_pct=100.0f)
 	{
 		std::lock_guard<std::mutex> lck(m_lock);
 
@@ -213,6 +223,9 @@ public:
 			m_callback = callback;
 			m_total_task_count = task_count;
 			m_init_done = true;
+
+			m_callback_start_percentage = start_pct;
+			m_callback_end_percentage = end_pct;
 
 			// Report every 1% or 4096 blocks, whichever is larger, to avoid callback overhead
 			float min_diff = (4096.0f / static_cast<float>(task_count)) * 100.0f;
@@ -285,7 +298,8 @@ public:
 
 			float num = static_cast<float>(local_count);
 			float den = static_cast<float>(m_total_task_count);
-			float this_value =  (num / den) * 100.0f;
+			float fraction = num / den;
+			float this_value = (1.0f - fraction) * m_callback_start_percentage + fraction * m_callback_end_percentage;
 			bool report_test = (local_count == m_total_task_count) ||
 			                   ((this_value - m_callback_last_value) > m_callback_min_diff);
 
@@ -349,6 +363,12 @@ struct astcenc_context
 
 	/** @brief The parallel manager for compression. */
 	ParallelManager manage_compress;
+
+	/** @brief The parallel manager for the LZ-RDO setup pass. */
+	ParallelManager manage_lz_rdo_setup;
+
+	/** @brief The parallel manager for LZ-RDO optimization passes. */
+	ParallelManager manage_lz_rdo_optimize;
 #endif
 
 	/** @brief The parallel manager for decompression. */
