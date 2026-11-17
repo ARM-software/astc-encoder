@@ -813,6 +813,32 @@ static void decompress_symbolic_block_raw(
 			rgb_lns, a_lns,
 			ep0, ep1);
 
+		// Single-partition, single-plane blocks have contiguous texels and shared endpoints
+		if ((partition_count == 1) && !is_dual_plane)
+		{
+			vint base = broadcast_quad(ep0);
+			vint delta = broadcast_quad(ep1 - ep0);
+			vint u8_lanes = broadcast_quad(select(vint4::zero(), vint4(-1), u8_mask));
+			vmask u8_mask_wide = u8_lanes != vint::zero();
+			vint lane_id = vint::lane_id();
+			vint float_count(bsd.texel_count * 4);
+
+			for (unsigned int j = 0; j < bsd.texel_count; j += ASTCENC_SIMD_WIDTH / 4)
+			{
+				vint weight = load1_quads(plane1_weights + j);
+				vint colori = base + asr<6>(delta * weight + vint(32));
+				vint colori_u8 = asr<8>(colori) * vint(257);
+				colori = select(colori, colori_u8, u8_mask_wide);
+
+				// Keep cache padding zero for the full-width error calculation
+				vmask mask = lane_id < float_count;
+				store(select(vfloat::zero(), int_to_float(colori), mask), out_rgba + j * 4);
+				lane_id += vint(ASTCENC_SIMD_WIDTH);
+			}
+
+			return;
+		}
+
 		vint4 diff = ep1 - ep0;
 		int texel_count = pi.partition_texel_count[i];
 
