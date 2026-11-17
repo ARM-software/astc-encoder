@@ -2409,7 +2409,7 @@ static bool store_dds_uncompressed_image(
 			{
 				size_t mod_y = y_flip ? dim_y - y - 1: y;
 				uint16_t* src_row = data16 + 4 * dim_x * mod_y;
-				uint16_t* dest_row = &pixel_data16[(y * dim_y + y) * dim_x * image_components];
+				uint16_t* dest_row = &pixel_data16[(z * dim_y + y) * dim_x * image_components];
 
 				switch (image_components)
 				{
