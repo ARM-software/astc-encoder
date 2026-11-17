@@ -1392,11 +1392,11 @@ static void compute_known_endpoint_weights(
 	vint4 ep0, ep1;
 
 	unpack_color_endpoints(
-		profile,
-		scb.color_formats[0],
-		scb.color_values[0],
-		rgb_hdr, alpha_hdr,
-		ep0, ep1);
+	    profile,
+	    scb.color_formats[0],
+	    scb.color_values[0],
+	    rgb_hdr, alpha_hdr,
+	    ep0, ep1);
 
 	ei.ep.partition_count = 1;
 	ei.ep.endpt0[0] = int_to_float(ep0);
@@ -1418,21 +1418,32 @@ static void compute_known_endpoint_weights(
 	const float error_weight = 1.0f;
 	const float wes = length_squared * error_weight;
 
-	for (size_t i = 0; i < blk.texel_count; i++)
-	{
-		vfloat4 point = blk.texel(i);
-		float param = dot_s(point - basef, dirf);
+	vfloat base_r(basef.lane<0>());
+	vfloat base_g(basef.lane<1>());
+	vfloat base_b(basef.lane<2>());
+	vfloat base_a(basef.lane<3>());
+	vfloat dir_r(dirf.lane<0>());
+	vfloat dir_g(dirf.lane<1>());
+	vfloat dir_b(dirf.lane<2>());
+	vfloat dir_a(dirf.lane<3>());
+	vint lane_id = vint::lane_id();
 
-		ei.weights[i] = astc::clamp1f(param);
-		ei.weight_error_scale[i] = wes;
-	}
-
-	// Zero initialize any SIMD over-fetch
-	size_t texel_count_simd = round_up_to_simd_multiple_vla(blk.texel_count);
-	for (size_t i = blk.texel_count; i < texel_count_simd; i++)
+	for (size_t i = 0; i < blk.texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		ei.weights[i] = 0.0f;
-		ei.weight_error_scale[i] = 0.0f;
+		vfloat param_r = (loada(blk.data_r + i) - base_r) * dir_r;
+		vfloat param_g = (loada(blk.data_g + i) - base_g) * dir_g;
+		vfloat param_b = (loada(blk.data_b + i) - base_b) * dir_b;
+		vfloat param_a = (loada(blk.data_a + i) - base_a) * dir_a;
+
+		// Match the dot_s reduction order across color channels
+		vfloat param = (param_r + param_b) + (param_g + param_a);
+
+		// Zero padded texels for subsequent SIMD over-fetch
+		vmask mask = lane_id < vint(blk.texel_count);
+		lane_id += vint(ASTCENC_SIMD_WIDTH);
+
+		storea(select(vfloat::zero(), clampzo(param), mask), ei.weights + i);
+		storea(select(vfloat::zero(), vfloat(wes), mask), ei.weight_error_scale + i);
 	}
 
 	ei.is_constant_weight_error_scale = true;
