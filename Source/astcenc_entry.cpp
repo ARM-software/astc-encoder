@@ -1312,6 +1312,8 @@ astcenc_error astcenc_compress_reset(
 
 	ctxo->manage_avg.reset();
 	ctxo->manage_compress.reset();
+	ctxo->manage_lz_rdo_setup.reset();
+	ctxo->manage_lz_rdo_optimize.reset();
 	return ASTCENC_SUCCESS;
 #endif
 }
@@ -1330,10 +1332,10 @@ astcenc_error astcenc_compress_cancel(
 		return ASTCENC_ERR_BAD_CONTEXT;
 	}
 
-	// Cancel compression before cancelling avg. This avoids the race condition where cancelling
-	// them in the other order could see a compression worker starting to process even though some
-	// of the avg data is undefined.
+	// Cancel dependent stages first so workers cannot consume incomplete input from an earlier stage
+	ctxo->manage_lz_rdo_optimize.cancel();
 	ctxo->manage_compress.cancel();
+	ctxo->manage_lz_rdo_setup.cancel();
 	ctxo->manage_avg.cancel();
 	return ASTCENC_SUCCESS;
 #endif
