@@ -4,25 +4,26 @@
  * This file implements a rate-distortion optimization algorithm for ASTC compressed textures.
  * The algorithm aims to improve compression by exploiting redundancy between neighboring blocks
  * while maintaining visual quality.
- * 
+ *
  * We keep a Move-To-Front (MTF) list of recently used endpoints (including header information)
  * and weight bits and try to build new blocks using them. Whenever we do, this allows a backend
  * LZ coder (like Deflate, Zstd, LZ4, LZMA, ...) to produce a match, decreasing the compressed size
  * significantly. The trade-off is that the blocks we get this way are worse in terms of error than
  * the blocks we get if we optimize the parameters for the block contents.
- * 
+ *
  * We use a combined rate-distortion score to weight this trade-off, controlled by a single
  * parameter (lambda). Low values of lambda heavily prioritize minimizing error (maximum quality).
  * Higher values of lambda care more about the bit rate estimate and will generally lead to higher
  * errors.
  *
- * It is important for visual quality to not just use raw squared error or equivalently PSNR for this.
- * Since we are intentionally increasing error, we should only do so where errors are less likely to
- * be noticed.
+ * It is important for visual quality to not just use raw squared error or equivalently PSNR for
+ * this. Since we are intentionally increasing error, we should only do so where errors are less
+ * likely to be noticed.
  *
  * To this end, we determine per-texel weights for the image to determine where errors are more or
- * less likely to be noticed. In general, the errors that result from the types of block modifications
- * we're evaluating are most apparent in smooth regions, less so in noisy areas or near edges.
+ * less likely to be noticed. In general, the errors that result from the types of block
+ * modifications we're evaluating are most apparent in smooth regions, less so in noisy areas or
+ * near edges.
  *
  * Therefore, we identify the amount of high-frequency energy near any given texel; texels in smooth
  * regions try to keep the error low, while texels in high-frequency areas use looser tolerances.
@@ -95,9 +96,9 @@ static inline void store64le(uint64_t value, uint8_t* p)
 /**
  * @brief Representation of ASTC blocks. Includes facilities for some basic bitwise operations.
  */
-struct physical_block 
+struct physical_block
 {
-	union 
+	union
 	{
 		/** @brief The block bytes. */
 		uint8_t bytes[16];
@@ -296,7 +297,7 @@ struct mode_byte_histogram
 
 	/** @brief Everyt his many updates, decay existing frequncies for adaptation. */
 	static constexpr unsigned int DECAY_PERIOD = 256;
-	
+
 	/** @brief Implicit count in every bucket so nothing has 0 frequency. */
 	static constexpr float BIAS = 0.25f;
 
@@ -367,7 +368,7 @@ struct mode_byte_histogram
  *
  * We keep track of recent endpoint and weight values to try and reuse them for other blocks.
  */
-struct mtf_list 
+struct mtf_list
 {
 	/** @brief The list of blocks. Most recent is in front. */
 	physical_block* list;
@@ -399,7 +400,7 @@ struct mtf_list
 	int search(const physical_block& value, const physical_block& mask) const
 	{
 		physical_block masked_value = value & mask;
-		for (unsigned int i = 0; i < size; i++) 
+		for (unsigned int i = 0; i < size; i++)
 		{
 			if ((list[i] & mask) == masked_value)
 			{
@@ -413,7 +414,7 @@ struct mtf_list
 	/** @brief Update MTF list after using a given value. pos is the value returned by search. */
 	int update(const physical_block& value, int pos)
 	{
-		if (pos == -1) 
+		if (pos == -1)
 		{
 			// If not found, insert at the end, growing up to capacity
 			if (size < capacity)
@@ -536,7 +537,7 @@ static inline unsigned int get_block_mode(const uint8_t* block)
  * @param bsd     The block size descriptor.
  */
 static inline int get_weight_bits(
-	const uint8_t* block, 
+	const uint8_t* block,
 	const block_size_descriptor* bsd
 ) {
 	return bsd->weight_bits_for_mode[get_block_mode(block)];
@@ -863,7 +864,7 @@ struct candidate_list
 	/** @brief The current number of candidates in the list. */
 	unsigned int count = 0;
 
-	/** 
+	/**
 	 * @brief Quick rejection check for candidates.
 	 *
 	 * If the candidate list is full and the provided cost lower bound is
@@ -1035,7 +1036,7 @@ struct endpoint_subst_mtf
 		/** @brief Cached normalized_axis() for this candidate. */
 		vfloat4 normalized_axis;
 	};
-	
+
 	/** @brief The list of entries in the list. Entries don't move after inserting. */
 	entry* entries;
 	/** @brief List of indices defining an index permutation. We shuffle indices instead of elements. */
@@ -1669,11 +1670,11 @@ static const filter_kernel kernel_spread {
  * @param direction    The direction to work in (0=X, 1=Y, 2=Z).
  */
 static void apply_1d_convolution_3d(
-	float* input, 
-	float* output, 
-	size_t xdim, 
-	size_t ydim, 
-	size_t zdim, 
+	float* input,
+	float* output,
+	size_t xdim,
+	size_t ydim,
+	size_t zdim,
 	const filter_kernel& filter,
 	int direction
 ) {
@@ -1725,7 +1726,7 @@ static void apply_1d_convolution_3d(
 					float sum = 0.0f;
 					float weight_sum = 0.0f;
 
-					for (int k = -radius; k <= radius; k++) 
+					for (int k = -radius; k <= radius; k++)
 					{
 						// Compute displaced position. Negatives wrap around,
 						// which shows up as >=width below.
@@ -1843,6 +1844,7 @@ static void separable_convolve_3d(
 
 /** @brief Maximum number of texels in a tile. */
 static constexpr unsigned int WEIGHTS_TILE_MAX_TEXELS { 256 * 256 };
+
 /** @brief Actual size of a tile buffer, intentionally larger to allow for padding and avoid pow2 aliasing conflicts. */
 static constexpr unsigned int WEIGHTS_TILE_BUFFER_TEXELS { WEIGHTS_TILE_MAX_TEXELS + 128 + ASTCENC_SIMD_WIDTH };
 
