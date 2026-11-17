@@ -16,7 +16,7 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-Benchmark three astcenc binaries and plot RGB, normal-map, and HDR throughput.
+Benchmark three astcenc binaries and plot luminance, RGB, RGBA, normal-map, and HDR throughput.
 
 Requires Python 3.10 or newer and the packages in requirements.txt. Shared profiling helpers live
 in testlib beside this script. The report layout does not depend on an external template.
@@ -25,13 +25,14 @@ Example, from the project root:
 
   python3 Test/astc_profile_report.py ./release-avx2 ./main-avx2 ./main-avx512
 
-Default images are the KodakMnt RGB and normal montages and HDRIHaven Canarywharf, under Images
-beside this script. Use --rgb-image, --normal-image, and --hdr-image when copying the script
-elsewhere with testlib. The HDR input is a Radiance .hdr image. Binaries can be paths or commands
-on PATH. Use matched build options and give the script exclusive use of the machine during
+Default images are the KodakMnt luminance, RGB, correlated-alpha RGBA, non-correlated-alpha RGBA,
+and normal montages and HDRIHaven Canarywharf, under Images beside this script. Use --l-image,
+--rgb-image, --rgba-ca-image, --rgba-nca-image, --normal-image, and --hdr-image when copying the
+script elsewhere with testlib. The HDR input is a Radiance .hdr image. Binaries can be paths or
+commands on PATH. Use matched build options and give the script exclusive use of the machine during
 measurement.
 
-Runs 4x4, 6x6, and 8x8 at -thorough, -medium, and -fast for all three images. Each case has one
+Runs 4x4, 6x6, and 8x8 at -thorough, -medium, and -fast for every image. Each case has one
 warmup and at most ten measured rounds, with 12 codec threads. Early stopping requires half the
 requested rounds, rounded up and capped at four, with at least two rounds for statistics. Then stop
 a case when every binary's 95% timing confidence interval has a half-width within 1% of its mean.
@@ -41,11 +42,12 @@ binary's mean consistent between tables. HDR compression uses -perceptual. HDR m
 -3 to +1 f-stop window across binary versions, matching the current compressor's automatic exposure
 for Canarywharf.
 
-Writes report.md, report.json, six {rgb,nml,hdr}-{perf_abs,perf_rel}.png files, and three
-{rgb,nml,hdr}-qual.png files in the output directory. Each quality
-plot shows signed B-A changes for baseline versus new AVX2 in two metric panels:
-PSNR and SSIM for RGB, PSNR and mean angular error for normals, and mPSNR and mSSIM for HDR. Metrics
-missing from older binaries are marked unavailable. The default output directory is
+Writes report.md, report.json, and per-image plots named
+{l,rgb,rgba-ca,rgba-nca,nml,hdr}-{perf_abs,perf_rel,qual}.png in the output directory.
+Each quality plot shows signed B-A changes for baseline versus new AVX2 in up to two metric panels:
+PSNR and SSIM for luminance, RGB, and RGBA, PSNR and mean angular error for normals, and mPSNR and
+mSSIM for HDR. SSIM panels are omitted when the baseline reports no SSIM measurements. Other missing
+metrics are marked unavailable. The default output directory is
 x_profiles/report-YYMMDD-HH.MM. Existing files with these names are overwritten. Tables report
 coding seconds; plots report MTex/s or throughput relative to A = 100%. Throughput is image texels
 divided by the unrounded mean coding time. Warmups are excluded from means. There is no checkpoint
@@ -55,6 +57,7 @@ or resume support.
 import argparse
 from dataclasses import asdict
 from datetime import datetime
+from functools import partial
 import json
 from pathlib import Path
 import platform
@@ -83,14 +86,21 @@ SETS = (
 )
 SCENARIOS = [(block, preset) for block in ('4x4', '6x6', '8x8')
              for preset in ('-thorough', '-medium', '-fast')]
-QUALITY = ('PSNR (LDR-RGB)', 'SSIM (LDR-RGB)', 'Mean Angular Error',
+QUALITY = ('PSNR (LDR-RGB)', 'SSIM (LDR-RGB)', 'PSNR (LDR-RGBA)', 'SSIM (LDR-RGBA)',
+           'Mean Angular Error',
            'Worst Angular Error', 'mPSNR (RGB)', 'mSSIM (RGB)')
 HDR_FSTOPS = (-3, 1)
 CONFIDENCE = 0.95
 PRECISION = 0.01
 QUALITY_PLOTS = {
+    'L': (('PSNR (LDR-RGB)', 'PSNR', 'dB', 'higher'),
+          ('SSIM (LDR-RGB)', 'SSIM', '', 'higher')),
     'RGB': (('PSNR (LDR-RGB)', 'PSNR', 'dB', 'higher'),
             ('SSIM (LDR-RGB)', 'SSIM', '', 'higher')),
+    'RGBA-CA': (('PSNR (LDR-RGBA)', 'PSNR', 'dB', 'higher'),
+                ('SSIM (LDR-RGBA)', 'SSIM', '', 'higher')),
+    'RGBA-NCA': (('PSNR (LDR-RGBA)', 'PSNR', 'dB', 'higher'),
+                 ('SSIM (LDR-RGBA)', 'SSIM', '', 'higher')),
     'Normal': (('PSNR (LDR-RGB)', 'PSNR', 'dB', 'higher'),
                ('Mean Angular Error', 'Mean angular error', 'degrees', 'lower')),
     'HDR': (('mPSNR (RGB)', 'mPSNR', 'dB', 'higher'),
@@ -171,13 +181,14 @@ def image_size(path: Path) -> tuple[int, int]:
     return width, height
 
 
-def run_codec(binary: str, arguments: list[str]) -> CodecResult:
+def run_codec(binary: str, arguments: list[str], image: str) -> CodecResult:
     '''
     Run the shared codec reader and require the metrics used by this report.
 
     Args:
         binary: The executable path.
         arguments: The codec command-line arguments.
+        image: The report image role selecting the required quality metrics.
 
     Return:
         The coding time and available report quality metrics.
@@ -186,12 +197,9 @@ def run_codec(binary: str, arguments: list[str]) -> CodecResult:
         ValueError: A required report metric is missing.
     '''
     result = execute_codec(binary, arguments)
-    required = ['PSNR (LDR-RGB)']
+    required = [QUALITY_PLOTS[image][0][0]]
 
-    if arguments[0] in ('-th', '-tH'):
-        required = ['mPSNR (RGB)']
-
-    if '-normal' in arguments:
+    if image == 'Normal':
         required.append('Mean Angular Error')
 
     # Required metrics fail immediately; optional metrics remain unavailable on older binaries
@@ -204,13 +212,14 @@ def run_codec(binary: str, arguments: list[str]) -> CodecResult:
     return CodecResult(time=result.time, quality=quality)
 
 
-def measure_case(binaries: dict[str, Any], args: list[str], runs: int, warmups: int,
+def measure_case(binaries: dict[str, Any], image: str, args: list[str], runs: int, warmups: int,
                  confidence: float, precision: float) -> dict[str, Any]:
     '''
     Collect one scenario using shared serial precision sampling.
 
     Args:
         binaries: Binary paths and identities keyed by role.
+        image: The report image role selecting the required quality metrics.
         args: The codec arguments shared by all binaries.
         runs: The maximum number of measured rounds.
         warmups: The number of excluded warmup rounds.
@@ -222,7 +231,7 @@ def measure_case(binaries: dict[str, Any], args: list[str], runs: int, warmups: 
     '''
     paths = {name: binaries[name]['path'] for name in BINARY_NAMES}
     samples = collect_precision_samples(paths, args, runs, warmups, confidence, precision,
-                                        run_codec)
+                                        partial(run_codec, image=image))
 
     return asdict(samples)
 
@@ -291,7 +300,8 @@ def collect_samples(binaries: dict[str, Any], images: dict[str, Any],
                 key = f'{image}-{block}-{preset.removeprefix("-")}'
                 args = codec_args(image, meta['path'], Path(tmp) / 'output', block, preset, threads)
                 print(f'Case {len(cases) + 1}/{total}: {key}', flush=True)
-                cases[key] = measure_case(binaries, args, runs, warmups, confidence, precision)
+                cases[key] = measure_case(binaries, image, args, runs, warmups,
+                                          confidence, precision)
 
     return cases
 
@@ -414,7 +424,7 @@ def timing_rows(data: dict[str, Any], image: str, a: str, b: str) -> list[str]:
 
 def write_report(out_dir: Path, data: dict[str, Any]) -> None:
     '''
-    Write nine comparison tables and their measurement provenance.
+    Write comparison tables and their measurement provenance.
 
     Args:
         out_dir: The directory containing the report artifacts.
@@ -492,7 +502,7 @@ def new_figure(size: tuple[int, int], panels: int) -> tuple[Any, Any]:
     figure = Figure(figsize=size, facecolor=BACKGROUND_COLOR)
     FigureCanvasAgg(figure)
 
-    return figure, figure.subplots(panels, 1)
+    return figure, figure.subplots(panels, 1, squeeze=False)[:, 0]
 
 
 def perf_rates(data: dict[str, Any], image: str, pair: tuple[str, str],
@@ -581,7 +591,7 @@ def plot_perf_panel(ax: Any, data: dict[str, Any], image: str, pair: tuple[str, 
 
 def plot_charts(out_dir: Path, data: dict[str, Any]) -> None:
     '''
-    Write RGB, normal-map, and HDR absolute and relative throughput plots.
+    Write absolute and relative throughput plots for every image.
 
     Args:
         out_dir: The directory containing the report artifacts.
@@ -728,7 +738,7 @@ def plot_quality_panel(ax: Any, data: dict[str, Any], image: str,
 
 def plot_quality_changes(out_dir: Path, data: dict[str, Any]) -> None:
     '''
-    Plot two signed quality changes for baseline versus new AVX2.
+    Plot signed quality changes for baseline versus new AVX2.
 
     Args:
         out_dir: The directory containing the report artifacts.
@@ -742,15 +752,34 @@ def plot_quality_changes(out_dir: Path, data: dict[str, Any]) -> None:
         if tag == 'normal':
             tag = 'nml'
 
-        figure, axes = new_figure((14, 11), 2)
-        figure.subplots_adjust(left=0.09, right=0.985, bottom=0.08, top=0.85, hspace=0.65)
+        metrics = []
+
+        for info in QUALITY_PLOTS[image]:
+            metric = info[0]
+            if 'SSIM' in metric:
+                is_baseline_ssim_available = any(
+                    mean_quality(data['cases'][f'{image}-{block}-{preset.removeprefix("-")}'],
+                                 SETS[0][0], metric) is not None
+                    for block, preset in SCENARIOS)
+
+                if not is_baseline_ssim_available:
+                    continue
+
+            metrics.append(info)
+
+        # Preserve room for titles and legends when the SSIM panel is omitted
+        height = 5 * len(metrics) + 1
+        figure, axes = new_figure((14, height), len(metrics))
+        figure.subplots_adjust(left=0.09, right=0.985, bottom=0.88 / height,
+                               top=1.0 - 1.65 / height, hspace=0.65)
         title = metadata['title']
         figure.suptitle(f'{title} | quality change vs baseline',
                         fontsize=22, y=0.985, fontweight='bold')
-        figure.text(0.5, 0.93, 'Signed B − A differences; baseline A = 0 | ' + thresholds,
+        figure.text(0.5, 1.0 - 0.77 / height,
+                    'Signed B − A differences; baseline A = 0 | ' + thresholds,
                     ha='center')
 
-        for ax, info in zip(axes, QUALITY_PLOTS[image]):
+        for ax, info in zip(axes, metrics):
             plot_quality_panel(ax, data, image, info)
 
         output = out_dir / f'{tag}-qual.png'
@@ -771,7 +800,10 @@ def describe_images(args: argparse.Namespace) -> dict[str, Any]:
     hdr_name = args.hdr_image.stem.removeprefix('hdr-rgb-').capitalize()
 
     images = [
+        ('L', 'Kodak Luminance', args.l_image),
         ('RGB', 'Kodak RGB', args.rgb_image),
+        ('RGBA-CA', 'Kodak RGBA (correlated alpha)', args.rgba_ca_image),
+        ('RGBA-NCA', 'Kodak RGBA (non-correlated alpha)', args.rgba_nca_image),
         ('Normal', 'Kodak Normal', args.normal_image),
         ('HDR', f'{hdr_name} HDR', args.hdr_image)
     ]
@@ -839,8 +871,20 @@ def parse_command_line() -> argparse.Namespace:
     kodak = images / 'KodakMnt'
 
     parser.add_argument(
+        '--l-image', type=Path, default=kodak / 'LDR-L/ldr-l-montage.png',
+        help='luminance image (default: Kodak L Montage)')
+
+    parser.add_argument(
         '--rgb-image', type=Path, default=kodak / 'LDR-RGB/ldr-rgb-montage.png',
         help='RGB image (default: Kodak RGB Montage)')
+
+    parser.add_argument(
+        '--rgba-ca-image', type=Path, default=kodak / 'LDR-RGBA/ldr-rgba-montage+ca.png',
+        help='RGBA image with correlated alpha (default: Kodak RGBA CA Montage)')
+
+    parser.add_argument(
+        '--rgba-nca-image', type=Path, default=kodak / 'LDR-RGBA/ldr-rgba-montage+nca.png',
+        help='RGBA image with non-correlated alpha (default: Kodak RGBA NCA Montage)')
 
     parser.add_argument(
         '--normal-image', type=Path, default=kodak / 'LDR-XY/ldr-xy-montage.png',
