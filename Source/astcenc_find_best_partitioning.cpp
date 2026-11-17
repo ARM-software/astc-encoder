@@ -619,7 +619,7 @@ unsigned int find_best_partition_candidates(
 
 #if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
 
-	if (blk.grayscale && uses_alpha)
+	if (uses_alpha)
 	{
 		unsigned int padded_limit = partition_search_limit + ASTCENC_SIMD_BATCH_WIDTH - 1;
 		padded_limit &= ~(ASTCENC_SIMD_BATCH_WIDTH - 1);
@@ -638,8 +638,16 @@ unsigned int find_best_partition_candidates(
 
 			float uncor_errors[ASTCENC_SIMD_BATCH_WIDTH];
 			float samec_errors[ASTCENC_SIMD_BATCH_WIDTH];
-			compute_partition_errors_rgba_grayscale_batch(candidates, blk, weight_imprecision_estim,
-			                                              uncor_errors, samec_errors);
+			if (blk.grayscale)
+			{
+				compute_partition_errors_rgba_grayscale_batch(candidates, blk, weight_imprecision_estim,
+				                                              uncor_errors, samec_errors);
+			}
+			else
+			{
+				compute_partition_errors_rgba_batch(candidates, blk, weight_imprecision_estim,
+				                                    uncor_errors, samec_errors);
+			}
 
 			// Keep candidate insertion order and exclude padded results from the rankings
 			unsigned int active_count = astc::min(ASTCENC_SIMD_BATCH_WIDTH,
