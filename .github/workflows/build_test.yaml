@@ -183,15 +183,15 @@ jobs:
       - name: Update apt packages
         run: sudo apt-get update
 
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
+      - name: Install dependencies
+        run: sudo apt-get install -y imagemagick zlib1g-dev
 
       - name: Build release
         run: |
           export CXX=clang++
           mkdir build_rel
           cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX256=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_PACKAGE=x64 ..
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX256=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_PACKAGE=x64 -DASTCENC_RDO_SIZE=ON ..
           make install package -j4
 
       - name: Build release decompressor
@@ -271,6 +271,12 @@ jobs:
           else
             echo "Skipping avx256/avx512 execute tests: host does not support the AVX-512 variants"
           fi
+
+      - name: Run RDO image test
+        run: |
+          ./bin/astcenc-avx2 -tl Test/Images/Small/LDR-RGB/ldr-rgb-00.png build_rel/rdo.png \
+            6x6 -medium -rdo-lambda 20 -j 12 | tee build_rel/rdo.log
+          grep -q "ASTC DEFLATE size:" build_rel/rdo.log
 
   build-ubuntu-x64-gcc:
     name: Ubuntu x64 GCC

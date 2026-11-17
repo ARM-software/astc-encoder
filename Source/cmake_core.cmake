@@ -97,6 +97,7 @@ if(${ASTCENC_CLI})
         astcenccli_entry2.cpp)
 
     add_executable(${ASTCENC_TARGET}
+        astcenccli_compression_metrics.cpp
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -114,6 +115,16 @@ if(${ASTCENC_CLI})
             ${ASTCENC_TARGET}-veneer1
             ${ASTCENC_TARGET}-veneer2
             ${ASTCENC_TARGET}-static)
+
+    if(ASTCENC_RDO_SIZE)
+        target_compile_definitions(${ASTCENC_TARGET}
+            PRIVATE
+                ASTCENC_RDO_SIZE)
+
+        target_link_libraries(${ASTCENC_TARGET}
+            PRIVATE
+                ZLIB::ZLIB)
+    endif()
 endif()
 
 macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
