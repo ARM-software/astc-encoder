@@ -44,7 +44,6 @@ header from the same release to avoid compatibility issues.
     `-rdo-lambda` command line option. See the API change above for details.
   * **Feature:** Add an AVX-512 SIMD backend to the library, with a
     corresponding command line tool variant operating on 512-bit vectors.
-    AVX-512 performance can be slower than AVX2 for smaller block sizes.
   * **Build Change:** AVX2 builds now also require BMI and BMI2.
   * **Build Change:** Require C++20 to build the codec, replacing local library
     functions with new standard library operations where possible.
