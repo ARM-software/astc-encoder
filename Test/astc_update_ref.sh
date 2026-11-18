@@ -32,7 +32,7 @@ echo ""
 
 
 #python3 ./Test/astc_test_image.py --test-set all --block-size all --test-quality all --repeats 8 --reference rebuild --encoder "ref-${1}-avx512" -j12
-#python3 ./Test/astc_test_image.py --test-set Small --block-size all --test-quality all --repeats 8 --reference rebuild --encoder "ref-${1}-avx2" -j12
+#python3 ./Test/astc_test_image.py --test-set all --block-size all --test-quality all --repeats 8 --reference rebuild --encoder "ref-${1}-avx2" -j12
 #python3 ./Test/astc_test_image.py --test-set all --block-size all --test-quality all --repeats 8 --reference rebuild --encoder ref-$1-sse4.1 -j12
 #python3 ./Test/astc_test_image.py --test-set all --block-size all --test-quality all --repeats 8 --reference rebuild --encoder ref-$1-sse2 -j12
 
