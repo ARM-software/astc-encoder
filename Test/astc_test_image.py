@@ -248,9 +248,9 @@ def add_selection_arguments(parser: argparse.ArgumentParser, test_dir: Path) -> 
         help='test encoder variant or ref-<version>-<variant>')
 
     parser.add_argument(
-        '--reference', default='ref-main-avx2',
+        '--reference', default='ref-6.0-avx2',
         choices=reference_encoders,
-        help='reference encoder variant')
+        help='reference encoder variant, or rebuild to make one for --encoder')
 
     # Image filters apply before the test plan is constructed
     parser.add_argument(
