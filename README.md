@@ -109,8 +109,7 @@ Support is provided for three architecture slices:
 We recommend using the latest stable release tag for production development.
 
 The `main` branch is an active development branch for the compressor. It is
-currently a development branch for the new 6.x major release series, and
-subject to breaking API changes.
+currently the development branch for the 6.x major release series.
 
 The `5.x` and `4.x` branches are stable support branches for older release
 series. They are no longer under active development, but continue to get bug
