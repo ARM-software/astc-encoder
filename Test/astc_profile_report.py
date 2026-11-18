@@ -15,6 +15,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 # -----------------------------------------------------------------------------
+# pylint: disable=too-many-lines
 '''
 Benchmark three astcenc binaries and plot luminance, RGB, RGBA, normal-map, and HDR throughput.
 
@@ -44,6 +45,8 @@ for Canarywharf.
 
 Writes report.md, report.json, and per-image plots named
 {l,rgb,rgba-ca,rgba-nca,nml,hdr}-{perf_abs,perf_rel,qual}.png in the output directory.
+Summary plots named summary-{avx2,avx512}-{perf_abs,perf_rel}.png compare the baseline AVX2 with
+each latest binary, stacking image types in channel-count order.
 Each quality plot shows signed B-A changes for baseline versus new AVX2 in up to two metric panels:
 PSNR and SSIM for luminance, RGB, and RGBA, PSNR and mean angular error for normals, and mPSNR and
 mSSIM for HDR. SSIM panels are omitted when the baseline reports no SSIM measurements. Other missing
@@ -51,7 +54,7 @@ metrics are marked unavailable. The default output directory is
 x_profiles/report-YYMMDD-HH.MM. Existing files with these names are overwritten. Tables report
 coding seconds; plots report MTex/s or throughput relative to A = 100%. Throughput is image texels
 divided by the unrounded mean coding time. Warmups are excluded from means. There is no checkpoint
-or resume support.
+or resume support. All plots are 800 pixels wide, preserving their aspect ratios.
 '''
 
 import argparse
@@ -92,6 +95,15 @@ QUALITY = ('PSNR (LDR-RGB)', 'SSIM (LDR-RGB)', 'PSNR (LDR-RGBA)', 'SSIM (LDR-RGB
 HDR_FSTOPS = (-3, 1)
 CONFIDENCE = 0.95
 PRECISION = 0.01
+PLOT_WIDTH = 800
+IMAGE_CHANNEL_COUNTS = {
+    'L': 1,
+    'Normal': 2,  # Two independent components encoded as RRRA
+    'RGB': 3,
+    'HDR': 3,
+    'RGBA-CA': 4,
+    'RGBA-NCA': 4,
+}
 QUALITY_PLOTS = {
     'L': (('PSNR (LDR-RGB)', 'PSNR', 'dB', 'higher'),
           ('SSIM (LDR-RGB)', 'SSIM', '', 'higher')),
@@ -482,7 +494,7 @@ def add_comparison_legend(ax: Any, a: str, b: str, is_change: bool = False) -> N
               title=f'A: {BINARY_NAMES[a]} | B: {BINARY_NAMES[b]}')
 
 
-def new_figure(size: tuple[int, int], panels: int) -> tuple[Any, Any]:
+def new_figure(size: tuple[float, float], panels: int) -> tuple[Any, Any]:
     '''
     Create a figure with vertically stacked panels and a headless rendering canvas.
 
@@ -624,7 +636,50 @@ def plot_charts(out_dir: Path, data: dict[str, Any]) -> None:
                 plot_perf_panel(axes[index], data, image, pair, is_relative)
 
             output = out_dir / f'{tag}-{suffix}.png'
-            figure.savefig(output, dpi=180)
+            figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
+            print(f'Wrote {output}', flush=True)
+
+
+def plot_summary_charts(out_dir: Path, data: dict[str, Any]) -> None:
+    '''
+    Compare baseline AVX2 with each latest binary using stacked images and a shared legend.
+
+    Args:
+        out_dir: The directory containing the report artifacts.
+        data: The settings, dimensions, and measurements.
+    '''
+    images = sorted(data['images'], key=IMAGE_CHANNEL_COUNTS.__getitem__)
+    thresholds = sampling_threshold_text(data)
+
+    for pair in SETS[:2]:
+        a, b = pair
+
+        for is_relative in (False, True):
+            suffix = 'perf_abs'
+            scale = 'absolute'
+
+            if is_relative:
+                suffix = 'perf_rel'
+                scale = 'relative'
+
+            height = 3.75 * len(images)
+            figure, axes = new_figure((14, height), len(images))
+            figure.subplots_adjust(left=0.075, right=0.985, bottom=1.125 / height,
+                                   top=1.0 - 1.8 / height, hspace=0.57)
+            figure.suptitle(f'{BINARY_NAMES[a]} vs {BINARY_NAMES[b]} | {scale} throughput',
+                            fontsize=22, y=1.0 - 0.375 / height, fontweight='bold')
+            figure.text(0.5, 1.0 - 0.825 / height,
+                        f'{data["threads"]} threads | {thresholds}', ha='center')
+
+            for ax, image in zip(axes, images):
+                plot_perf_panel(ax, data, image, pair, is_relative)
+                ax.set_title(data['images'][image]['title'], loc='left', pad=35)
+
+                if ax is not axes[0]:
+                    ax.get_legend().remove()
+
+            output = out_dir / f'summary-{b.removeprefix("main-")}-{suffix}.png'
+            figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
             print(f'Wrote {output}', flush=True)
 
 
@@ -783,7 +838,7 @@ def plot_quality_changes(out_dir: Path, data: dict[str, Any]) -> None:
             plot_quality_panel(ax, data, image, info)
 
         output = out_dir / f'{tag}-qual.png'
-        figure.savefig(output, dpi=180)
+        figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
         print(f'Wrote {output}', flush=True)
 
 
@@ -839,6 +894,7 @@ def save_report(out_dir: Path, data: dict[str, Any]) -> None:
 
     write_report(out_dir, data)
     plot_charts(out_dir, data)
+    plot_summary_charts(out_dir, data)
     plot_quality_changes(out_dir, data)
     report_path = out_dir / 'report.md'
     print(f'Report: {report_path}\nRaw measurements: {raw_path}')
