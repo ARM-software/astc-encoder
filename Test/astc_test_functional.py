@@ -357,7 +357,7 @@ class CLIPTest(CLITestBase):
         return modes[mode][corners]
 
     def assertColorSame(self, color1: ColorVType, color2: ColorVType,
-                        threshold: float = 0.02,
+                        thresholdRel: float = 0.02, thresholdAbs: float = 0.00,
                         swizzle: Optional[str] = None) -> None:
         '''
         Test if a color is the similar to a reference.
@@ -367,7 +367,8 @@ class CLIPTest(CLITestBase):
         Args:
             color1: The reference color to compare with.
             color2: The new color to compare.
-            threshold: The allowed deviation from reference (ratio).
+            thresholdRel: The allowed deviation from reference (ratio).
+            thresholdAbs: The allowed deviation from reference (absolute).
             swizzle: The swizzle string (4 characters from the set rgba01), to be applied to the
                 reference color.
         '''
@@ -403,7 +404,7 @@ class CLIPTest(CLITestBase):
             color1 = tuple([remap_input[remap_index[s]] for s in swizzle])
 
         for ref_channel, new_channel in zip(color1, color2):
-            max_delta = ref_channel * threshold
+            max_delta = max(thresholdAbs, ref_channel * thresholdRel)
             self.assertAlmostEqual(ref_channel, new_channel, delta=max_delta)
 
     def exec(self, cmd: list[str | Path], pattern: Optional[re.Pattern] = None) -> str:
@@ -996,10 +997,11 @@ class CLIPTest(CLITestBase):
                 self.exec(cmd)
 
                 # Check colors if image wrapper supports it
+                # stb_image_write doesn't round-trip the same color
                 if tli.Image.is_format_supported(image_format, 'hdr'):
                     color_in = tli.Image(image_in).get_colors((7, 7))
                     color_out = tli.Image(image_out).get_colors((7, 7))
-                    self.assertColorSame(color_in, color_out)
+                    self.assertColorSame(color_in, color_out, thresholdAbs=0.002)
 
     def test_valid_uncomp_hdr_output_formats(self) -> None:
         '''
