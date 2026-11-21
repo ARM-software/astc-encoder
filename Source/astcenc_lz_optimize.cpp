@@ -1856,8 +1856,11 @@ static void lz_rdo_optimization_passes(
 						float mse = compute_symbolic_block_difference_1plane_1partition_weighted(
 							ctx.config,
 							*bsd,
+							di,
 							scb,
 							blk,
+							float_to_int(entry.endpoint0),
+							float_to_int(entry.endpoint1),
 							block_texel_weights
 						);
 
