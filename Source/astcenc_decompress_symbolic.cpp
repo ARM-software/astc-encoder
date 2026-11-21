@@ -385,6 +385,7 @@ float compute_symbolic_block_difference_2plane(
 
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk.texel(i);
+		vfloat4 error;
 
 		// Compare error using a perceptual decode metric for RGBM textures
 		if (config.flags & ASTCENC_FLG_MAP_RGBM)
@@ -411,10 +412,15 @@ float compute_symbolic_block_difference_2plane(
 				oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
 				1.0f
 			);
+
+			// Bound differences because the RGBM reconstruction scale is unbounded
+			error = min(abs(oldColor - color), 1e15f);
+		}
+		else
+		{
+			error = oldColor - color;
 		}
 
-		vfloat4 error = oldColor - color;
-		error = min(abs(error), 1e15f);
 		error = error * error;
 
 		summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
@@ -474,11 +480,11 @@ float compute_symbolic_block_difference_1plane(
 		for (unsigned int j = 0; j < texel_count; j++)
 		{
 			unsigned int tix = pi.texels_of_partition[i][j];
-			vint4 colori = lerp_color_int(u8_mask, ep0, ep1,
-			                              vint4(plane1_weights[tix]));
+			vint4 colori = lerp_color_int(u8_mask, ep0, ep1, vint4(plane1_weights[tix]));
 
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
+			vfloat4 error;
 
 			// Compare error using a perceptual decode metric for RGBM textures
 			if (config.flags & ASTCENC_FLG_MAP_RGBM)
@@ -505,10 +511,15 @@ float compute_symbolic_block_difference_1plane(
 					oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
 					1.0f
 				);
+
+				// Bound differences because the RGBM reconstruction scale is unbounded
+				error = min(abs(oldColor - color), 1e15f);
+			}
+			else
+			{
+				error = oldColor - color;
 			}
 
-			vfloat4 error = oldColor - color;
-			error = min(abs(error), 1e15f);
 			error = error * error;
 
 			summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
@@ -595,12 +606,6 @@ float compute_symbolic_block_difference_1plane_1partition(
 		vfloat error_g = loada(blk.data_g + i) - int_to_float(colori_g);
 		vfloat error_b = loada(blk.data_b + i) - int_to_float(colori_b);
 		vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
-
-		// Clamp extreme differences before squaring
-		error_r = min(abs(error_r), vfloat(1e15f));
-		error_g = min(abs(error_g), vfloat(1e15f));
-		error_b = min(abs(error_b), vfloat(1e15f));
-		error_a = min(abs(error_a), vfloat(1e15f));
 
 		// Compute squared error metric
 		error_r = error_r * error_r;
