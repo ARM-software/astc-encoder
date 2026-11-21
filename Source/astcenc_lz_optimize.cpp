@@ -1853,6 +1853,12 @@ static void lz_rdo_optimization_passes(
 						}
 
 						// Determine the corresponding error
+						float error_limit = ERROR_CALC_DEFAULT;
+						if (best_endpoints.count == BEST_CANDIDATES_COUNT)
+						{
+							error_limit = best_endpoints.list[BEST_CANDIDATES_COUNT - 1].rd_cost;
+						}
+
 						float mse = compute_symbolic_block_difference_1plane_1partition_weighted(
 							ctx.config,
 							*bsd,
@@ -1861,7 +1867,8 @@ static void lz_rdo_optimization_passes(
 							blk,
 							float_to_int(entry.endpoint0),
 							float_to_int(entry.endpoint1),
-							block_texel_weights
+							block_texel_weights,
+							error_limit
 						);
 
 						// No need to perform RD scoring if we blew past our target on the distortion term alone

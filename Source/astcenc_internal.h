@@ -2318,16 +2318,17 @@ float compute_symbolic_block_difference_1plane_1partition(
  * The symbolic block must be non-constant and use the provided decimation table.
  * The decoded endpoints must match its endpoint encoding.
  *
- * @param config    The compressor configuration.
- * @param bsd       The block size information.
- * @param di        The weight grid decimation table.
- * @param scb       The symbolic compressed encoding.
- * @param blk       The original image block color data.
- * @param ep0       The decoded first endpoint.
- * @param ep1       The decoded second endpoint.
- * @param weights   The per-texel importance weights.
+ * @param config        The compressor configuration.
+ * @param bsd           The block size information.
+ * @param di            The weight grid decimation table.
+ * @param scb           The symbolic compressed encoding.
+ * @param blk           The original image block color data.
+ * @param ep0           The decoded first endpoint.
+ * @param ep1           The decoded second endpoint.
+ * @param weights       The per-texel importance weights.
+ * @param error_limit   The partial error at which further scoring can be skipped.
  *
- * @return The computed error.
+ * @return The computed error, or a partial error at least @c error_limit.
  */
 float compute_symbolic_block_difference_1plane_1partition_weighted(
 	const astcenc_config& config,
@@ -2337,7 +2338,8 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 	const image_block& blk,
 	vint4 ep0,
 	vint4 ep1,
-	const float* weights);
+	const float* weights,
+	float error_limit);
 
 /**
  * @brief Convert a symbolic representation into a binary physical encoding.

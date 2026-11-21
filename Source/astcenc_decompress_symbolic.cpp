@@ -632,16 +632,17 @@ float compute_symbolic_block_difference_1plane_1partition(
  *
  * @tparam is_rgb   True if the source and both decoded endpoints have opaque alpha.
  *
- * @param config    The compressor configuration.
- * @param bsd       The block size information.
- * @param di        The weight grid decimation table.
- * @param scb       The symbolic compressed encoding.
- * @param blk       The original image block color data.
- * @param ep0       The decoded first endpoint.
- * @param ep1       The decoded second endpoint.
- * @param weights   The per-texel importance weights.
+ * @param config        The compressor configuration.
+ * @param bsd           The block size information.
+ * @param di            The weight grid decimation table.
+ * @param scb           The symbolic compressed encoding.
+ * @param blk           The original image block color data.
+ * @param ep0           The decoded first endpoint.
+ * @param ep1           The decoded second endpoint.
+ * @param weights       The per-texel importance weights.
+ * @param error_limit   The partial error at which further scoring can be skipped.
  *
- * @return The computed error.
+ * @return The computed error, or a partial error at least @c error_limit.
  */
 template<bool is_rgb>
 static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
@@ -652,7 +653,8 @@ static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 	const image_block& blk,
 	vint4 ep0,
 	vint4 ep1,
-	const float* weights
+	const float* weights,
+	float error_limit
 ) {
 	assert((config.profile == ASTCENC_PRF_LDR) || (config.profile == ASTCENC_PRF_LDR_SRGB));
 	assert(scb.block_type == SYM_BTYPE_NONCONST);
@@ -730,6 +732,16 @@ static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 		vmask mask = lane_id < vint(texel_count);
 		lane_id += vint(ASTCENC_SIMD_WIDTH);
 		haccumulate(error_sum, metric, mask);
+
+		// Early checkpoint to skip checking if it's a clear fail already
+		if ((i + ASTCENC_SIMD_WIDTH) == 16)
+		{
+			float partial_error = hadd_s(error_sum);
+			if (partial_error >= error_limit)
+			{
+				return partial_error;
+			}
+		}
 	}
 
 	return hadd_s(error_sum);
@@ -744,7 +756,8 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 	const image_block& blk,
 	vint4 ep0,
 	vint4 ep1,
-	const float* weights
+	const float* weights,
+	float error_limit
 ) {
 	// Source opacity alone is insufficient when reusing endpoints from other blocks
 	bool is_rgb = (blk.data_min.lane<3>() == 65535.0f) && (blk.data_max.lane<3>() == 65535.0f) &&
@@ -752,11 +765,11 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 	if (is_rgb)
 	{
 		return compute_symbolic_block_difference_1plane_1partition_weighted_impl<true>(
-			config, bsd, di, scb, blk, ep0, ep1, weights);
+			config, bsd, di, scb, blk, ep0, ep1, weights, error_limit);
 	}
 
 	return compute_symbolic_block_difference_1plane_1partition_weighted_impl<false>(
-		config, bsd, di, scb, blk, ep0, ep1, weights);
+		config, bsd, di, scb, blk, ep0, ep1, weights, error_limit);
 }
 
 #endif

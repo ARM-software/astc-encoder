@@ -30,6 +30,79 @@
 namespace astcenc
 {
 
+/** @brief Weighted scoring returns safe partial errors without changing surviving candidates. */
+TEST(compress, weighted_error_cutoff)
+{
+	astcenc_config config {};
+	config.profile = ASTCENC_PRF_LDR;
+
+	for (unsigned int block_size : { 4u, 6u })
+	{
+		auto bsd = std::make_unique<block_size_descriptor>();
+		init_block_size_descriptor(block_size, block_size, 1, true, 1, 1.0f, *bsd);
+		const block_mode& bm = bsd->block_modes[0];
+		const decimation_info& di = bsd->get_decimation_info(bm.decimation_mode);
+
+		symbolic_compressed_block scb {};
+		scb.block_type = SYM_BTYPE_NONCONST;
+		scb.block_mode = bm.mode_index;
+		scb.partition_count = 1;
+		scb.plane2_component = -1;
+
+		for (bool is_rgb : { false, true })
+		{
+			image_block blk {};
+			blk.texel_count = block_size * block_size;
+			blk.channel_weight = vfloat4(1.0f);
+			float alpha = 256.0f;
+			int endpoint_alpha = 0;
+			if (is_rgb)
+			{
+				alpha = 65535.0f;
+				endpoint_alpha = 65535;
+			}
+
+			blk.data_min = vfloat4(256.0f, 256.0f, 256.0f, alpha);
+			blk.data_max = blk.data_min;
+			float weights[BLOCK_MAX_TEXELS] {};
+			for (unsigned int i = 0; i < blk.texel_count; i++)
+			{
+				blk.data_r[i] = 256.0f;
+				blk.data_g[i] = 256.0f;
+				blk.data_b[i] = 256.0f;
+				blk.data_a[i] = alpha;
+				weights[i] = 1.0f;
+			}
+
+			vint4 endpoint(0, 0, 0, endpoint_alpha);
+			float full_error = compute_symbolic_block_difference_1plane_1partition_weighted(
+				config, *bsd, di, scb, blk, endpoint, endpoint, weights, ERROR_CALC_DEFAULT);
+			EXPECT_GT(full_error, 0.0f);
+
+			float error_limit = full_error * 0.25f;
+			float partial_error = compute_symbolic_block_difference_1plane_1partition_weighted(
+				config, *bsd, di, scb, blk, endpoint, endpoint, weights, error_limit);
+			EXPECT_GE(partial_error, error_limit);
+			if (blk.texel_count > 16)
+			{
+				EXPECT_LT(partial_error, full_error);
+			}
+			else
+			{
+				EXPECT_EQ(partial_error, full_error);
+			}
+
+			float boundary_error = compute_symbolic_block_difference_1plane_1partition_weighted(
+				config, *bsd, di, scb, blk, endpoint, endpoint, weights, partial_error);
+			EXPECT_EQ(boundary_error, partial_error);
+
+			float surviving_error = compute_symbolic_block_difference_1plane_1partition_weighted(
+				config, *bsd, di, scb, blk, endpoint, endpoint, weights, full_error * 2.0f);
+			EXPECT_EQ(surviving_error, full_error);
+		}
+	}
+}
+
 /** @brief State for cancellation from an LZ-RDO progress callback. */
 struct lz_rdo_cancel_state
 {
