@@ -627,8 +627,24 @@ float compute_symbolic_block_difference_1plane_1partition(
 	return hadd_s(error_sum);
 }
 
-/* See header for documentation. */
-float compute_symbolic_block_difference_1plane_1partition_weighted(
+/**
+ * @brief Compute weighted single-plane, single-partition LDR error.
+ *
+ * @tparam is_rgb   True if the source and both decoded endpoints have opaque alpha.
+ *
+ * @param config    The compressor configuration.
+ * @param bsd       The block size information.
+ * @param di        The weight grid decimation table.
+ * @param scb       The symbolic compressed encoding.
+ * @param blk       The original image block color data.
+ * @param ep0       The decoded first endpoint.
+ * @param ep1       The decoded second endpoint.
+ * @param weights   The per-texel importance weights.
+ *
+ * @return The computed error.
+ */
+template<bool is_rgb>
+static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
@@ -671,7 +687,6 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 		vint colori_r = ep0_r + asr<6>(ep_delta_r * weight + vint(32));
 		vint colori_g = ep0_g + asr<6>(ep_delta_g * weight + vint(32));
 		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
-		vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
 
 		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
 		vint colori_r8 = asr<8>(colori_r) * vint(257);
@@ -683,25 +698,31 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 		vint colori_b8 = asr<8>(colori_b) * vint(257);
 		colori_b = select(colori_b, colori_b8, vmask(u8_mask.lane<2>()));
 
-		vint colori_a8 = asr<8>(colori_a) * vint(257);
-		colori_a = select(colori_a, colori_a8, vmask(u8_mask.lane<3>()));
-
 		// Compute color diff
 		vfloat error_r = loada(blk.data_r + i) - int_to_float(colori_r);
 		vfloat error_g = loada(blk.data_g + i) - int_to_float(colori_g);
 		vfloat error_b = loada(blk.data_b + i) - int_to_float(colori_b);
-		vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
 
 		// Compute squared error metric
 		error_r = error_r * error_r;
 		error_g = error_g * error_g;
 		error_b = error_b * error_b;
-		error_a = error_a * error_a;
 
 		vfloat metric = error_r * blk.channel_weight.lane<0>()
 		              + error_g * blk.channel_weight.lane<1>()
-		              + error_b * blk.channel_weight.lane<2>()
-		              + error_a * blk.channel_weight.lane<3>();
+		              + error_b * blk.channel_weight.lane<2>();
+
+		// Opaque source and endpoint alpha values contribute exactly zero error
+		if constexpr (!is_rgb)
+		{
+			vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
+			vint colori_a8 = asr<8>(colori_a) * vint(257);
+			colori_a = select(colori_a, colori_a8, vmask(u8_mask.lane<3>()));
+
+			vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
+			error_a = error_a * error_a;
+			metric = metric + error_a * blk.channel_weight.lane<3>();
+		}
 
 		metric = metric * vfloat(weights + i);
 
@@ -712,6 +733,30 @@ float compute_symbolic_block_difference_1plane_1partition_weighted(
 	}
 
 	return hadd_s(error_sum);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_1partition_weighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const decimation_info& di,
+	const symbolic_compressed_block& scb,
+	const image_block& blk,
+	vint4 ep0,
+	vint4 ep1,
+	const float* weights
+) {
+	// Source opacity alone is insufficient when reusing endpoints from other blocks
+	bool is_rgb = (blk.data_min.lane<3>() == 65535.0f) && (blk.data_max.lane<3>() == 65535.0f) &&
+	              (ep0.lane<3>() == 65535) && (ep1.lane<3>() == 65535);
+	if (is_rgb)
+	{
+		return compute_symbolic_block_difference_1plane_1partition_weighted_impl<true>(
+			config, bsd, di, scb, blk, ep0, ep1, weights);
+	}
+
+	return compute_symbolic_block_difference_1plane_1partition_weighted_impl<false>(
+		config, bsd, di, scb, blk, ep0, ep1, weights);
 }
 
 #endif
