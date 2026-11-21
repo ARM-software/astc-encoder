@@ -2298,15 +2298,12 @@ float compute_symbolic_block_difference_1plane(
  *
  * This function is specialized for 1 plane and 1 partition search.
  *
- * In RGBM mode this will reject blocks that attempt to encode a zero M value.
- *
  * @param config   The compressor config.
  * @param bsd      The block size information.
  * @param scb      The symbolic compressed encoding.
  * @param blk      The original image block color data.
  *
- * @return Returns the computed error, or a negative value if the encoding
- *         should be rejected for any reason.
+ * @return The computed error, or ERROR_CALC_DEFAULT for an error block.
  */
 float compute_symbolic_block_difference_1plane_1partition(
 	const astcenc_config& config,
@@ -2315,26 +2312,31 @@ float compute_symbolic_block_difference_1plane_1partition(
 	const image_block& blk);
 
 /**
- * @brief Compute the error between a symbolic block and the original input data, with per-texel weights.
+ * @brief Compute weighted single-plane, single-partition LDR error using known endpoints.
  *
- * This function is specialized for 1 plane and 1 partition search.
+ * Used by LDR RDO endpoint substitution, with source colors in the UNORM16 range.
+ * The symbolic block must be non-constant and use the provided decimation table.
+ * The decoded endpoints must match its endpoint encoding.
  *
- * In RGBM mode this will reject blocks that attempt to encode a zero M value.
+ * @param config    The compressor configuration.
+ * @param bsd       The block size information.
+ * @param di        The weight grid decimation table.
+ * @param scb       The symbolic compressed encoding.
+ * @param blk       The original image block color data.
+ * @param ep0       The decoded first endpoint.
+ * @param ep1       The decoded second endpoint.
+ * @param weights   The per-texel importance weights.
  *
- * @param config   The compressor config.
- * @param bsd      The block size information.
- * @param scb      The symbolic compressed encoding.
- * @param blk      The original image block color data.
- * @param weights  The per-texel weights.
- *
- * @return Returns the computed error, or a negative value if the encoding
- *         should be rejected for any reason.
+ * @return The computed error.
  */
 float compute_symbolic_block_difference_1plane_1partition_weighted(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
+	const decimation_info& di,
 	const symbolic_compressed_block& scb,
 	const image_block& blk,
+	vint4 ep0,
+	vint4 ep1,
 	const float* weights);
 
 /**
