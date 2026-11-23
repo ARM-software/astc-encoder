@@ -194,8 +194,10 @@ static void compute_lowest_and_highest_weight(
 		lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 		vfloat weights = loada(dec_weight_ideal_value + i);
-		min_weight = min(select(min_weight, weights, active), min_weight);
-		max_weight = max(select(max_weight, weights, active), max_weight);
+
+		// Mask inputs using FLT_MAX rather than existing min/max to break register dependencies
+		min_weight = min(select(vfloat(FLT_MAX), weights, active), min_weight);
+		max_weight = max(select(vfloat(-FLT_MAX), weights, active), max_weight);
 	}
 
 	min_weight = hmin(min_weight);
@@ -222,14 +224,18 @@ static void compute_lowest_and_highest_weight(
 
 			// Accumulate errors for minimum index
 			vmask mask = svalrte == minidx;
-			vfloat accum = cut_low_weight_err + vfloat(1.0f) - vfloat(2.0f) * diff;
-			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
+			vfloat accum = vfloat(0.5f) - diff;
+			cut_low_weight_err += select(vfloat::zero(), accum, mask);
 
 			// Accumulate errors for maximum index
 			mask = svalrte == maxidx;
-			accum = cut_high_weight_err + vfloat(1.0f) + vfloat(2.0f) * diff;
-			cut_high_weight_err = select(cut_high_weight_err, accum, mask);
+			accum = vfloat(0.5f) + diff;
+			cut_high_weight_err += select(vfloat::zero(), accum, mask);
 		}
+
+		// Rescale errors to full range
+		cut_low_weight_err = cut_low_weight_err * vfloat(2.0f);
+		cut_high_weight_err = cut_high_weight_err * vfloat(2.0f);
 
 		// Write out min weight and weight span; clamp span to a usable range
 		vint span = float_to_int(maxidx - minidx + vfloat(1));
