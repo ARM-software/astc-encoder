@@ -224,14 +224,18 @@ static void compute_lowest_and_highest_weight(
 
 			// Accumulate errors for minimum index
 			vmask mask = svalrte == minidx;
-			vfloat accum = vfloat(1.0f) - vfloat(2.0f) * diff;
+			vfloat accum = vfloat(0.5f) - diff;
 			cut_low_weight_err += select(vfloat::zero(), accum, mask);
 
 			// Accumulate errors for maximum index
 			mask = svalrte == maxidx;
-			accum = vfloat(1.0f) + vfloat(2.0f) * diff;
+			accum = vfloat(0.5f) + diff;
 			cut_high_weight_err += select(vfloat::zero(), accum, mask);
 		}
+
+		// Rescale errors to full range
+		cut_low_weight_err = cut_low_weight_err * vfloat(2.0f);
+		cut_high_weight_err = cut_high_weight_err * vfloat(2.0f);
 
 		// Write out min weight and weight span; clamp span to a usable range
 		vint span = float_to_int(maxidx - minidx + vfloat(1));
