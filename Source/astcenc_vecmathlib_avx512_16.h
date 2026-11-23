@@ -286,7 +286,7 @@ struct vmask16
 #define ASTCENC_HAS_NATIVE_BROADCAST_QUAD
 
 /**
- * @brief Replicate a four-lane integer vector into all four quads.
+ * @brief Replicate a four-lane integer vector into every quad.
  *
  * @param a   The source quad.
  *

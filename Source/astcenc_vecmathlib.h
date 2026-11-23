@@ -433,7 +433,7 @@ ASTCENC_SIMD_INLINE vfloat load1_quads(const float* p)
 #if !defined(ASTCENC_HAS_NATIVE_BROADCAST_QUAD)
 
 /**
- * @brief Return a four-lane integer vector as its only quad.
+ * @brief Replicate a four-lane integer vector into every quad.
  *
  * @param a   The source quad.
  *
@@ -445,6 +445,19 @@ ASTCENC_SIMD_INLINE vint broadcast_quad(vint4 a)
 }
 
 #endif
+
+/**
+ * @brief Replicate a four-lane mask into every quad.
+ *
+ * @param a   The source quad.
+ *
+ * @return The mask with the source quad repeated.
+ */
+ASTCENC_SIMD_INLINE vmask broadcast_quad(vmask4 a)
+{
+	vint lanes = broadcast_quad(select(vint4::zero(), vint4(-1), a));
+	return lanes != vint::zero();
+}
 
 /**
  * @brief Replicate a four-lane float vector into every quad.

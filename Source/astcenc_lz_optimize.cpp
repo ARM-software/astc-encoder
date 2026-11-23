@@ -818,19 +818,19 @@ static void decompress_symbolic_block_raw(
 		// Single-partition, single-plane blocks have contiguous texels and shared endpoints
 		if ((partition_count == 1) && !is_dual_plane)
 		{
-			vint base = broadcast_quad(ep0);
-			vint delta = broadcast_quad(ep1 - ep0);
-			vint u8_lanes = broadcast_quad(select(vint4::zero(), vint4(-1), u8_mask));
-			vmask u8_mask_wide = u8_lanes != vint::zero();
+			vint ep0_biasv = broadcast_quad(lsl<6>(ep0) + vint4(32));
+			vint ep_deltav = broadcast_quad(ep1 - ep0);
+			vmask u8_maskv = broadcast_quad(u8_mask);
+
 			vint lane_id = vint::lane_id();
 			vint float_count(bsd.texel_count * 4);
 
 			for (unsigned int j = 0; j < bsd.texel_count; j += ASTCENC_SIMD_BATCH_WIDTH)
 			{
 				vint weight = load1_quads(plane1_weights + j);
-				vint colori = base + asr<6>(delta * weight + vint(32));
+				vint colori = asr<6>(ep0_biasv + ep_deltav * weight);
 				vint colori_u8 = asr<8>(colori) * vint(257);
-				colori = select(colori, colori_u8, u8_mask_wide);
+				colori = select(colori, colori_u8, u8_maskv);
 
 				// Keep cache padding zero for the full-width error calculation
 				vmask mask = lane_id < float_count;
