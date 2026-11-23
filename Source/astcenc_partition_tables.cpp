@@ -19,6 +19,8 @@
  * @brief Functions for generating partition tables on demand.
  */
 
+#include <utility>
+
 #include "astcenc_internal.h"
 
 /** @brief The number of 64-bit words needed to represent a canonical partition bit pattern. */
@@ -393,6 +395,140 @@ static bool generate_one_partition_info_entry(
 	return valid;
 }
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
+/**
+ * @brief Order useful partitionings by similarity of their partition texel counts.
+ *
+ * Each candidate is followed by the unused candidate with the smallest sum of absolute partition
+ * count differences. For two candidates this also minimizes batched direction iterations. Integer
+ * distances and seed-order tie breaks keep the ordering independent of SIMD width.
+ *
+ * @param[in,out] bsd               The block size information.
+ * @param         partition_count   The number of partitions per candidate.
+ * @param[in,out] ptab              The packed partition table.
+ */
+static void order_partition_table(
+	block_size_descriptor& bsd,
+	unsigned int partition_count,
+	partition_info* ptab
+) {
+	unsigned int count = bsd.partitioning_count_selected[partition_count - 1];
+	if (count == 0)
+	{
+		return;
+	}
+
+	// Start at the lexicographically smallest count vector, breaking ties in seed order
+	unsigned int current = 0;
+	unsigned int first_key = ~0u;
+	for (unsigned int i = 0; i < count; i++)
+	{
+		unsigned int key = 0;
+		for (unsigned int p = 0; p < partition_count; p++)
+		{
+			key = (key << 8) | ptab[i].partition_texel_count[p];
+		}
+
+		if (key < first_key)
+		{
+			first_key = key;
+			current = i;
+		}
+	}
+
+	// Build a nearest-neighbor path using the full count vectors, without SIMD-dependent batches
+	uint16_t order[BLOCK_MAX_PARTITIONINGS];
+	bool is_used[BLOCK_MAX_PARTITIONINGS] {};
+	for (unsigned int i = 0; i < count; i++)
+	{
+		order[i] = static_cast<uint16_t>(current);
+		is_used[current] = true;
+		if (i + 1 == count)
+		{
+			break;
+		}
+
+		unsigned int best_distance = ~0u;
+		unsigned int next = 0;
+		for (unsigned int j = 0; j < count; j++)
+		{
+			if (is_used[j])
+			{
+				continue;
+			}
+
+			unsigned int distance = 0;
+			for (unsigned int p = 0; p < partition_count; p++)
+			{
+				unsigned int a = ptab[current].partition_texel_count[p];
+				unsigned int b = ptab[j].partition_texel_count[p];
+				distance += astc::max(a, b) - astc::min(a, b);
+			}
+
+			if (distance < best_distance)
+			{
+				best_distance = distance;
+				next = j;
+				if (distance == 0)
+				{
+					break;
+				}
+			}
+		}
+
+		current = next;
+	}
+
+	// Preserve seed-order mismatch ties while moving records and coverage bitmaps together
+	uint16_t destinations[BLOCK_MAX_PARTITIONINGS];
+	for (unsigned int i = 0; i < count; i++)
+	{
+		destinations[order[i]] = static_cast<uint16_t>(i);
+		bsd.partitioning_search_indices[partition_count - 2][order[i]] = static_cast<uint16_t>(i);
+	}
+
+	for (unsigned int i = 0; i < count; i++)
+	{
+		while (destinations[i] != i)
+		{
+			unsigned int target = destinations[i];
+			std::swap(ptab[i], ptab[target]);
+			uint64_t* bitmaps_i;
+			uint64_t* bitmaps_target;
+			if (partition_count == 2)
+			{
+				bitmaps_i = bsd.coverage_bitmaps_2[i];
+				bitmaps_target = bsd.coverage_bitmaps_2[target];
+			}
+			else if (partition_count == 3)
+			{
+				bitmaps_i = bsd.coverage_bitmaps_3[i];
+				bitmaps_target = bsd.coverage_bitmaps_3[target];
+			}
+			else
+			{
+				bitmaps_i = bsd.coverage_bitmaps_4[i];
+				bitmaps_target = bsd.coverage_bitmaps_4[target];
+			}
+
+			for (unsigned int p = 0; p < partition_count; p++)
+			{
+				std::swap(bitmaps_i[p], bitmaps_target[p]);
+			}
+
+			std::swap(destinations[i], destinations[target]);
+		}
+	}
+
+	for (unsigned int i = 0; i < count; i++)
+	{
+		bsd.partitioning_packed_index[partition_count - 2][ptab[i].partition_index] = static_cast<uint16_t>(i);
+	}
+}
+
+#endif
+
 static void build_partition_table_for_one_partition_count(
 	block_size_descriptor& bsd,
 	bool can_omit_partitionings,
@@ -499,4 +635,10 @@ void init_partition_tables(
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 4, par_tab4, canonical_patterns);
 
 	delete[] canonical_patterns;
+
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	order_partition_table(bsd, 2, par_tab2);
+	order_partition_table(bsd, 3, par_tab3);
+	order_partition_table(bsd, 4, par_tab4);
+#endif
 }
