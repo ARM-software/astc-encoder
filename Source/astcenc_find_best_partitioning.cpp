@@ -424,7 +424,8 @@ static void count_partition_mismatch_bits(
  * @param      texel_count          The number of texels used for clustering.
  * @param      partitioning_count   The number of packed partitionings.
  * @param      mismatch_count       Partitioning mismatch counts, in index order.
- * @param[out] partition_ordering   Partition index values, in mismatch order.
+ * @param      partition_indices    Packed partition indices, in seed order.
+ * @param[out] partition_ordering   Packed partition index values, in mismatch order.
  *
  * @return The number of active partitionings in this selection.
  */
@@ -432,6 +433,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 	unsigned int texel_count,
 	unsigned int partitioning_count,
 	const uint8_t mismatch_count[BLOCK_MAX_PARTITIONINGS],
+	const uint16_t partition_indices[BLOCK_MAX_PARTITIONINGS],
 	uint16_t partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
 	promise(partitioning_count > 0);
@@ -456,8 +458,9 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 	// Use running sum as index, incrementing after read to allow sequential entries with same count
 	for (unsigned int i = 0; i < partitioning_count; i++)
 	{
-		unsigned int idx = mscount[mismatch_count[i]]++;
-		partition_ordering[idx] = static_cast<uint16_t>(i);
+		unsigned int partition = partition_indices[i];
+		unsigned int idx = mscount[mismatch_count[partition]]++;
+		partition_ordering[idx] = static_cast<uint16_t>(partition);
 	}
 
 	return partitioning_count;
@@ -469,7 +472,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
  * @param      bsd                  The block size information.
  * @param      blk                  The image block color data to compress.
  * @param      partition_count      The desired number of partitions in the block.
- * @param[out] partition_ordering   The list of recommended partition indices, in priority order.
+ * @param[out] partition_ordering   Packed partition indices, in priority order.
  *
  * @return The number of active partitionings in this selection.
  */
@@ -515,7 +518,7 @@ static unsigned int compute_kmeans_partition_ordering(
 	return get_partition_ordering_by_mismatch_bits(
 	    texels_to_process,
 	    bsd.partitioning_count_selected[partition_count - 1],
-	    mismatch_counts, partition_ordering);
+	    mismatch_counts, bsd.partitioning_search_indices[partition_count - 2], partition_ordering);
 }
 
 /**
@@ -565,6 +568,45 @@ static void insert_result(
 	}
 }
 
+/**
+ * @brief Group selected candidates in the precomputed partition-size order.
+ *
+ * Batched partition searches assign one SIMD quad to each candidate. For each partition, all quads
+ * advance until the candidate with the most texels has finished. The partition table orders similar
+ * per-partition texel counts together to reduce work in exhausted quads. Emit the selected candidates
+ * in table order, independent of SIMD width, to keep candidate ranking invariant across ISAs.
+ *
+ * @param      candidate_count      The number of selected candidates.
+ * @param      partition_ordering   Packed partition indices, in priority order.
+ * @param[out] partition_sequence   The selected candidates, in partition table order.
+ */
+static void group_partition_candidates(
+	unsigned int candidate_count,
+	const uint16_t partition_ordering[BLOCK_MAX_PARTITIONINGS],
+	uint16_t partition_sequence[BLOCK_MAX_PARTITIONINGS]
+) {
+	uint64_t selected[BLOCK_MAX_PARTITIONINGS / 64] {};
+	for (unsigned int i = 0; i < candidate_count; i++)
+	{
+		unsigned int partition = partition_ordering[i];
+		selected[partition / 64] |= 1ull << (partition % 64);
+	}
+
+	unsigned int emitted = 0;
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS / 64; i++)
+	{
+		uint64_t bits = selected[i];
+		while (bits)
+		{
+			unsigned int bit = static_cast<unsigned int>(std::countr_zero(bits));
+			partition_sequence[emitted++] = static_cast<uint16_t>(i * 64 + bit);
+			bits &= bits - 1;
+		}
+	}
+
+	assert(emitted == candidate_count);
+}
+
 /* See header for documentation. */
 unsigned int find_best_partition_candidates(
 	const block_size_descriptor& bsd,
@@ -596,10 +638,13 @@ unsigned int find_best_partition_candidates(
 
 	weight_imprecision_estim = weight_imprecision_estim * weight_imprecision_estim;
 
-	uint16_t partition_sequence[BLOCK_MAX_PARTITIONINGS];
-	unsigned int sequence_len = compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_sequence);
+	uint16_t partition_ordering[BLOCK_MAX_PARTITIONINGS];
+	unsigned int sequence_len = compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_ordering);
 	partition_search_limit = astc::min(partition_search_limit, sequence_len);
 	requested_candidates = astc::min(partition_search_limit, requested_candidates);
+
+	uint16_t partition_sequence[BLOCK_MAX_PARTITIONINGS];
+	group_partition_candidates(partition_search_limit, partition_ordering, partition_sequence);
 
 	bool uses_alpha = !blk.is_constant_channel(3);
 

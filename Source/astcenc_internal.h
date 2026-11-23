@@ -621,6 +621,14 @@ struct block_size_descriptor
 	uint16_t partitioning_packed_index[3][BLOCK_MAX_PARTITIONINGS];
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
+	/**
+	 * @brief The packed partition search indices in seed order.
+	 *
+	 * Indexed by partition_count - 2 and the original seed-order packed index. Preserves mismatch
+	 * tie breaks after useful partitionings are reordered by their partition texel counts.
+	 */
+	uint16_t partitioning_search_indices[3][BLOCK_MAX_PARTITIONINGS];
+
 	/** @brief The active texels for k-means partition selection. */
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
 
