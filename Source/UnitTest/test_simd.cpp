@@ -292,6 +292,33 @@ TEST(SuiteVint, broadcast_quad)
 	}
 }
 
+/** @brief Repeat all sixteen four-lane mask patterns in order at every VLA width. */
+TEST(SuiteVmask, broadcast_quad)
+{
+	for (unsigned int pattern = 0; pattern < 16; pattern++)
+	{
+		vmask4 source((pattern & 1u) != 0, (pattern & 2u) != 0,
+		              (pattern & 4u) != 0, (pattern & 8u) != 0);
+
+		vmask replicated = broadcast_quad(source);
+
+		ASTCENC_ALIGNAS int result[ASTCENC_SIMD_WIDTH];
+		vint selected = select(vint(13), vint(29), replicated);
+		storea(selected, result);
+
+		for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+		{
+			int expected = 13;
+			if ((pattern & (1u << (i % 4))) != 0)
+			{
+				expected = 29;
+			}
+
+			EXPECT_EQ(result[i], expected);
+		}
+	}
+}
+
 /** @brief Pack four-lane integer groups in order at every VLA width. */
 TEST(SuiteVint, pack_quads)
 {

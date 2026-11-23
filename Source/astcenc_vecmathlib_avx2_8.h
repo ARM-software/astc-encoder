@@ -302,7 +302,7 @@ struct vmask8
 #define ASTCENC_HAS_NATIVE_BROADCAST_QUAD
 
 /**
- * @brief Replicate a four-lane integer vector into both quads.
+ * @brief Replicate a four-lane integer vector into every quad.
  *
  * @param a   The source quad.
  *
