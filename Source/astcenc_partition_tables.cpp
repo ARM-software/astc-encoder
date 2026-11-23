@@ -305,12 +305,20 @@ static bool generate_one_partition_info_entry(
 		}
 	}
 
-	// Fill loop tail so we can overfetch later
+	// When we batch candidates we process quads from all candidates in the batch up to the longest
+	// partition size of any of the candidates in the batch. We don't know the partition counts of
+	// other candidates, so we assume worst case and pad up to rounded-up texel count for the whole
+	// block. No need to re-initialize if a partition is completely empty.
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(bsd.texel_count);
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		size_t ptex_count = counts[i];
-		size_t ptex_count_simd = round_up_to_simd_multiple_vla(ptex_count);
-		for (size_t j = ptex_count; j < ptex_count_simd; j++)
+		if (ptex_count == 0)
+		{
+			continue;
+		}
+
+		for (size_t j = ptex_count; j < texel_count_simd; j++)
 		{
 			pi.texels_of_partition[i][j] = pi.texels_of_partition[i][ptex_count - 1];
 		}

@@ -343,7 +343,12 @@ struct partition_info
 	/** @brief The partition of each texel in the block. */
 	ASTCENC_ALIGNAS uint8_t partition_of_texel[BLOCK_MAX_TEXELS];
 
-	/** @brief The list of texels in each partition. */
+	/**
+	 * @brief The list of texels in each partition.
+	 *
+	 * SIMD padded by duplicating the final texel to a rounded-up full block size because of how
+	 * we batch multiple candidates together.
+	 */
 	ASTCENC_ALIGNAS uint8_t texels_of_partition[BLOCK_MAX_PARTITIONS][BLOCK_MAX_TEXELS];
 };
 

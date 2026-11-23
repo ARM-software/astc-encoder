@@ -1344,9 +1344,8 @@ void compute_partition_errors_luminance_batch(
 
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				// Repeat the final padded quad for exhausted candidates to preserve min/max
-				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
-				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+				// Padded tails repeat an existing texel, preserving the partition range
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + i);
 			}
 
 			vfloat r = gatherf(tr, pack_quads(indices));
@@ -1442,8 +1441,7 @@ void compute_partition_errors_luminance_alpha_batch(
 		{
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
-				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
+				unsigned int texel = candidates[c]->texels_of_partition[p][i];
 				float r = blk.data_r[texel];
 				colors[c] = vfloat4(r, r, r, blk.data_a[texel]);
 			}
@@ -1488,9 +1486,8 @@ void compute_partition_errors_luminance_alpha_batch(
 
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				// Repeat the final padded quad for exhausted candidates to preserve min/max
-				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
-				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+				// Padded tails repeat an existing texel, preserving the partition range
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + i);
 			}
 
 			vint texels = pack_quads(indices);
@@ -1642,8 +1639,7 @@ void compute_partition_errors_rgb_batch(
 		{
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
-				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
+				unsigned int texel = candidates[c]->texels_of_partition[p][i];
 				colors[c] = blk.texel3(texel);
 			}
 
@@ -1700,9 +1696,8 @@ void compute_partition_errors_rgb_batch(
 
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				// Repeat the final padded quad for exhausted candidates to preserve min/max
-				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
-				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+				// Padded tails repeat an existing texel, preserving the partition range
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + i);
 			}
 
 			vint texels = pack_quads(indices);
@@ -1837,8 +1832,7 @@ void compute_partition_errors_rgba_batch(
 		{
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				unsigned int last = candidates[c]->partition_texel_count[p] - 1u;
-				unsigned int texel = candidates[c]->texels_of_partition[p][astc::min(i, last)];
+				unsigned int texel = candidates[c]->texels_of_partition[p][i];
 				colors[c] = blk.texel(texel);
 			}
 
@@ -1904,9 +1898,8 @@ void compute_partition_errors_rgba_batch(
 
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
-				// Repeat the final padded quad for exhausted candidates to preserve min/max
-				unsigned int last = (candidates[c]->partition_texel_count[p] - 1u) & ~3u;
-				indices[c] = vint4(candidates[c]->texels_of_partition[p] + astc::min(i, last));
+				// Padded tails repeat an existing texel, preserving the partition range
+				indices[c] = vint4(candidates[c]->texels_of_partition[p] + i);
 			}
 
 			vint texels = pack_quads(indices);
