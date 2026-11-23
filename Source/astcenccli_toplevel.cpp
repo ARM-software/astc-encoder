@@ -694,7 +694,7 @@ static bool parse_commandline_options(
 
 	if (operation == ASTCENC_OP_UNKNOWN)
 	{
-		print_error("ERROR: Unrecognized operation '%s'\n", argv[1]);
+		print_error("ERROR: Unrecognized operation '%s'. Run '-h' for usage information.\n", argv[1]);
 		return true;
 	}
 
