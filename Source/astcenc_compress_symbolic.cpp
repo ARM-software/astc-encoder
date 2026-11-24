@@ -937,12 +937,12 @@ static float compress_symbolic_block_for_partition_2planes(
 	vfloat4 min_ep2(10.0f);
 
 	vfloat4 ep1 = (vfloat4(65535.0f) - ei1.ep.endpt0[0]) / (ei1.ep.endpt1[0] - ei1.ep.endpt0[0]);
-	vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
-	min_ep1 = select(min_ep1, ep1, use_ep1);
+	vmask4 use_ep1 = ep1 > vfloat4(0.5f);
+	min_ep1 = min(select(vfloat4(10.0f), ep1, use_ep1), min_ep1);
 
 	vfloat4 ep2 = (vfloat4(65535.0f) - ei2.ep.endpt0[0]) / (ei2.ep.endpt1[0] - ei2.ep.endpt0[0]);
-	vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
-	min_ep2 = select(min_ep2, ep2, use_ep2);
+	vmask4 use_ep2 = ep2 > vfloat4(0.5f);
+	min_ep2 = min(select(vfloat4(10.0f), ep2, use_ep2), min_ep2);
 
 	vfloat4 err_max(ERROR_CALC_DEFAULT);
 	vmask4 err_mask = vint4::lane_id() == vint4(plane2_component);
