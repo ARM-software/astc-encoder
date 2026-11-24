@@ -1042,10 +1042,10 @@ void compute_error_squared_rgba(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
-			                 + (ew_g * uncor_dist1 * uncor_dist1)
-			                 + (ew_b * uncor_dist2 * uncor_dist2)
-			                 + (ew_a * uncor_dist3 * uncor_dist3);
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
+			                 + ((uncor_dist1 * uncor_dist1) * ew_g)
+			                 + ((uncor_dist2 * uncor_dist2) * ew_b)
+			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
 
@@ -1060,10 +1060,10 @@ void compute_error_squared_rgba(
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                 + (ew_g * samec_dist1 * samec_dist1)
-			                 + (ew_b * samec_dist2 * samec_dist2)
-			                 + (ew_a * samec_dist3 * samec_dist3);
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
+			                 + ((samec_dist1 * samec_dist1) * ew_g)
+			                 + ((samec_dist2 * samec_dist2) * ew_b)
+			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
 
@@ -1117,10 +1117,12 @@ void compute_error_squared_rgba_grayscale(
 		// The line coefficients have identical RGB components
 		vfloat l_uncor_bs0(l_uncor.bs.lane<0>());
 		vfloat l_uncor_bs3(l_uncor.bs.lane<3>());
+		vfloat l_uncor_bs_rgb = l_uncor_bs0 * 3.0f;
 		vfloat l_uncor_amod0(l_uncor.amod.lane<0>());
 		vfloat l_uncor_amod3(l_uncor.amod.lane<3>());
 		vfloat l_samec_bs0(l_samec.bs.lane<0>());
 		vfloat l_samec_bs3(l_samec.bs.lane<3>());
+		vfloat l_samec_bs_rgb = l_samec_bs0 * 3.0f;
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
@@ -1141,12 +1143,8 @@ void compute_error_squared_rgba_grayscale(
 			vfloat data_r = gatherf(tr, texel_idxs);
 			vfloat data_a = gatherf(ta, texel_idxs);
 
-			// Reuse the RGB product, retaining all three additions in order
-			vfloat uncor_rgb_param = data_r * l_uncor_bs0;
-			vfloat uncor_param = uncor_rgb_param
-			                   + uncor_rgb_param
-			                   + uncor_rgb_param
-			                   + (data_a * l_uncor_bs3);
+			// Identical RGB components share one projection coefficient
+			vfloat uncor_param = (data_r * l_uncor_bs_rgb) + (data_a * l_uncor_bs3);
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
@@ -1157,26 +1155,22 @@ void compute_error_squared_rgba_grayscale(
 			                   + (uncor_param * l_uncor_bs3);
 
 			// Channel weights may differ, even though the RGB residuals match
-			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
-			                 + (ew_g * uncor_dist0 * uncor_dist0)
-			                 + (ew_b * uncor_dist0 * uncor_dist0)
-			                 + (ew_a * uncor_dist3 * uncor_dist3);
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
+			                 + ((uncor_dist0 * uncor_dist0) * ew_g)
+			                 + ((uncor_dist0 * uncor_dist0) * ew_b)
+			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
 
-			vfloat samec_rgb_param = data_r * l_samec_bs0;
-			vfloat samec_param = samec_rgb_param
-			                   + samec_rgb_param
-			                   + samec_rgb_param
-			                   + (data_a * l_samec_bs3);
+			vfloat samec_param = (data_r * l_samec_bs_rgb) + (data_a * l_samec_bs3);
 
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                 + (ew_g * samec_dist0 * samec_dist0)
-			                 + (ew_b * samec_dist0 * samec_dist0)
-			                 + (ew_a * samec_dist3 * samec_dist3);
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
+			                 + ((samec_dist0 * samec_dist0) * ew_g)
+			                 + ((samec_dist0 * samec_dist0) * ew_b)
+			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
@@ -1266,9 +1260,9 @@ void compute_error_squared_rgb(
 			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
 			                   + (uncor_param * l_uncor_bs2);
 
-			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
-			                 + (ew_g * uncor_dist1 * uncor_dist1)
-			                 + (ew_b * uncor_dist2 * uncor_dist2);
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
+			                 + ((uncor_dist1 * uncor_dist1) * ew_g)
+			                 + ((uncor_dist2 * uncor_dist2) * ew_b);
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
 
@@ -1281,9 +1275,9 @@ void compute_error_squared_rgb(
 			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 
-			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                 + (ew_g * samec_dist1 * samec_dist1)
-			                 + (ew_b * samec_dist2 * samec_dist2);
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
+			                 + ((samec_dist1 * samec_dist1) * ew_g)
+			                 + ((samec_dist2 * samec_dist2) * ew_b);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
 
@@ -1360,6 +1354,7 @@ void compute_partition_errors_luminance_batch(
 		vfloat error = (length_squared * (ew_r * error_weight))
 		             + (length_squared * (ew_g * error_weight))
 		             + (length_squared * (ew_b * error_weight));
+
 		error_sum += error;
 	}
 
@@ -1381,8 +1376,8 @@ void compute_partition_errors_luminance_alpha_batch(
 	// RRRA lanes per candidate, while error scoring uses four texels per candidate quad.
 	//
 	// Identical RGB components share direction and distance calculations, but retain separate
-	// channel weights. Keep the original addition order, four running error sums, and partition
-	// order for quantization errors to preserve floating-point invariance
+	// channel weights. Keep four running error sums and partition order for quantization
+	// errors independent of SIMD width
 
 	assert(blk.grayscale);
 
@@ -1401,8 +1396,8 @@ void compute_partition_errors_luminance_alpha_batch(
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
-	vfloat uncor_sum = zero;
-	vfloat samec_sum = zero;
+	vfloat uncor_errorsumv = zero;
+	vfloat samec_errorsumv = zero;
 
 	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
 	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
@@ -1462,23 +1457,25 @@ void compute_partition_errors_luminance_alpha_batch(
 		best = select(best, sum_wp, prod_wp > prod_xp);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat bs = normalize_safe_quads(best, safe);
-		vfloat samec_bs = normalize_safe_quads(mean, safe);
-		vfloat amod = mean - bs * dot_quads(mean, bs);
+		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
+		vfloat l_uncor_amod = mean - l_uncor_bs * dot_quads(mean, l_uncor_bs);
 
 		// Scoring uses four texels per candidate quad, with separate channel vectors
-		vfloat bs0 = swizzle_quads<0, 0, 0, 0>(bs);
-		vfloat bs3 = swizzle_quads<3, 3, 3, 3>(bs);
+		vfloat l_uncor_bs0 = swizzle_quads<0, 0, 0, 0>(l_uncor_bs);
+		vfloat l_uncor_bs3 = swizzle_quads<3, 3, 3, 3>(l_uncor_bs);
 
-		vfloat amod0 = swizzle_quads<0, 0, 0, 0>(amod);
-		vfloat amod3 = swizzle_quads<3, 3, 3, 3>(amod);
+		vfloat l_uncor_amod0 = swizzle_quads<0, 0, 0, 0>(l_uncor_amod);
+		vfloat l_uncor_amod3 = swizzle_quads<3, 3, 3, 3>(l_uncor_amod);
 
-		vfloat samec0 = swizzle_quads<0, 0, 0, 0>(samec_bs);
-		vfloat samec3 = swizzle_quads<3, 3, 3, 3>(samec_bs);
+		vfloat l_samec_bs0 = swizzle_quads<0, 0, 0, 0>(l_samec_bs);
+		vfloat l_samec_bs3 = swizzle_quads<3, 3, 3, 3>(l_samec_bs);
+		vfloat l_uncor_bs_rgb = l_uncor_bs0 * 3.0f;
+		vfloat l_samec_bs_rgb = l_samec_bs0 * 3.0f;
 		vfloat lane_ids = int_to_float(vint::lane_id() & vint(3));
 
-		vfloat low(1e10f);
-		vfloat high(-1e10f);
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
 
 		for (unsigned int i = 0; i < max_count; i += 4)
 		{
@@ -1497,51 +1494,57 @@ void compute_partition_errors_luminance_alpha_batch(
 			vfloat r = gatherf(tr, texels);
 			vfloat a = gatherf(ta, texels);
 
-			// Retain the three RGB additions and separately weighted channel errors
-			vfloat rgb_param = r * bs0;
-			vfloat param = rgb_param + rgb_param + rgb_param + (a * bs3);
+			// Identical RGB components share one projection coefficient
+			vfloat uncor_param = (r * l_uncor_bs_rgb) + (a * l_uncor_bs3);
 
-			low = min(param, low);
-			high = max(param, high);
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat dr = (amod0 - r) + (param * bs0);
-			vfloat da = (amod3 - a) + (param * bs3);
-			vfloat error = (ew_r * dr * dr) + (ew_g * dr * dr)
-			             + (ew_b * dr * dr) + (ew_a * da * da);
-			uncor_sum += select(zero, error, active);
+			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist3 = (l_uncor_amod3 - a)
+			                   + (uncor_param * l_uncor_bs3);
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
+			                 + ((uncor_dist0 * uncor_dist0) * ew_g)
+			                 + ((uncor_dist0 * uncor_dist0) * ew_b)
+			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
-			rgb_param = r * samec0;
-			param = rgb_param + rgb_param + rgb_param + (a * samec3);
+			uncor_errorsumv += select(zero, uncor_err, active);
 
-			dr = param * samec0 - r;
-			da = param * samec3 - a;
-			error = (ew_r * dr * dr) + (ew_g * dr * dr)
-			      + (ew_b * dr * dr) + (ew_a * da * da);
-			samec_sum += select(zero, error, active);
+			vfloat samec_param = (r * l_samec_bs_rgb) + (a * l_samec_bs3);
+
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - a;
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
+			                 + ((samec_dist0 * samec_dist0) * ew_g)
+			                 + ((samec_dist0 * samec_dist0) * ew_b)
+			                 + ((samec_dist3 * samec_dist3) * ew_a);
+
+			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
-		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
+		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
 		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
 
-		vfloat uncor_vector = bs * length;
-		vfloat samec_vector = samec_bs * length;
+		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
+		vfloat samec_vector = l_samec_bs * uncor_linelen;
 		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
 		samec_quant[p] = sum_quads((samec_vector * samec_vector) * error_weights);
 	}
 
 	// Reduce each candidate's texel sums as (s0 + s2) + (s1 + s3), matching hadd_s(vfloat4)
 	// Then add quantization errors in the original partition order
-	uncor_sum = sum_quads(uncor_sum);
-	samec_sum = sum_quads(samec_sum);
+	uncor_errorsumv = sum_quads(uncor_errorsumv);
+	samec_errorsumv = sum_quads(samec_errorsumv);
 	for (unsigned int p = 0; p < partition_count; p++)
 	{
-		uncor_sum += uncor_quant[p];
-		samec_sum += samec_quant[p];
+		uncor_errorsumv += uncor_quant[p];
+		samec_errorsumv += samec_quant[p];
 	}
 
-	store_lane0_quads(uncor_sum, uncor_errors);
-	store_lane0_quads(samec_sum, samec_errors);
+	store_lane0_quads(uncor_errorsumv, uncor_errors);
+	store_lane0_quads(samec_errorsumv, samec_errors);
 }
 
 /* See header for documentation. */
@@ -1597,8 +1600,8 @@ void compute_partition_errors_rgb_batch(
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
-	vfloat uncor_sum = zero;
-	vfloat samec_sum = zero;
+	vfloat uncor_errorsumv = zero;
+	vfloat samec_errorsumv = zero;
 
 	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
 	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
@@ -1668,27 +1671,27 @@ void compute_partition_errors_rgb_batch(
 		best = select(best, sum_zp, mask);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat bs = normalize_safe_quads(best, safe);
-		vfloat samec_bs = normalize_safe_quads(mean, safe);
-		vfloat amod = mean - bs * sum_rgb_quads(mean * bs);
+		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
+		vfloat l_uncor_amod = mean - l_uncor_bs * sum_rgb_quads(mean * l_uncor_bs);
 
 		// Scoring uses four texels per candidate quad, with separate R, G, and B vectors
 		// Broadcast each line component to all four texels of its candidate
-		vfloat bs0 = swizzle_quads<0, 0, 0, 0>(bs);
-		vfloat bs1 = swizzle_quads<1, 1, 1, 1>(bs);
-		vfloat bs2 = swizzle_quads<2, 2, 2, 2>(bs);
+		vfloat l_uncor_bs0 = swizzle_quads<0, 0, 0, 0>(l_uncor_bs);
+		vfloat l_uncor_bs1 = swizzle_quads<1, 1, 1, 1>(l_uncor_bs);
+		vfloat l_uncor_bs2 = swizzle_quads<2, 2, 2, 2>(l_uncor_bs);
 
-		vfloat amod0 = swizzle_quads<0, 0, 0, 0>(amod);
-		vfloat amod1 = swizzle_quads<1, 1, 1, 1>(amod);
-		vfloat amod2 = swizzle_quads<2, 2, 2, 2>(amod);
+		vfloat l_uncor_amod0 = swizzle_quads<0, 0, 0, 0>(l_uncor_amod);
+		vfloat l_uncor_amod1 = swizzle_quads<1, 1, 1, 1>(l_uncor_amod);
+		vfloat l_uncor_amod2 = swizzle_quads<2, 2, 2, 2>(l_uncor_amod);
 
-		vfloat samec0 = swizzle_quads<0, 0, 0, 0>(samec_bs);
-		vfloat samec1 = swizzle_quads<1, 1, 1, 1>(samec_bs);
-		vfloat samec2 = swizzle_quads<2, 2, 2, 2>(samec_bs);
+		vfloat l_samec_bs0 = swizzle_quads<0, 0, 0, 0>(l_samec_bs);
+		vfloat l_samec_bs1 = swizzle_quads<1, 1, 1, 1>(l_samec_bs);
+		vfloat l_samec_bs2 = swizzle_quads<2, 2, 2, 2>(l_samec_bs);
 		vfloat lane_ids = int_to_float(vint::lane_id() & vint(3));
 
-		vfloat low(1e10f);
-		vfloat high(-1e10f);
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
 
 		for (unsigned int i = 0; i < max_count; i += 4)
 		{
@@ -1708,54 +1711,65 @@ void compute_partition_errors_rgb_batch(
 			vfloat g = gatherf(tg, texels);
 			vfloat b = gatherf(tb, texels);
 
-			vfloat param = (r * bs0) + (g * bs1) + (b * bs2);
+			vfloat uncor_param = (r * l_uncor_bs0)
+			                   + (g * l_uncor_bs1)
+			                   + (b * l_uncor_bs2);
 
-			low = min(param, low);
-			high = max(param, high);
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat d0 = (amod0 - r) + (param * bs0);
-			vfloat d1 = (amod1 - g) + (param * bs1);
-			vfloat d2 = (amod2 - b) + (param * bs2);
+			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - g)
+			                   + (uncor_param * l_uncor_bs1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - b)
+			                   + (uncor_param * l_uncor_bs2);
 
-			vfloat error = (ew_r * d0 * d0) + (ew_g * d1 * d1) + (ew_b * d2 * d2);
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist1 * uncor_dist1)
+			                 + (ew_b * uncor_dist2 * uncor_dist2);
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
-			uncor_sum += select(zero, error, active);
+			uncor_errorsumv += select(zero, uncor_err, active);
 
-			param = (r * samec0) + (g * samec1) + (b * samec2);
+			vfloat samec_param = (r * l_samec_bs0)
+			                   + (g * l_samec_bs1)
+			                   + (b * l_samec_bs2);
 
-			d0 = param * samec0 - r;
-			d1 = param * samec1 - g;
-			d2 = param * samec2 - b;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - b;
 
-			error = (ew_r * d0 * d0) + (ew_g * d1 * d1) + (ew_b * d2 * d2);
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2);
 
-			samec_sum += select(zero, error, active);
+			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
-		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
+		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
 		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
 
-		vfloat uncor_vector = bs * length;
+		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		uncor_quant[p] = sum_rgb_quads((uncor_vector * uncor_vector) * error_weights);
 
-		vfloat samec_vector = samec_bs * length;
+		vfloat samec_vector = l_samec_bs * uncor_linelen;
 		samec_quant[p] = sum_rgb_quads((samec_vector * samec_vector) * error_weights);
 	}
 
 	// Reduce each candidate's texel sums as (s0 + s2) + (s1 + s3), matching hadd_s(vfloat4)
 	// Then add quantization errors in the original partition order
-	uncor_sum = sum_quads(uncor_sum);
-	samec_sum = sum_quads(samec_sum);
+	uncor_errorsumv = sum_quads(uncor_errorsumv);
+	samec_errorsumv = sum_quads(samec_errorsumv);
 	for (unsigned int p = 0; p < partition_count; p++)
 	{
-		uncor_sum += uncor_quant[p];
-		samec_sum += samec_quant[p];
+		uncor_errorsumv += uncor_quant[p];
+		samec_errorsumv += samec_quant[p];
 	}
 
-	store_lane0_quads(uncor_sum, uncor_errors);
-	store_lane0_quads(samec_sum, samec_errors);
+	store_lane0_quads(uncor_errorsumv, uncor_errors);
+	store_lane0_quads(samec_errorsumv, samec_errors);
 }
 
 /* See header for documentation. */
@@ -1787,8 +1801,8 @@ void compute_partition_errors_rgba_batch(
 	vfloat zero = vfloat::zero();
 
 	// Preserve four running texel-error sums per candidate across partition boundaries
-	vfloat uncor_sum = zero;
-	vfloat samec_sum = zero;
+	vfloat uncor_errorsumv = zero;
+	vfloat samec_errorsumv = zero;
 
 	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
 	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
@@ -1867,30 +1881,30 @@ void compute_partition_errors_rgba_batch(
 		best = select(best, sum_wp, mask);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat bs = normalize_safe_quads(best, safe);
-		vfloat samec_bs = normalize_safe_quads(mean, safe);
-		vfloat amod = mean - bs * dot_quads(mean, bs);
+		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
+		vfloat l_uncor_amod = mean - l_uncor_bs * dot_quads(mean, l_uncor_bs);
 
 		// Scoring uses four texels per candidate quad, with separate R, G, B, and A vectors
 		// Broadcast each line component to all four texels of its candidate
-		vfloat bs0 = swizzle_quads<0, 0, 0, 0>(bs);
-		vfloat bs1 = swizzle_quads<1, 1, 1, 1>(bs);
-		vfloat bs2 = swizzle_quads<2, 2, 2, 2>(bs);
-		vfloat bs3 = swizzle_quads<3, 3, 3, 3>(bs);
+		vfloat l_uncor_bs0 = swizzle_quads<0, 0, 0, 0>(l_uncor_bs);
+		vfloat l_uncor_bs1 = swizzle_quads<1, 1, 1, 1>(l_uncor_bs);
+		vfloat l_uncor_bs2 = swizzle_quads<2, 2, 2, 2>(l_uncor_bs);
+		vfloat l_uncor_bs3 = swizzle_quads<3, 3, 3, 3>(l_uncor_bs);
 
-		vfloat amod0 = swizzle_quads<0, 0, 0, 0>(amod);
-		vfloat amod1 = swizzle_quads<1, 1, 1, 1>(amod);
-		vfloat amod2 = swizzle_quads<2, 2, 2, 2>(amod);
-		vfloat amod3 = swizzle_quads<3, 3, 3, 3>(amod);
+		vfloat l_uncor_amod0 = swizzle_quads<0, 0, 0, 0>(l_uncor_amod);
+		vfloat l_uncor_amod1 = swizzle_quads<1, 1, 1, 1>(l_uncor_amod);
+		vfloat l_uncor_amod2 = swizzle_quads<2, 2, 2, 2>(l_uncor_amod);
+		vfloat l_uncor_amod3 = swizzle_quads<3, 3, 3, 3>(l_uncor_amod);
 
-		vfloat samec0 = swizzle_quads<0, 0, 0, 0>(samec_bs);
-		vfloat samec1 = swizzle_quads<1, 1, 1, 1>(samec_bs);
-		vfloat samec2 = swizzle_quads<2, 2, 2, 2>(samec_bs);
-		vfloat samec3 = swizzle_quads<3, 3, 3, 3>(samec_bs);
+		vfloat l_samec_bs0 = swizzle_quads<0, 0, 0, 0>(l_samec_bs);
+		vfloat l_samec_bs1 = swizzle_quads<1, 1, 1, 1>(l_samec_bs);
+		vfloat l_samec_bs2 = swizzle_quads<2, 2, 2, 2>(l_samec_bs);
+		vfloat l_samec_bs3 = swizzle_quads<3, 3, 3, 3>(l_samec_bs);
 		vfloat lane_ids = int_to_float(vint::lane_id() & vint(3));
 
-		vfloat low(1e10f);
-		vfloat high(-1e10f);
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
 
 		for (unsigned int i = 0; i < max_count; i += 4)
 		{
@@ -1911,58 +1925,72 @@ void compute_partition_errors_rgba_batch(
 			vfloat b = gatherf(tb, texels);
 			vfloat a = gatherf(ta, texels);
 
-			vfloat param = (r * bs0) + (g * bs1) + (b * bs2) + (a * bs3);
+			vfloat uncor_param = (r * l_uncor_bs0)
+			                   + (g * l_uncor_bs1)
+			                   + (b * l_uncor_bs2)
+			                   + (a * l_uncor_bs3);
 
-			low = min(param, low);
-			high = max(param, high);
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat d0 = (amod0 - r) + (param * bs0);
-			vfloat d1 = (amod1 - g) + (param * bs1);
-			vfloat d2 = (amod2 - b) + (param * bs2);
-			vfloat d3 = (amod3 - a) + (param * bs3);
+			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - g)
+			                   + (uncor_param * l_uncor_bs1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - b)
+			                   + (uncor_param * l_uncor_bs2);
+			vfloat uncor_dist3 = (l_uncor_amod3 - a)
+			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat error = (ew_r * d0 * d0) + (ew_g * d1 * d1)
-			             + (ew_b * d2 * d2) + (ew_a * d3 * d3);
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist1 * uncor_dist1)
+			                 + (ew_b * uncor_dist2 * uncor_dist2)
+			                 + (ew_a * uncor_dist3 * uncor_dist3);
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
-			uncor_sum += select(zero, error, active);
+			uncor_errorsumv += select(zero, uncor_err, active);
 
-			param = (r * samec0) + (g * samec1) + (b * samec2) + (a * samec3);
+			vfloat samec_param = (r * l_samec_bs0)
+			                   + (g * l_samec_bs1)
+			                   + (b * l_samec_bs2)
+			                   + (a * l_samec_bs3);
 
-			d0 = param * samec0 - r;
-			d1 = param * samec1 - g;
-			d2 = param * samec2 - b;
-			d3 = param * samec3 - a;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - b;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - a;
 
-			error = (ew_r * d0 * d0) + (ew_g * d1 * d1)
-			      + (ew_b * d2 * d2) + (ew_a * d3 * d3);
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2)
+			                 + (ew_a * samec_dist3 * samec_dist3);
 
-			samec_sum += select(zero, error, active);
+			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
-		vfloat length = max(max_quads(high) - min_quads(low), 1e-7f);
+		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
 		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
 
-		vfloat uncor_vector = bs * length;
+		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
 
-		vfloat samec_vector = samec_bs * length;
+		vfloat samec_vector = l_samec_bs * uncor_linelen;
 		samec_quant[p] = sum_quads((samec_vector * samec_vector) * error_weights);
 	}
 
 	// Reduce each candidate's texel sums as (s0 + s2) + (s1 + s3), matching hadd_s(vfloat4)
 	// Then add quantization errors in the original partition order
-	uncor_sum = sum_quads(uncor_sum);
-	samec_sum = sum_quads(samec_sum);
+	uncor_errorsumv = sum_quads(uncor_errorsumv);
+	samec_errorsumv = sum_quads(samec_errorsumv);
 	for (unsigned int p = 0; p < partition_count; p++)
 	{
-		uncor_sum += uncor_quant[p];
-		samec_sum += samec_quant[p];
+		uncor_errorsumv += uncor_quant[p];
+		samec_errorsumv += samec_quant[p];
 	}
 
-	store_lane0_quads(uncor_sum, uncor_errors);
-	store_lane0_quads(samec_sum, samec_errors);
+	store_lane0_quads(uncor_errorsumv, uncor_errors);
+	store_lane0_quads(samec_errorsumv, samec_errors);
 }
 
 #endif

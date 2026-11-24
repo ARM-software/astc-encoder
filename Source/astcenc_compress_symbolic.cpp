@@ -1720,8 +1720,7 @@ void compress_block(
 	}
 #endif
 
-	block_skip_two_plane = block_skip_two_plane ||
-	                       (lowest_correl >= ctx.config.tune_2plane_early_out_limit_correlation);
+	block_skip_two_plane |= lowest_correl >= ctx.config.tune_2plane_early_out_limit_correlation;
 
 	if (!block_skip_two_plane)
 	{
