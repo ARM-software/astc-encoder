@@ -27,15 +27,15 @@
 /**
  * @brief Compute the integer linear interpolation of two color endpoints.
  *
- * @param u8_mask   The mask for lanes using decode_unorm8 rather than decode_f16.
- * @param color0    The endpoint0 color.
- * @param color1    The endpoint1 color.
- * @param weights   The interpolation weight (between 0 and 64).
+ * @param u8_control   The control from prepare_unorm8_rounding().
+ * @param color0       The endpoint0 color.
+ * @param color1       The endpoint1 color.
+ * @param weights      The interpolation weight (between 0 and 64).
  *
  * @return The interpolated color.
  */
 static vint4 lerp_color_int(
-	vmask4 u8_mask,
+	vint4 u8_control,
 	vint4 color0,
 	vint4 color1,
 	vint4 weights
@@ -45,10 +45,7 @@ static vint4 lerp_color_int(
 
 	// For decode_unorm8 values force the codec to bit replicate. This allows the rest of the codec
 	// to assume the full 0xFFFF range for everything and ignore the decode_mode setting
-	vint4 color_u8 = asr<8>(color) * vint4(257);
-	color = select(color, color_u8, u8_mask);
-
-	return color;
+	return apply_unorm8_rounding(color, u8_control);
 }
 
 /**
@@ -231,10 +228,10 @@ bool decompress_symbolic_block(
 
 			// Determine the UNORM8 rounding on the decode
 			vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
+			vint4 u8_control = prepare_unorm8_rounding(u8_mask);
 
 			// Real decoder uses top 8 bits, but rescale into 16-bits that rounds correctly
-			vint4 colori_u8 = asr<8>(colori) * 257;
-			colori = select(colori, colori_u8, u8_mask);
+			colori = apply_unorm8_rounding(colori, u8_control);
 
 			vint4 colorf16 = unorm16_to_sf16(colori);
 			color = float16_to_float(colorf16);
@@ -292,6 +289,7 @@ bool decompress_symbolic_block(
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
 	vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
+	vint4 u8_control = prepare_unorm8_rounding(u8_mask);
 	bool is_valid = true;
 
 	for (int i = 0; i < partition_count; i++)
@@ -316,7 +314,7 @@ bool decompress_symbolic_block(
 		{
 			int tix = pi.texels_of_partition[i][j];
 			vint4 weight = select(vint4(plane1_weights[tix]), vint4(plane2_weights[tix]), plane2_mask);
-			vint4 color = lerp_color_int(u8_mask, ep0, ep1, weight);
+			vint4 color = lerp_color_int(u8_control, ep0, ep1, weight);
 			vfloat4 colorf = decode_texel(color, lns_mask);
 
 			blk.data_r[tix] = colorf.lane<0>();
@@ -375,13 +373,14 @@ float compute_symbolic_block_difference_2plane(
 	                       ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+	vint4 u8_control = prepare_unorm8_rounding(u8_mask);
 
 	// Unpack and compute error for each texel in the partition
 	unsigned int texel_count = bsd.texel_count;
 	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		vint4 weight = select(vint4(plane1_weights[i]), vint4(plane2_weights[i]), plane2_mask);
-		vint4 colori = lerp_color_int(u8_mask, ep0, ep1, weight);
+		vint4 colori = lerp_color_int(u8_control, ep0, ep1, weight);
 
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk.texel(i);
@@ -459,6 +458,7 @@ float compute_symbolic_block_difference_1plane(
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+	vint4 u8_control = prepare_unorm8_rounding(u8_mask);
 
 	vfloat4 summa = vfloat4::zero();
 	for (unsigned int i = 0; i < partition_count; i++)
@@ -480,7 +480,7 @@ float compute_symbolic_block_difference_1plane(
 		for (unsigned int j = 0; j < texel_count; j++)
 		{
 			unsigned int tix = pi.texels_of_partition[i][j];
-			vint4 colori = lerp_color_int(u8_mask, ep0, ep1, vint4(plane1_weights[tix]));
+			vint4 colori = lerp_color_int(u8_control, ep0, ep1, vint4(plane1_weights[tix]));
 
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
@@ -563,6 +563,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	                       rgb_lns, a_lns, ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+	vint u8_control = broadcast_quad(prepare_unorm8_rounding(all(u8_mask)));
 
 	// Unpack and compute error for each texel in the partition
 	vint4 ep_delta = ep1 - ep0;
@@ -589,17 +590,10 @@ float compute_symbolic_block_difference_1plane_1partition(
 		vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
 
 		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
-		vint colori_r8 = asr<8>(colori_r) * vint(257);
-		colori_r = select(colori_r, colori_r8, vmask(u8_mask.lane<0>()));
-
-		vint colori_g8 = asr<8>(colori_g) * vint(257);
-		colori_g = select(colori_g, colori_g8, vmask(u8_mask.lane<1>()));
-
-		vint colori_b8 = asr<8>(colori_b) * vint(257);
-		colori_b = select(colori_b, colori_b8, vmask(u8_mask.lane<2>()));
-
-		vint colori_a8 = asr<8>(colori_a) * vint(257);
-		colori_a = select(colori_a, colori_a8, vmask(u8_mask.lane<3>()));
+		colori_r = apply_unorm8_rounding(colori_r, u8_control);
+		colori_g = apply_unorm8_rounding(colori_g, u8_control);
+		colori_b = apply_unorm8_rounding(colori_b, u8_control);
+		colori_a = apply_unorm8_rounding(colori_a, u8_control);
 
 		// Compute color diff
 		vfloat error_r = loada(blk.data_r + i) - int_to_float(colori_r);
@@ -666,6 +660,7 @@ static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+	vint u8_control = broadcast_quad(prepare_unorm8_rounding(all(u8_mask)));
 
 	// Unpack and compute error for each texel in the partition
 	vint4 ep_delta = ep1 - ep0;
@@ -691,14 +686,9 @@ static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
 
 		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
-		vint colori_r8 = asr<8>(colori_r) * vint(257);
-		colori_r = select(colori_r, colori_r8, vmask(u8_mask.lane<0>()));
-
-		vint colori_g8 = asr<8>(colori_g) * vint(257);
-		colori_g = select(colori_g, colori_g8, vmask(u8_mask.lane<1>()));
-
-		vint colori_b8 = asr<8>(colori_b) * vint(257);
-		colori_b = select(colori_b, colori_b8, vmask(u8_mask.lane<2>()));
+		colori_r = apply_unorm8_rounding(colori_r, u8_control);
+		colori_g = apply_unorm8_rounding(colori_g, u8_control);
+		colori_b = apply_unorm8_rounding(colori_b, u8_control);
 
 		// Compute color diff
 		vfloat error_r = loada(blk.data_r + i) - int_to_float(colori_r);
@@ -718,8 +708,7 @@ static float compute_symbolic_block_difference_1plane_1partition_weighted_impl(
 		if constexpr (!is_rgb)
 		{
 			vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
-			vint colori_a8 = asr<8>(colori_a) * vint(257);
-			colori_a = select(colori_a, colori_a8, vmask(u8_mask.lane<3>()));
+			colori_a = apply_unorm8_rounding(colori_a, u8_control);
 
 			vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
 			error_a = error_a * error_a;

@@ -145,6 +145,33 @@ ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
 }
 
 /**
+ * @brief Prepare a control vector for optional UNORM8 rounding.
+ *
+ * @param is_unorm8   The mask of lanes to round to UNORM8.
+ *
+ * @return The rounding control, to be replicated into every quad when using wider vectors.
+ */
+ASTCENC_SIMD_INLINE vint4 prepare_unorm8_rounding(vmask4 is_unorm8)
+{
+	// UNORM16 occupies the low two bytes of each lane. Copy byte 1 into byte 0 for UNORM8,
+	// preserving byte 1 and the zero upper bytes; otherwise retain the identity permutation.
+	vint4 control(0x03020100, 0x07060504, 0x0B0A0908, 0x0F0E0D0C);
+	return control + select(vint4::zero(), vint4(1), is_unorm8);
+}
+
+/**
+ * @brief Prepare a control vector for optional UNORM8 rounding of every lane.
+ *
+ * @param is_unorm8   True to round to UNORM8; false to preserve UNORM16 values.
+ *
+ * @return The rounding control, to be replicated into every quad when using wider vectors.
+ */
+ASTCENC_SIMD_INLINE vint4 prepare_unorm8_rounding(bool is_unorm8)
+{
+	return prepare_unorm8_rounding(vmask4(is_unorm8));
+}
+
+/**
  * @brief Return the clamped value between min and max.
  *
  * @param minv   The inclusive lower bound.

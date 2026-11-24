@@ -846,6 +846,21 @@ ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 	return vint4(vbslq_s32(cond.m, b.m, a.m));
 }
 
+/**
+ * @brief Apply optional UNORM8 rounding to UNORM16 color lanes.
+ *
+ * @param a         The color values, in [0, 65535].
+ * @param control   The control from prepare_unorm8_rounding().
+ *
+ * @return The colors rounded to UNORM8 and rescaled to UNORM16, or unchanged.
+ */
+ASTCENC_SIMD_INLINE vint4 apply_unorm8_rounding(vint4 a, vint4 control)
+{
+	uint8x16_t bytes = vreinterpretq_u8_s32(a.m);
+	uint8x16_t indices = vreinterpretq_u8_s32(control.m);
+	return vint4(vreinterpretq_s32_u8(vqtbl1q_u8(bytes, indices)));
+}
+
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================

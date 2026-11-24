@@ -708,24 +708,6 @@ static inline uint32_t xorshift32(uint32_t& state)
 }
 
 /**
- * @brief Applies UNORM8-style rounding to 16-bit integer values.
- *
- * @param[in] colori    The input color values in [0, 65535].
- * @param[in] u8_mask   The mask of channels requiring UNORM8 rounding.
- *
- * @return The rounded color values in [0, 65535].
- */
-static inline vint4 apply_u8_rounding(
-	vint4 colori,
-	vmask4 u8_mask
-) {
-	// The real decoder would just use the top 8 bits, but we rescale
-	// into a 16-bit value that rounds correctly.
-	vint4 colori_u8 = asr<8>(colori) * 257;
-	return select(colori, colori_u8, u8_mask);
-}
-
-/**
  * @brief Decode symbolic ASTC block to internal value range.
  *
  * We want to do our error measurement the way the encoder does, which is to say, in
@@ -758,6 +740,8 @@ static void decompress_symbolic_block_raw(
 		u8_mask = vmask4(true, true, true, false);
 	}
 
+	vint4 u8_control = prepare_unorm8_rounding(u8_mask);
+
 	if (scb.block_type != SYM_BTYPE_NONCONST)
 	{
 		// Error and constant blocks output the same value for every texel
@@ -769,7 +753,7 @@ static void decompress_symbolic_block_raw(
 		{
 			vint4 colori(scb.constant_color);
 
-			colori = apply_u8_rounding(colori, u8_mask);
+			colori = apply_unorm8_rounding(colori, u8_control);
 			color = int_to_float(colori);
 		}
 
@@ -820,7 +804,7 @@ static void decompress_symbolic_block_raw(
 		{
 			vint ep0_biasv = broadcast_quad(lsl<6>(ep0) + vint4(32));
 			vint ep_deltav = broadcast_quad(ep1 - ep0);
-			vmask u8_maskv = broadcast_quad(u8_mask);
+			vint u8_controlv = broadcast_quad(u8_control);
 
 			vint lane_id = vint::lane_id();
 			vint float_count(bsd.texel_count * 4);
@@ -829,8 +813,7 @@ static void decompress_symbolic_block_raw(
 			{
 				vint weight = load1_quads(plane1_weights + j);
 				vint colori = asr<6>(ep0_biasv + ep_deltav * weight);
-				vint colori_u8 = asr<8>(colori) * vint(257);
-				colori = select(colori, colori_u8, u8_maskv);
+				colori = apply_unorm8_rounding(colori, u8_controlv);
 
 				// Keep cache padding zero for the full-width error calculation
 				vmask mask = lane_id < float_count;
@@ -851,7 +834,7 @@ static void decompress_symbolic_block_raw(
 
 			// Interpolate the color
 			vint4 colori = ep0 + asr<6>(diff * weight + vint4(32));
-			colori = apply_u8_rounding(colori, u8_mask);
+			colori = apply_unorm8_rounding(colori, u8_control);
 
 			store(int_to_float(colori), out_rgba + tix * 4);
 		}

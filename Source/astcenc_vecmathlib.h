@@ -274,6 +274,24 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 #endif
 
+/**
+ * @brief Apply optional UNORM8 rounding to UNORM16 color lanes.
+ *
+ * @tparam T   The integer vector type.
+ *
+ * @param a         The color values, in [0, 65535].
+ * @param control   The replicated control from prepare_unorm8_rounding().
+ *
+ * @return The colors rounded to UNORM8 and rescaled to UNORM16, or unchanged.
+ */
+template<typename T>
+ASTCENC_SIMD_INLINE T apply_unorm8_rounding(T a, T control)
+{
+	// The low bit of each control lane distinguishes replication from the identity permutation
+	auto is_unorm8 = (control & T(1)) != T::zero();
+	return select(a, asr<8>(a) * T(257), is_unorm8);
+}
+
 /** @brief The number of four-lane quads in a SIMD vector. */
 #define ASTCENC_SIMD_BATCH_WIDTH (ASTCENC_SIMD_WIDTH / 4u)
 
