@@ -137,7 +137,8 @@ static void compute_angular_offsets(
 			anglesum_y += loada(sin_table[isample] + i);
 		}
 
-		vfloat angle = atan2(anglesum_y, anglesum_x);
+		// Sums are bounded by BLOCK_MAX_WEIGHTS, so the rational form cannot overflow
+		vfloat angle = atan2_bounded(anglesum_y, anglesum_x);
 
 		// Suppress NaNs generated if anglesums are both zero
 		angle = select(vfloat::zero(), angle, angle == angle);
