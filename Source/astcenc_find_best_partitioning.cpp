@@ -187,8 +187,10 @@ static void kmeans_assign(
 			vfloat distance_a = diff_a * diff_a * weight_a;
 
 			// Match the dot product reduction order and keep the first cluster on ties
-			vfloat distance = (distance_r + distance_b) + (distance_g + distance_a);
+			vfloat distance = (distance_r + distance_b)
+			                + (distance_g + distance_a);
 			vmask closer = distance < best_distance;
+
 			best_distance = select(best_distance, distance, closer);
 			best_partition = select(best_partition, vint(j), closer);
 		}
@@ -518,7 +520,9 @@ static unsigned int compute_kmeans_partition_ordering(
 	return get_partition_ordering_by_mismatch_bits(
 	    texels_to_process,
 	    bsd.partitioning_count_selected[partition_count - 1],
-	    mismatch_counts, bsd.partitioning_search_indices[partition_count - 2], partition_ordering);
+	    mismatch_counts,
+	    bsd.partitioning_search_indices[partition_count - 2],
+	    partition_ordering);
 }
 
 /**
