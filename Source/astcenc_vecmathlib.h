@@ -683,6 +683,31 @@ ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 }
 
 /**
+ * @brief Return approximate vector atan2(y, x) for bounded inputs using one division.
+ *
+ * Uses the same rational approximation as atan(), with a maximum error of about 0.0049 radians.
+ * Inputs must be finite and avoid overflow or underflow in the quadratic terms. Both inputs being
+ * zero produces NaN, which the caller must handle if needed.
+ *
+ * @param y   The y coordinates.
+ * @param x   The x coordinates.
+ *
+ * @return The approximate angles in radians.
+ */
+ASTCENC_SIMD_INLINE vfloat atan2_bounded(vfloat y, vfloat x)
+{
+	// atan(t) ~= t / (1 + (0.28 * t * t)), where t = small / large
+	vfloat ax = abs(x);
+	vfloat ay = abs(y);
+	vfloat small = min(ax, ay);
+	vfloat large = max(ax, ay);
+	vfloat angle = (small * large) / (large * large + vfloat(0.28f) * small * small);
+	angle = select(angle, vfloat(astc::PI_OVER_TWO) - angle, ay > ax);
+	angle = select(angle, vfloat(astc::PI) - angle, x < vfloat::zero());
+	return change_sign(angle, y);
+}
+
+/**
  * @brief Factory that returns a unit length 4 component vfloat4.
  */
 static ASTCENC_SIMD_INLINE vfloat4 unit4()
