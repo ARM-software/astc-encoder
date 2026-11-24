@@ -1634,7 +1634,7 @@ void compute_partition_errors_luminance_alpha_batch(
 	float* samec_errors);
 
 /**
- * @brief Estimate partition errors while retaining candidate data in wide vectors.
+ * @brief Estimate partition errors for RGB data in candidate quads.
  *
  * All candidates have the same partition count.
  *
@@ -1702,13 +1702,14 @@ void compute_error_squared_rgba(
  *
  * The block must have identical RGB components. The RGB components of each
  * line's @c bs and @c amod coefficients must also be identical. Same chroma
- * @c amod must be zero. Channel weights may differ and are applied separately.
+ * @c amod must be zero. Channel weights may differ; identical RGB residuals
+ * use the sum of the RGB weights.
  *
  * @param      pi             The partition info for the current trial.
  * @param      blk            The grayscale image block color data.
  * @param      uncor_plines   Processed uncorrelated partition lines.
  * @param      samec_plines   Processed same chroma partition lines.
- * @param[out] line_lengths   The length of each partition's projection.
+ * @param[out] line_lengths   The length of each partition's uncorrelated projection.
  * @param[out] uncor_error    The cumulative uncorrelated line error.
  * @param[out] samec_error    The cumulative same chroma line error.
  */

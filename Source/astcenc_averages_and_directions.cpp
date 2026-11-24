@@ -1012,8 +1012,8 @@ void compute_error_squared_rgba(
 		vfloat ew_b(blk.channel_weight.lane<2>());
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
-		// Padded texel indexes repeat the last value, preserving min/max. Mask padded lanes when
-		// computing line weights.
+		// Padded texel indices repeat the last value, preserving min/max
+		// Mask padded lanes when accumulating errors
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1025,10 +1025,10 @@ void compute_error_squared_rgba(
 			vfloat data_b = gatherf(tb, texel_idxs);
 			vfloat data_a = gatherf(ta, texel_idxs);
 
-			vfloat uncor_param = (data_r * l_uncor_bs0)
-			                   + (data_g * l_uncor_bs1)
-			                   + (data_b * l_uncor_bs2)
-			                   + (data_a * l_uncor_bs3);
+			vfloat uncor_param = ((data_r * l_uncor_bs0)
+			                   +  (data_g * l_uncor_bs1))
+			                   + ((data_b * l_uncor_bs2)
+			                   +  (data_a * l_uncor_bs3));
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
@@ -1042,35 +1042,35 @@ void compute_error_squared_rgba(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
-			                 + ((uncor_dist1 * uncor_dist1) * ew_g)
-			                 + ((uncor_dist2 * uncor_dist2) * ew_b)
-			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
+			vfloat uncor_err = (((uncor_dist0 * uncor_dist0) * ew_r)
+			                 +  ((uncor_dist1 * uncor_dist1) * ew_g))
+			                 + (((uncor_dist2 * uncor_dist2) * ew_b)
+			                 +  ((uncor_dist3 * uncor_dist3) * ew_a));
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
 
-			// Process samechroma data
-			vfloat samec_param = (data_r * l_samec_bs0)
-			                   + (data_g * l_samec_bs1)
-			                   + (data_b * l_samec_bs2)
-			                   + (data_a * l_samec_bs3);
+			// The same chroma line passes through the origin
+			vfloat samec_param = ((data_r * l_samec_bs0)
+			                   +  (data_g * l_samec_bs1))
+			                   + ((data_b * l_samec_bs2)
+			                   +  (data_a * l_samec_bs3));
 
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
 			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
-			                 + ((samec_dist1 * samec_dist1) * ew_g)
-			                 + ((samec_dist2 * samec_dist2) * ew_b)
-			                 + ((samec_dist3 * samec_dist3) * ew_a);
+			vfloat samec_err = (((samec_dist0 * samec_dist0) * ew_r)
+			                 +  ((samec_dist1 * samec_dist1) * ew_g))
+			                 + (((samec_dist2 * samec_dist2) * ew_b)
+			                 +  ((samec_dist3 * samec_dist3) * ew_a));
 
 			haccumulate(samec_errorsumv, samec_err, mask);
 
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
-		// Turn very small numbers and NaNs into a small number
+		// Clamp degenerate projection lengths, including NaNs, to a small positive value
 		float uncor_linelen = hmax_s(uncor_hiparamv) - hmin_s(uncor_loparamv);
 		line_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
 	}
@@ -1130,8 +1130,8 @@ void compute_error_squared_rgba_grayscale(
 		vfloat ew_rgb(hadd_rgb_s(blk.channel_weight));
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
-		// Padded texel indexes repeat the last value, preserving min/max. Mask these lanes when
-		// accumulating errors.
+		// Padded texel indices repeat the last value, preserving min/max
+		// Mask padded lanes when accumulating errors.
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1167,9 +1167,11 @@ void compute_error_squared_rgba_grayscale(
 			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
+
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
+		// Clamp degenerate projection lengths, including NaNs, to a small positive value
 		float uncor_linelen = hmax_s(uncor_hiparamv) - hmin_s(uncor_loparamv);
 		line_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
 	}
@@ -1228,8 +1230,8 @@ void compute_error_squared_rgb(
 		vfloat ew_g(blk.channel_weight.lane<1>());
 		vfloat ew_b(blk.channel_weight.lane<2>());
 
-		// Padded weights repeat the last value, preserving min/max. Mask padded lanes when
-		// computing line weights.
+		// Padded texel indices repeat the last value, preserving min/max
+		// Mask padded lanes when accumulating errors
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1260,7 +1262,7 @@ void compute_error_squared_rgb(
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
 
-			// Process samechroma data
+			// The same chroma line passes through the origin
 			vfloat samec_param = (data_r * l_samec_bs0)
 			                   + (data_g * l_samec_bs1)
 			                   + (data_b * l_samec_bs2);
@@ -1278,7 +1280,7 @@ void compute_error_squared_rgb(
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
-		// Turn very small numbers and NaNs into a small number
+		// Clamp degenerate projection lengths, including NaNs, to a small positive value
 		float uncor_linelen = hmax_s(uncor_hiparamv) - hmin_s(uncor_loparamv);
 		pl.line_length = astc::max(uncor_linelen, 1e-7f);
 	}
@@ -1336,9 +1338,9 @@ void compute_partition_errors_luminance_batch(
 				indices[c] = vint4(candidates[c]->texels_of_partition[p] + i);
 			}
 
-			vfloat r = gatherf(tr, pack_quads(indices));
-			low = min(r, low);
-			high = max(r, high);
+			vfloat data_r = gatherf(tr, pack_quads(indices));
+			low = min(data_r, low);
+			high = max(data_r, high);
 		}
 
 		// Keep the channel weights separate and retain the RGB addition order
@@ -1369,8 +1371,8 @@ void compute_partition_errors_luminance_alpha_batch(
 	// Apply the RGB batch strategy to luminance with alpha. Direction finding uses
 	// RRRA lanes per candidate, while error scoring uses four texels per candidate quad.
 	//
-	// Identical RGB residuals use the sum of their channel weights. Keep the four running
-	// error sums and partition order for quantization errors independent of SIMD width
+	// Identical RGB residuals use the sum of their channel weights. Accumulation and reduction
+	// follow the RGB batch strategy to preserve SIMD invariance.
 
 	assert(blk.grayscale);
 
@@ -1388,7 +1390,7 @@ void compute_partition_errors_luminance_alpha_batch(
 	vfloat channel_weight = broadcast_quad(blk.channel_weight);
 	vfloat zero = vfloat::zero();
 
-	// Preserve four running texel-error sums per candidate across partition boundaries
+	// Preserve four texel-error sums per candidate and model across partition boundaries
 	vfloat uncor_errorsumv = zero;
 	vfloat samec_errorsumv = zero;
 
@@ -1428,11 +1430,11 @@ void compute_partition_errors_luminance_alpha_batch(
 			for (unsigned int c = 0; c < ASTCENC_SIMD_BATCH_WIDTH; c++)
 			{
 				unsigned int texel = candidates[c]->texels_of_partition[p][i];
-				float r = blk.data_r[texel];
-				colors[c] = vfloat4(r, r, r, blk.data_a[texel]);
+				float data_r = blk.data_r[texel];
+				colors[c] = vfloat4(data_r, data_r, data_r, blk.data_a[texel]);
 			}
 
-			// Preserve texel order and mask exhausted candidates without rebuilding RGB vectors
+			// Mask exhausted candidates while retaining each candidate's texel order
 			vfloat datum = select(zero, pack_quads(colors) - mean, index < countv);
 			index += vfloat(1.0f);
 
@@ -1442,13 +1444,13 @@ void compute_partition_errors_luminance_alpha_batch(
 
 		// Select the dominant direction independently for each candidate
 		vfloat prod_xp = dot_quads(sum_xp, sum_xp);
-		vfloat best = sum_xp;
+		vfloat best_vector = sum_xp;
 
 		vfloat prod_wp = dot_quads(sum_wp, sum_wp);
-		best = select(best, sum_wp, prod_wp > prod_xp);
+		best_vector = select(best_vector, sum_wp, prod_wp > prod_xp);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_uncor_bs = normalize_safe_quads(best_vector, safe);
 		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
 		vfloat l_uncor_amod = mean - l_uncor_bs * dot_quads(mean, l_uncor_bs);
 
@@ -1482,28 +1484,30 @@ void compute_partition_errors_luminance_alpha_batch(
 			vmask active = lane_ids < countv;
 			lane_ids += vfloat(4.0f);
 
-			vfloat r = gatherf(tr, texels);
-			vfloat a = gatherf(ta, texels);
+			vfloat data_r = gatherf(tr, texels);
+			vfloat data_a = gatherf(ta, texels);
 
 			// Identical RGB components share one projection coefficient
-			vfloat uncor_param = (r * l_uncor_bs_rgb) + (a * l_uncor_bs3);
+			vfloat uncor_param = (data_r * l_uncor_bs_rgb) + (data_a * l_uncor_bs3);
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
 			                   + (uncor_param * l_uncor_bs0);
-			vfloat uncor_dist3 = (l_uncor_amod3 - a)
+			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
+
 			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_rgb)
 			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
 			uncor_errorsumv += select(zero, uncor_err, active);
 
-			vfloat samec_param = (r * l_samec_bs_rgb) + (a * l_samec_bs3);
+			vfloat samec_param = (data_r * l_samec_bs_rgb) + (data_a * l_samec_bs3);
 
-			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
-			vfloat samec_dist3 = samec_param * l_samec_bs3 - a;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
+
 			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_rgb)
 			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
@@ -1516,6 +1520,7 @@ void compute_partition_errors_luminance_alpha_batch(
 
 		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		vfloat samec_vector = l_samec_bs * uncor_linelen;
+
 		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
 		samec_quant[p] = sum_quads((samec_vector * samec_vector) * error_weights);
 	}
@@ -1566,7 +1571,7 @@ void compute_partition_errors_rgb_batch(
 	//
 	// Preserve floating-point invariance by keeping each candidate's arithmetic order unchanged.
 	// Partition averages still use the original helper, and direction sums retain texel order.
-	// During error scoring, each candidate has four running sums, matching the original
+	// During error scoring, each candidate has four running sums per model, matching the original
 	// four-lane accumulator. Successive texel quads update these sums lane-wise in partition
 	// order. The sums persist across partition boundaries and are reduced only after all
 	// partitions, using (s0 + s2) + (s1 + s3), matching the original hadd_s() reduction. Weight
@@ -1586,7 +1591,7 @@ void compute_partition_errors_rgb_batch(
 	vfloat channel_weight = broadcast_quad(blk.channel_weight);
 	vfloat zero = vfloat::zero();
 
-	// Preserve four running texel-error sums per candidate across partition boundaries
+	// Preserve four texel-error sums per candidate and model across partition boundaries
 	vfloat uncor_errorsumv = zero;
 	vfloat samec_errorsumv = zero;
 
@@ -1633,7 +1638,7 @@ void compute_partition_errors_rgb_batch(
 				colors[c] = blk.texel3(texel);
 			}
 
-			// Preserve texel order and mask exhausted candidates without rebuilding RGB vectors
+			// Mask exhausted candidates while retaining each candidate's texel order
 			vfloat datum = select(zero, pack_quads(colors) - mean, index < countv);
 			index += vfloat(1.0f);
 
@@ -1647,18 +1652,18 @@ void compute_partition_errors_rgb_batch(
 		vfloat prod_yp = dot_quads(sum_yp, sum_yp);
 		vfloat prod_zp = dot_quads(sum_zp, sum_zp);
 
-		vfloat best = sum_xp;
+		vfloat best_vector = sum_xp;
 		vfloat best_sum = prod_xp;
 
 		vmask mask = prod_yp > best_sum;
-		best = select(best, sum_yp, mask);
+		best_vector = select(best_vector, sum_yp, mask);
 		best_sum = select(best_sum, prod_yp, mask);
 
 		mask = prod_zp > best_sum;
-		best = select(best, sum_zp, mask);
+		best_vector = select(best_vector, sum_zp, mask);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_uncor_bs = normalize_safe_quads(best_vector, safe);
 		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
 		vfloat l_uncor_amod = mean - l_uncor_bs * sum_rgb_quads(mean * l_uncor_bs);
 
@@ -1694,42 +1699,42 @@ void compute_partition_errors_rgb_batch(
 			vmask active = lane_ids < countv;
 			lane_ids += vfloat(4.0f);
 
-			vfloat r = gatherf(tr, texels);
-			vfloat g = gatherf(tg, texels);
-			vfloat b = gatherf(tb, texels);
+			vfloat data_r = gatherf(tr, texels);
+			vfloat data_g = gatherf(tg, texels);
+			vfloat data_b = gatherf(tb, texels);
 
-			vfloat uncor_param = (r * l_uncor_bs0)
-			                   + (g * l_uncor_bs1)
-			                   + (b * l_uncor_bs2);
+			vfloat uncor_param = (data_r * l_uncor_bs0)
+			                   + (data_g * l_uncor_bs1)
+			                   + (data_b * l_uncor_bs2);
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
 			                   + (uncor_param * l_uncor_bs0);
-			vfloat uncor_dist1 = (l_uncor_amod1 - g)
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
 			                   + (uncor_param * l_uncor_bs1);
-			vfloat uncor_dist2 = (l_uncor_amod2 - b)
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
 			                   + (uncor_param * l_uncor_bs2);
 
-			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
-			                 + (ew_g * uncor_dist1 * uncor_dist1)
-			                 + (ew_b * uncor_dist2 * uncor_dist2);
+			vfloat uncor_err = (uncor_dist0 * uncor_dist0 * ew_r)
+			                 + (uncor_dist1 * uncor_dist1 * ew_g)
+			                 + (uncor_dist2 * uncor_dist2 * ew_b);
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
 			uncor_errorsumv += select(zero, uncor_err, active);
 
-			vfloat samec_param = (r * l_samec_bs0)
-			                   + (g * l_samec_bs1)
-			                   + (b * l_samec_bs2);
+			vfloat samec_param = (data_r * l_samec_bs0)
+			                   + (data_g * l_samec_bs1)
+			                   + (data_b * l_samec_bs2);
 
-			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
-			vfloat samec_dist1 = samec_param * l_samec_bs1 - g;
-			vfloat samec_dist2 = samec_param * l_samec_bs2 - b;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 
-			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                 + (ew_g * samec_dist1 * samec_dist1)
-			                 + (ew_b * samec_dist2 * samec_dist2);
+			vfloat samec_err = (samec_dist0 * samec_dist0 * ew_r)
+			                 + (samec_dist1 * samec_dist1 * ew_g)
+			                 + (samec_dist2 * samec_dist2 * ew_b);
 
 			samec_errorsumv += select(zero, samec_err, active);
 		}
@@ -1770,8 +1775,8 @@ void compute_partition_errors_rgba_batch(
 	// Apply the RGB batch strategy above to general RGBA data. Direction finding uses
 	// RGBA lanes per candidate, while error scoring uses four texels per candidate quad.
 	//
-	// Preserve the original partition averages, texel order for direction sums, four running
-	// error sums, and partition order for quantization errors to preserve floating-point invariance
+	// Preserve partition averages, texel order for direction sums, four texel-error sums per
+	// candidate and model, and partition order for quantization errors to retain SIMD invariance
 
 	unsigned int partition_count = candidates[0]->partition_count;
 
@@ -1787,7 +1792,7 @@ void compute_partition_errors_rgba_batch(
 	vfloat channel_weight = broadcast_quad(blk.channel_weight);
 	vfloat zero = vfloat::zero();
 
-	// Preserve four running texel-error sums per candidate across partition boundaries
+	// Preserve four texel-error sums per candidate and model across partition boundaries
 	vfloat uncor_errorsumv = zero;
 	vfloat samec_errorsumv = zero;
 
@@ -1837,7 +1842,7 @@ void compute_partition_errors_rgba_batch(
 				colors[c] = blk.texel(texel);
 			}
 
-			// Preserve texel order and mask exhausted candidates without rebuilding RGBA vectors
+			// Mask exhausted candidates while retaining each candidate's texel order
 			vfloat datum = select(zero, pack_quads(colors) - mean, index < countv);
 			index += vfloat(1.0f);
 
@@ -1853,22 +1858,22 @@ void compute_partition_errors_rgba_batch(
 		vfloat prod_zp = dot_quads(sum_zp, sum_zp);
 		vfloat prod_wp = dot_quads(sum_wp, sum_wp);
 
-		vfloat best = sum_xp;
+		vfloat best_vector = sum_xp;
 		vfloat best_sum = prod_xp;
 
 		vmask mask = prod_yp > best_sum;
-		best = select(best, sum_yp, mask);
+		best_vector = select(best_vector, sum_yp, mask);
 		best_sum = select(best_sum, prod_yp, mask);
 
 		mask = prod_zp > best_sum;
-		best = select(best, sum_zp, mask);
+		best_vector = select(best_vector, sum_zp, mask);
 		best_sum = select(best_sum, prod_zp, mask);
 
 		mask = prod_wp > best_sum;
-		best = select(best, sum_wp, mask);
+		best_vector = select(best_vector, sum_wp, mask);
 
 		// Keep direction selection, normalization, and line setup in the same candidate groups
-		vfloat l_uncor_bs = normalize_safe_quads(best, safe);
+		vfloat l_uncor_bs = normalize_safe_quads(best_vector, safe);
 		vfloat l_samec_bs = normalize_safe_quads(mean, safe);
 		vfloat l_uncor_amod = mean - l_uncor_bs * dot_quads(mean, l_uncor_bs);
 
@@ -1907,50 +1912,50 @@ void compute_partition_errors_rgba_batch(
 			vmask active = lane_ids < countv;
 			lane_ids += vfloat(4.0f);
 
-			vfloat r = gatherf(tr, texels);
-			vfloat g = gatherf(tg, texels);
-			vfloat b = gatherf(tb, texels);
-			vfloat a = gatherf(ta, texels);
+			vfloat data_r = gatherf(tr, texels);
+			vfloat data_g = gatherf(tg, texels);
+			vfloat data_b = gatherf(tb, texels);
+			vfloat data_a = gatherf(ta, texels);
 
-			vfloat uncor_param = (r * l_uncor_bs0)
-			                   + (g * l_uncor_bs1)
-			                   + (b * l_uncor_bs2)
-			                   + (a * l_uncor_bs3);
+			vfloat uncor_param = ((data_r * l_uncor_bs0)
+			                   +  (data_g * l_uncor_bs1))
+			                   + ((data_b * l_uncor_bs2)
+			                   +  (data_a * l_uncor_bs3));
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
-			vfloat uncor_dist0 = (l_uncor_amod0 - r)
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
 			                   + (uncor_param * l_uncor_bs0);
-			vfloat uncor_dist1 = (l_uncor_amod1 - g)
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
 			                   + (uncor_param * l_uncor_bs1);
-			vfloat uncor_dist2 = (l_uncor_amod2 - b)
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
 			                   + (uncor_param * l_uncor_bs2);
-			vfloat uncor_dist3 = (l_uncor_amod3 - a)
+			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
-			                 + (ew_g * uncor_dist1 * uncor_dist1)
-			                 + (ew_b * uncor_dist2 * uncor_dist2)
-			                 + (ew_a * uncor_dist3 * uncor_dist3);
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0 * ew_r)
+			                 +  (uncor_dist1 * uncor_dist1 * ew_g))
+			                 + ((uncor_dist2 * uncor_dist2 * ew_b)
+			                 +  (uncor_dist3 * uncor_dist3 * ew_a));
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
 			uncor_errorsumv += select(zero, uncor_err, active);
 
-			vfloat samec_param = (r * l_samec_bs0)
-			                   + (g * l_samec_bs1)
-			                   + (b * l_samec_bs2)
-			                   + (a * l_samec_bs3);
+			vfloat samec_param = ((data_r * l_samec_bs0)
+			                   +  (data_g * l_samec_bs1))
+			                   + ((data_b * l_samec_bs2)
+			                   +  (data_a * l_samec_bs3));
 
-			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
-			vfloat samec_dist1 = samec_param * l_samec_bs1 - g;
-			vfloat samec_dist2 = samec_param * l_samec_bs2 - b;
-			vfloat samec_dist3 = samec_param * l_samec_bs3 - a;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                 + (ew_g * samec_dist1 * samec_dist1)
-			                 + (ew_b * samec_dist2 * samec_dist2)
-			                 + (ew_a * samec_dist3 * samec_dist3);
+			vfloat samec_err = ((samec_dist0 * samec_dist0 * ew_r)
+			                 +  (samec_dist1 * samec_dist1 * ew_g))
+			                 + ((samec_dist2 * samec_dist2 * ew_b)
+			                 +  (samec_dist3 * samec_dist3 * ew_a));
 
 			samec_errorsumv += select(zero, samec_err, active);
 		}
