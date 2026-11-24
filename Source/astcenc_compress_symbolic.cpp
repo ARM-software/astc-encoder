@@ -471,10 +471,14 @@ static bool realign_weights_decimated(
 			if (weight_adjusted)
 			{
 				adjustments = true;
+				float weight_delta = uq_weightsf[we_idx] - uqw_base;
+
+				// Integer weights and 1/16 interpolation factors make this update exact
 				for (unsigned int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 				{
 					unsigned int texel = di.weight_texels_tr[te_idx][we_idx];
-					infilled_weights[texel] = infill_weight(di, uq_weightsf, texel);
+					float contrib = di.texel_contrib_for_weight[te_idx][we_idx];
+					infilled_weights[texel] += weight_delta * contrib;
 				}
 			}
 		}
