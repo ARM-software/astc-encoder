@@ -1620,13 +1620,11 @@ static void quantize_hdr_rgb(
 	// For negative C, retain the clamped delta encoding if it beats the direct fallback
 	if (is_delta_valid)
 	{
-		bool rgb_hdr;
-		bool alpha_hdr;
 		vint4 delta0, delta1, direct0, direct1;
 		unpack_color_endpoints(ASTCENC_PRF_HDR, FMT_HDR_RGB, delta_output,
-		                       rgb_hdr, alpha_hdr, delta0, delta1);
+		                       nullptr, nullptr, delta0, delta1);
 		unpack_color_endpoints(ASTCENC_PRF_HDR, FMT_HDR_RGB, output,
-		                       rgb_hdr, alpha_hdr, direct0, direct1);
+		                       nullptr, nullptr, direct0, direct1);
 
 		vfloat4 d0 = color0_bak - int_to_float(delta0);
 		vfloat4 d1 = color1_bak - int_to_float(delta1);

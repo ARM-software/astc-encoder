@@ -790,14 +790,12 @@ static void decompress_symbolic_block_raw(
 		// Decode the color endpoints for this partition
 		vint4 ep0;
 		vint4 ep1;
-		bool rgb_lns;
-		bool a_lns;
 
 		unpack_color_endpoints(config.profile,
-			scb.color_formats[i],
-			scb.color_values[i],
-			rgb_lns, a_lns,
-			ep0, ep1);
+		                       scb.color_formats[i],
+		                       scb.color_values[i],
+		                       nullptr, nullptr,
+		                       ep0, ep1);
 
 		// Single-partition, single-plane blocks have contiguous texels and shared endpoints
 		if ((partition_count == 1) && !is_dual_plane)
@@ -1423,10 +1421,8 @@ struct endpoint_subst_mtf
 			// Projection data depends only on the endpoints and is reused across source blocks
 			vint4 ep0;
 			vint4 ep1;
-			bool rgb_hdr;
-			bool alpha_hdr;
 			unpack_color_endpoints(profile, endpoints.color_format, endpoints.color_values,
-			                       rgb_hdr, alpha_hdr, ep0, ep1);
+			                       nullptr, nullptr, ep0, ep1);
 
 			entries[id].endpoint0 = int_to_float(ep0);
 			entries[id].endpoint1 = int_to_float(ep1);

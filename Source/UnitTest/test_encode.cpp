@@ -336,7 +336,7 @@ TEST(compress, hdr_quantization_mode_bits)
 		vint4 decoded0;
 		vint4 decoded1;
 		unpack_color_endpoints(ASTCENC_PRF_HDR_RGB_LDR_A, format, values,
-		                       is_rgb_hdr, is_alpha_hdr, decoded0, decoded1);
+		                       &is_rgb_hdr, &is_alpha_hdr, decoded0, decoded1);
 		EXPECT_TRUE(is_rgb_hdr);
 		EXPECT_FALSE(is_alpha_hdr);
 

@@ -75,14 +75,12 @@ static bool realign_weights_undecimated_1partition(
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const quant_and_transfer_table& qat = quant_and_xfer_tables[bm.quant_mode];
 
-	bool is_rgb_hdr;
-	bool is_alpha_hdr;
 	vint4 endpnt0;
 	vint4 endpnt1;
 	unpack_color_endpoints(decode_mode,
 	                       scb.color_formats[0],
 	                       scb.color_values[0],
-	                       is_rgb_hdr, is_alpha_hdr,
+	                       nullptr, nullptr,
 	                       endpnt0, endpnt1);
 
 	vfloat4 color_base = int_to_float(endpnt0);
@@ -207,8 +205,6 @@ static bool realign_weights_undecimated_multipartition(
 	const quant_and_transfer_table& qat = quant_and_xfer_tables[bm.quant_mode];
 
 	// Multipartition blocks use every endpoint component in a single plane
-	bool is_rgb_hdr;
-	bool is_alpha_hdr;
 	vfloat4 error_weight = blk.channel_weight;
 	vfloat4 endpnt0f[BLOCK_MAX_PARTITIONS];
 	vfloat4 offset[BLOCK_MAX_PARTITIONS];
@@ -220,7 +216,7 @@ static bool realign_weights_undecimated_multipartition(
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[pa_idx],
 		                       scb.color_values[pa_idx],
-		                       is_rgb_hdr, is_alpha_hdr,
+		                       nullptr, nullptr,
 		                       endpnt0, endpnt1);
 
 		endpnt0f[pa_idx] = int_to_float(endpnt0);
@@ -345,8 +341,6 @@ static bool realign_weights_decimated(
 	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
-	bool rgb_hdr;
-	bool alpha_hdr;
 	vint4 endpnt0[BLOCK_MAX_PARTITIONS];
 	vint4 endpnt1[BLOCK_MAX_PARTITIONS];
 	vfloat4 endpnt0f[BLOCK_MAX_PARTITIONS];
@@ -360,7 +354,7 @@ static bool realign_weights_decimated(
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[pa_idx],
 		                       scb.color_values[pa_idx],
-		                       rgb_hdr, alpha_hdr,
+		                       nullptr, nullptr,
 		                       endpnt0[pa_idx],
 		                       endpnt1[pa_idx]);
 	}

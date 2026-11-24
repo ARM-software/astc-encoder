@@ -303,7 +303,7 @@ bool decompress_symbolic_block(
 		bool is_partition_valid = unpack_color_endpoints(decode_mode,
 		                                                 scb.color_formats[i],
 		                                                 scb.color_values[i],
-		                                                 rgb_lns, a_lns,
+		                                                 &rgb_lns, &a_lns,
 		                                                 ep0, ep1);
 		is_valid = is_valid && is_partition_valid;
 
@@ -363,13 +363,11 @@ float compute_symbolic_block_difference_2plane(
 	// Decode the color endpoints for this partition
 	vint4 ep0;
 	vint4 ep1;
-	bool rgb_lns;
-	bool a_lns;
 
 	unpack_color_endpoints(config.profile,
 	                       scb.color_formats[0],
 	                       scb.color_values[0],
-	                       rgb_lns, a_lns,
+	                       nullptr, nullptr,
 	                       ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
@@ -466,13 +464,11 @@ float compute_symbolic_block_difference_1plane(
 		// Decode the color endpoints for this partition
 		vint4 ep0;
 		vint4 ep1;
-		bool rgb_lns;
-		bool a_lns;
 
 		unpack_color_endpoints(config.profile,
 		                       scb.color_formats[i],
 		                       scb.color_values[i],
-		                       rgb_lns, a_lns,
+		                       nullptr, nullptr,
 		                       ep0, ep1);
 
 		// Unpack and compute error for each texel in the partition
@@ -641,11 +637,9 @@ float compute_symbolic_block_difference_1plane_1partition(
 	// Decode the color endpoints for this partition
 	vint4 ep0;
 	vint4 ep1;
-	bool rgb_lns;
-	bool a_lns;
 
 	unpack_color_endpoints(config.profile, scb.color_formats[0], scb.color_values[0],
-	                       rgb_lns, a_lns, ep0, ep1);
+	                       nullptr, nullptr, ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 	vint u8_control = broadcast_quad(prepare_unorm8_rounding(all(u8_mask)));

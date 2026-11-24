@@ -2030,8 +2030,8 @@ uint8_t pack_color_endpoints(
  * @param      format        The color endpoint mode used.
  * @param      input         The raw array of encoded input integers. The length of this array
  *                           depends on @c format; it can be safely assumed to be large enough.
- * @param[out] rgb_hdr       Is the endpoint using HDR for the RGB channels?
- * @param[out] alpha_hdr     Is the endpoint using HDR for the A channel?
+ * @param[out] rgb_hdr       Is the endpoint using HDR for the RGB channels? May be nullptr.
+ * @param[out] alpha_hdr     Is the endpoint using HDR for the A channel? May be nullptr.
  * @param[out] output0       The output color for endpoint 0.
  * @param[out] output1       The output color for endpoint 1.
  *
@@ -2041,8 +2041,8 @@ bool unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
 	const uint8_t* input,
-	bool& rgb_hdr,
-	bool& alpha_hdr,
+	bool* rgb_hdr,
+	bool* alpha_hdr,
 	vint4& output0,
 	vint4& output1);
 
