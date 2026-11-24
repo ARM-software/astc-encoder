@@ -1490,12 +1490,12 @@ static float prepare_block_statistics(
 	covariance[2] = vfloat4(ga_cov, ba_cov, 0.0f, 0.0f);
 
 	// These will give a NaN if a channel is constant - these are fixed up in the next step
-	rg_cov *= astc::rsqrt(rr_var * gg_var);
-	rb_cov *= astc::rsqrt(rr_var * bb_var);
-	ra_cov *= astc::rsqrt(rr_var * aa_var);
-	gb_cov *= astc::rsqrt(gg_var * bb_var);
-	ga_cov *= astc::rsqrt(gg_var * aa_var);
-	ba_cov *= astc::rsqrt(bb_var * aa_var);
+	rg_cov /= astc::sqrt(rr_var * gg_var);
+	rb_cov /= astc::sqrt(rr_var * bb_var);
+	ra_cov /= astc::sqrt(rr_var * aa_var);
+	gb_cov /= astc::sqrt(gg_var * bb_var);
+	ga_cov /= astc::sqrt(gg_var * aa_var);
+	ba_cov /= astc::sqrt(bb_var * aa_var);
 
 	if (astc::isnan(rg_cov)) rg_cov = 1.0f;
 	if (astc::isnan(rb_cov)) rb_cov = 1.0f;
