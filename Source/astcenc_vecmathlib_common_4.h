@@ -498,11 +498,11 @@ static ASTCENC_SIMD_INLINE void bit_transfer_signed(
 	vint4& input0,
 	vint4& input1
 ) {
+	// Shift input1 bits [7:1] down and insert input0 bit 7 as the new bit 7
 	input1 = lsr<1>(input1) | (input0 & 0x80);
-	input0 = lsr<1>(input0) & 0x3F;
 
-	vmask4 mask = (input0 & 0x20) != vint4::zero();
-	input0 = select(input0, input0 - 0x40, mask);
+	// Move bit 6 into the sign bit, then extract and sign-extend bits [6:1]
+	input0 = asr<26>(lsl<25>(input0));
 }
 
 #if !defined(ASTCENC_USE_NATIVE_STORE_LANE)
