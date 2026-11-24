@@ -33,6 +33,11 @@ script elsewhere with testlib. The HDR input is a Radiance .hdr image. Binaries 
 commands on PATH. Use matched build options and give the script exclusive use of the machine during
 measurement.
 
+Report names use the version and ISA reported by each binary's -version output. If a before and
+an after binary report the same name, the script prompts for postfixes for both groups. Pass
+--before-postfix and --after-postfix to supply them without prompting. The after postfix applies
+to both after binaries. The detected identities and final names are saved in report.json.
+
 Runs 4x4, 6x6, and 8x8 at -thorough, -medium, and -fast for every image. Each case has one
 warmup and at most ten measured rounds, with 12 codec threads. Early stopping requires half the
 requested rounds, rounded up and capped at four, with at least two rounds for statistics. Then stop
@@ -45,16 +50,18 @@ for Canarywharf.
 
 Writes report.md, report.json, and per-image plots named
 {l,rgb,rgba-ca,rgba-nca,nml,hdr}-{perf_abs,perf_rel,qual}.png in the output directory.
-Summary plots named summary-{avx2,avx512}-{perf_abs,perf_rel}.png compare the baseline AVX2 with
-each latest binary, stacking image types in channel-count order.
-Each quality plot shows signed B-A changes for baseline versus new AVX2 in up to two metric panels:
-PSNR and SSIM for luminance, RGB, and RGBA, PSNR and mean angular error for normals, and mPSNR and
-mSSIM for HDR. SSIM panels are omitted when the baseline reports no SSIM measurements. Other missing
-metrics are marked unavailable. The default output directory is
+Performance plots show all three binaries in Set 1 and compare the two after binaries in Set 3.
+Relative plots normalize each panel to its first binary. Summary plots named
+summary-{perf_abs,perf_rel}.png show all three binaries together, stacking image types in
+channel-count order and normalizing relative throughput to the before binary.
+Each quality plot shows signed B-A changes for before versus the first after binary in up to two
+metric panels: PSNR and SSIM for luminance, RGB, and RGBA, PSNR and mean angular error for normals,
+and mPSNR and mSSIM for HDR. SSIM panels are omitted when the baseline reports no SSIM measurements.
+Other missing metrics are marked unavailable. The default output directory is
 x_profiles/report-YYMMDD-HH.MM. Existing files with these names are overwritten. Tables report
 coding seconds; plots report MTex/s or throughput relative to A = 100%. Throughput is image texels
 divided by the unrounded mean coding time. Warmups are excluded from means. There is no checkpoint
-or resume support. All plots are 800 pixels wide, preserving their aspect ratios.
+or resume support. All plots are saved as 1400-pixel-wide PNGs, preserving their aspect ratios.
 '''
 
 import argparse
@@ -62,6 +69,7 @@ from dataclasses import asdict
 from datetime import datetime
 from functools import partial
 import json
+import math
 from pathlib import Path
 import platform
 import re
@@ -77,16 +85,13 @@ from testlib.profile import PROFILE_ERRORS, report_error
 from testlib.profile import run_codec as execute_codec
 
 
-BINARY_NAMES = {
-    'release-avx2': '5.7.1 AVX2',
-    'main-avx2': 'main AVX2',
-    'main-avx512': 'main AVX512',
-}
+BINARY_ROLES = ('release-avx2', 'main-avx2', 'main-avx512')
 SETS = (
     ('release-avx2', 'main-avx2'),
     ('release-avx2', 'main-avx512'),
     ('main-avx2', 'main-avx512'),
 )
+CHART_SETS = {1: BINARY_ROLES, 3: SETS[2]}
 SCENARIOS = [(block, preset) for block in ('4x4', '6x6', '8x8')
              for preset in ('-thorough', '-medium', '-fast')]
 QUALITY = ('PSNR (LDR-RGB)', 'SSIM (LDR-RGB)', 'PSNR (LDR-RGBA)', 'SSIM (LDR-RGBA)',
@@ -95,7 +100,7 @@ QUALITY = ('PSNR (LDR-RGB)', 'SSIM (LDR-RGB)', 'PSNR (LDR-RGBA)', 'SSIM (LDR-RGB
 HDR_FSTOPS = (-3, 1)
 CONFIDENCE = 0.95
 PRECISION = 0.01
-PLOT_WIDTH = 800
+PLOT_WIDTH = 1400
 IMAGE_CHANNEL_COUNTS = {
     'L': 1,
     'Normal': 2,  # Two independent components encoded as RRRA
@@ -118,11 +123,11 @@ QUALITY_PLOTS = {
     'HDR': (('mPSNR (RGB)', 'mPSNR', 'dB', 'higher'),
             ('mSSIM (RGB)', 'mSSIM', '', 'higher')),
 }
-# Use the older report's light A and dark B shades for each block size
+# Preserve the older report's A and B shades, with a darker C shade for three-way comparisons
 BLOCK_COLORS = {
-    '4x4': ('#a8c7e3', '#35689a'),  # Light and dark blue
-    '6x6': ('#f1bb99', '#ce6a2c'),  # Light and dark orange
-    '8x8': ('#9dd5c6', '#2b8a74'),  # Light and dark teal
+    '4x4': ('#a8c7e3', '#35689a', '#173b5d'),  # Blue
+    '6x6': ('#f1bb99', '#ce6a2c', '#77350f'),  # Orange
+    '8x8': ('#9dd5c6', '#2b8a74', '#124b3e'),  # Teal
 }
 BACKGROUND_COLOR = 'white'  # White figure background
 ANNOTATION_COLOR = '#64748b'  # Slate gray for reference lines and missing metrics
@@ -137,7 +142,7 @@ MEASUREMENT_NOTES = '''## Measurement notes
 * Invocations run serially in rotating order. All three sets reuse the same per-binary samples.
 * Times are arithmetic means of reported coding times. B-A (%) = 100 x (B/A - 1); negative means B
   takes less time.
-* Quality plots show baseline versus new AVX2 signed B-A changes in the metric's own units. Higher
+* Quality plots show before versus the first after binary signed B-A changes. Higher
   PSNR/SSIM is better; lower angular error is better. Metrics not reported by a comparison binary
   are unavailable.
 * HDR compression uses -perceptual. Quality metrics use a fixed -3 to +1 f-stop window for every
@@ -146,6 +151,75 @@ MEASUREMENT_NOTES = '''## Measurement notes
 * Binary versions, SHA-256 hashes, image dimensions, quality scores, and raw samples:
   [report.json](report.json).
 '''
+
+
+def describe_binaries(args: argparse.Namespace) -> dict[str, Any]:
+    '''
+    Detect binary names and disambiguate matching before and after groups.
+
+    Args:
+        args: The executable paths and optional group postfixes.
+
+    Return:
+        Binary identities, detected versions and ISAs, and final report names keyed by role.
+
+    Raises:
+        ValueError: A version banner is invalid or the final names are ambiguous.
+    '''
+    binaries = {}
+
+    for role in BINARY_ROLES:
+        metadata = binary_metadata(getattr(args, role.replace('-', '_')))
+        match = re.search(r'\bv([^,\s]+),\s+\d+-bit\s+([^+\s,]+)', metadata['version'])
+
+        if not match:
+            raise ValueError(f'Cannot detect version and ISA from {metadata["path"]}: '
+                             f'{metadata["version"]}')
+
+        metadata['codec_version'] = match.group(1)
+        metadata['isa'] = match.group(2).upper()
+        metadata['name'] = f'{metadata["codec_version"]} {metadata["isa"]}'
+        binaries[role] = metadata
+
+    after_names = {binaries[role]['name'] for role in BINARY_ROLES[1:]}
+
+    if len(after_names) != len(BINARY_ROLES) - 1:
+        raise ValueError('The after binaries must report distinct versions or ISAs')
+
+    is_matching = binaries[BINARY_ROLES[0]]['name'] in after_names
+    postfixes = {'before': args.before_postfix, 'after': args.after_postfix}
+
+    for group, postfix in postfixes.items():
+        if is_matching and postfix is None:
+            try:
+                postfix = input(f'Matching binary names; postfix for {group} binaries: ')
+            except EOFError as error:
+                raise ValueError('Matching binary names require --before-postfix and '
+                                 '--after-postfix when input is unavailable') from error
+
+        if postfix is not None:
+            postfix = postfix.strip()
+
+            if not postfix:
+                raise ValueError(f'The {group} postfix must not be empty')
+
+        postfixes[group] = postfix
+
+    for role, metadata in binaries.items():
+        group = 'after'
+
+        if role == BINARY_ROLES[0]:
+            group = 'before'
+
+        postfix = postfixes[group]
+
+        if postfix:
+            metadata['name'] += f' {postfix}'
+
+    if len({metadata['name'] for metadata in binaries.values()}) != len(binaries):
+        raise ValueError('The before and after postfixes must produce distinct binary names')
+
+    return binaries
 
 
 def image_size(path: Path) -> tuple[int, int]:
@@ -241,7 +315,7 @@ def measure_case(binaries: dict[str, Any], image: str, args: list[str], runs: in
     Return:
         The samples, intervals, and stopping reason in report JSON format.
     '''
-    paths = {name: binaries[name]['path'] for name in BINARY_NAMES}
+    paths = {name: binaries[name]['path'] for name in BINARY_ROLES}
     samples = collect_precision_samples(paths, args, runs, warmups, confidence, precision,
                                         partial(run_codec, image=image))
 
@@ -445,9 +519,11 @@ def write_report(out_dir: Path, data: dict[str, Any]) -> None:
     lines = []
 
     for index, (a, b) in enumerate(SETS, start=1):
+        name_a = data['binaries'][a]['name']
+        name_b = data['binaries'][b]['name']
         lines += [f'# Set {index}', '',
-                  f'* Revision A: {BINARY_NAMES[a]}',
-                  f'* Revision B: {BINARY_NAMES[b]}',
+                  f'* Revision A: {name_a}',
+                  f'* Revision B: {name_b}',
                   f'* Threads: {data["threads"]}', '', '']
 
         for image, metadata in data['images'].items():
@@ -467,20 +543,21 @@ def write_report(out_dir: Path, data: dict[str, Any]) -> None:
     output.write_text('\n'.join(lines), encoding='utf-8')
 
 
-def add_comparison_legend(ax: Any, a: str, b: str, is_change: bool = False) -> None:
+def add_comparison_legend(ax: Any, data: dict[str, Any], binaries: tuple[str, ...],
+                          is_change: bool = False) -> None:
     '''
     Add the shared block-size and binary-role legend to a comparison panel.
 
     Args:
         ax: The plot axes receiving the legend.
-        a: The baseline binary role.
-        b: The candidate binary role.
+        data: The detected binary names and report measurements.
+        binaries: The binary roles in bar order, starting with the baseline.
         is_change: Show only candidate block colors for signed-change bars.
     '''
     # Keep Matplotlib optional until plots are requested
     from matplotlib.patches import Patch  # pylint: disable=import-outside-toplevel
 
-    roles = [(0, 'A'), (1, 'B')]
+    roles = [(index, chr(ord('A') + index)) for index in range(len(binaries))]
 
     if is_change:
         roles = [(1, 'B')]
@@ -489,9 +566,11 @@ def add_comparison_legend(ax: Any, a: str, b: str, is_change: bool = False) -> N
                for block, pair in BLOCK_COLORS.items()
                for i, role in roles]
 
-    ax.legend(handles=handles, loc='upper right', frameon=False,
-              ncol=3, bbox_to_anchor=(1.0, 1.24), fontsize=9,
-              title=f'A: {BINARY_NAMES[a]} | B: {BINARY_NAMES[b]}')
+    title = '\n'.join(f'{chr(ord("A") + index)}: {data["binaries"][role]["name"]}'
+                      for index, role in enumerate(binaries))
+    ax.legend(handles=handles, loc='lower right', frameon=False,
+              ncol=3, bbox_to_anchor=(1.0, 1.03), fontsize=9,
+              title=title, title_fontsize=9)
 
 
 def new_figure(size: tuple[float, float], panels: int) -> tuple[Any, Any]:
@@ -517,41 +596,70 @@ def new_figure(size: tuple[float, float], panels: int) -> tuple[Any, Any]:
     return figure, figure.subplots(panels, 1, squeeze=False)[:, 0]
 
 
-def perf_rates(data: dict[str, Any], image: str, pair: tuple[str, str],
+def save_figure(figure: Any, output: Path) -> None:
+    '''
+    Render a PNG at the configured pixel width.
+
+    Args:
+        figure: The Matplotlib figure to render.
+        output: The destination PNG path.
+    '''
+    figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
+    print(f'Wrote {output}', flush=True)
+
+
+def perf_rates(data: dict[str, Any], image: str, binaries: tuple[str, ...],
                is_relative: bool) -> list[list[float]]:
     '''
-    Compute the baseline and candidate throughput values for a panel.
+    Compute throughput values for every binary in a panel.
 
     Args:
         data: The settings, dimensions, and measurements.
         image: The image type.
-        pair: The baseline and candidate binary roles.
+        binaries: The binary roles in bar order, starting with the baseline.
         is_relative: Report throughput relative to the baseline.
 
     Return:
-        The baseline and candidate throughput series.
+        One throughput series per binary.
     '''
-    a, b = pair
     pixels = data['images'][image]['width'] * data['images'][image]['height']
-    rates: list[list[float]] = [[], []]
+    rates: list[list[float]] = [[] for _ in binaries]
 
     for block, preset in SCENARIOS:
         key = f'{image}-{block}-{preset.removeprefix("-")}'
         case = data['cases'][key]
-        time_a = mean_time(case, a)
-        time_b = mean_time(case, b)
+        time_a = mean_time(case, binaries[0])
 
-        if is_relative:
-            rates[0].append(100.0)
-            rates[1].append(100.0 * time_a / time_b)
-        else:
-            rates[0].append(pixels / time_a / 1e6)
-            rates[1].append(pixels / time_b / 1e6)
+        for role, values in zip(binaries, rates):
+            time_b = mean_time(case, role)
+
+            if is_relative:
+                values.append(100.0 * time_a / time_b)
+            else:
+                values.append(pixels / time_b / 1e6)
 
     return rates
 
 
-def plot_perf_panel(ax: Any, data: dict[str, Any], image: str, pair: tuple[str, str],
+def format_perf_score(value: float) -> str:
+    '''
+    Format a throughput score with at most three significant figures and two decimal places.
+
+    Args:
+        value: The absolute or relative throughput score.
+
+    Return:
+        The rounded score without trailing decimal zeros or scientific notation.
+    '''
+    if value == 0:
+        return '0'
+
+    decimals = min(2, 2 - math.floor(math.log10(abs(value))))
+    rounded = round(value, decimals)
+    return f'{rounded:.2f}'.rstrip('0').rstrip('.')
+
+
+def plot_perf_panel(ax: Any, data: dict[str, Any], image: str, binaries: tuple[str, ...],
                     is_relative: bool) -> None:
     '''
     Draw one absolute or relative performance comparison.
@@ -560,29 +668,28 @@ def plot_perf_panel(ax: Any, data: dict[str, Any], image: str, pair: tuple[str, 
         ax: The plot axes receiving the panel.
         data: The settings, dimensions, and measurements.
         image: The image type.
-        pair: The baseline and candidate binary roles.
+        binaries: The binary roles in bar order, starting with the baseline.
         is_relative: Report throughput relative to the baseline.
     '''
-    a, b = pair
-    rates = perf_rates(data, image, pair, is_relative)
+    rates = perf_rates(data, image, binaries, is_relative)
+    width = 0.84 / len(binaries)
+    font_size = 9
+
+    if len(binaries) == 3:
+        font_size = 8
 
     for offset, values in enumerate(rates):
-        positions = [i + (offset - 0.5) * 0.36 for i in range(9)]
+        positions = [i + (offset - (len(binaries) - 1) / 2) * width
+                     for i in range(len(SCENARIOS))]
         shades = [BLOCK_COLORS[block][offset] for block, _ in SCENARIOS]
-        bars = ax.bar(positions, values, width=0.36, color=shades)
+        bars = ax.bar(positions, values, width=width, color=shades)
 
         if is_relative and offset == 0:
             continue
 
-        fmt = '%.2f'
+        ax.bar_label(bars, labels=[format_perf_score(value) for value in values],
+                     padding=2, fontsize=font_size)
 
-        if is_relative:
-            fmt = '%.2f%%'
-
-        ax.bar_label(bars, fmt=fmt, padding=2, fontsize=9)
-
-    ax.set_title(f'Set {SETS.index(pair) + 1}: {BINARY_NAMES[a]} vs {BINARY_NAMES[b]}',
-                 loc='left', pad=35)
     unit = 'Throughput (MTex/s)'
 
     if is_relative:
@@ -590,12 +697,12 @@ def plot_perf_panel(ax: Any, data: dict[str, Any], image: str, pair: tuple[str, 
 
     ax.set_ylabel(unit)
     labels = [f'{block}\n{preset}' for block, preset in SCENARIOS]
-    ax.set_xticks(range(9), labels, fontsize=9)
-    ax.set_ylim(0, max(rates[0] + rates[1]) * 1.19)
+    ax.set_xticks(range(len(SCENARIOS)), labels, fontsize=9)
+    ax.set_ylim(0, max(max(values) for values in rates) * 1.19)
     ax.set_axisbelow(True)
     ax.grid(axis='y', alpha=0.25)
     ax.spines[['top', 'right']].set_visible(False)
-    add_comparison_legend(ax, a, b)
+    add_comparison_legend(ax, data, binaries)
 
     if is_relative:
         ax.axhline(100, color=ANNOTATION_COLOR, linewidth=0.8, linestyle='--')
@@ -625,24 +732,24 @@ def plot_charts(out_dir: Path, data: dict[str, Any]) -> None:
                 suffix = 'perf_rel'
                 scale = 'relative'
 
-            figure, axes = new_figure((14, 15), 3)
-            figure.subplots_adjust(left=0.075, right=0.985, bottom=0.075, top=0.895, hspace=0.57)
+            figure, axes = new_figure((14, 10), len(CHART_SETS))
+            figure.subplots_adjust(left=0.075, right=0.985, bottom=0.10, top=0.78, hspace=0.65)
             title = metadata['title']
             figure.suptitle(f'{title} | {scale} compression throughput',
                             fontsize=22, y=0.975, fontweight='bold')
-            figure.text(0.5, 0.945, f'{data["threads"]} threads | {thresholds}', ha='center')
+            figure.text(0.5, 0.93, f'{data["threads"]} threads | {thresholds}', ha='center')
 
-            for index, pair in enumerate(SETS):
-                plot_perf_panel(axes[index], data, image, pair, is_relative)
+            for ax, (index, binaries) in zip(axes, CHART_SETS.items()):
+                plot_perf_panel(ax, data, image, binaries, is_relative)
+                ax.set_title(f'Set {index}', loc='left', pad=35)
 
             output = out_dir / f'{tag}-{suffix}.png'
-            figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
-            print(f'Wrote {output}', flush=True)
+            save_figure(figure, output)
 
 
 def plot_summary_charts(out_dir: Path, data: dict[str, Any]) -> None:
     '''
-    Compare baseline AVX2 with each latest binary using stacked images and a shared legend.
+    Compare all three binaries using stacked images and a shared legend.
 
     Args:
         out_dir: The directory containing the report artifacts.
@@ -651,36 +758,32 @@ def plot_summary_charts(out_dir: Path, data: dict[str, Any]) -> None:
     images = sorted(data['images'], key=IMAGE_CHANNEL_COUNTS.__getitem__)
     thresholds = sampling_threshold_text(data)
 
-    for pair in SETS[:2]:
-        a, b = pair
+    for is_relative in (False, True):
+        suffix = 'perf_abs'
+        scale = 'absolute'
 
-        for is_relative in (False, True):
-            suffix = 'perf_abs'
-            scale = 'absolute'
+        if is_relative:
+            suffix = 'perf_rel'
+            scale = 'relative'
 
-            if is_relative:
-                suffix = 'perf_rel'
-                scale = 'relative'
+        height = 3.75 * len(images) + 0.5
+        figure, axes = new_figure((14, height), len(images))
+        figure.subplots_adjust(left=0.075, right=0.985, bottom=1.125 / height,
+                               top=1.0 - 2.3 / height, hspace=0.57)
+        figure.suptitle(f'All binaries | {scale} throughput',
+                        fontsize=22, y=1.0 - 0.375 / height, fontweight='bold')
+        figure.text(0.5, 1.0 - 0.825 / height,
+                    f'{data["threads"]} threads | {thresholds}', ha='center')
 
-            height = 3.75 * len(images)
-            figure, axes = new_figure((14, height), len(images))
-            figure.subplots_adjust(left=0.075, right=0.985, bottom=1.125 / height,
-                                   top=1.0 - 1.8 / height, hspace=0.57)
-            figure.suptitle(f'{BINARY_NAMES[a]} vs {BINARY_NAMES[b]} | {scale} throughput',
-                            fontsize=22, y=1.0 - 0.375 / height, fontweight='bold')
-            figure.text(0.5, 1.0 - 0.825 / height,
-                        f'{data["threads"]} threads | {thresholds}', ha='center')
+        for ax, image in zip(axes, images):
+            plot_perf_panel(ax, data, image, BINARY_ROLES, is_relative)
+            ax.set_title(data['images'][image]['title'], loc='left', pad=35)
 
-            for ax, image in zip(axes, images):
-                plot_perf_panel(ax, data, image, pair, is_relative)
-                ax.set_title(data['images'][image]['title'], loc='left', pad=35)
+            if ax is not axes[0]:
+                ax.get_legend().remove()
 
-                if ax is not axes[0]:
-                    ax.get_legend().remove()
-
-            output = out_dir / f'summary-{b.removeprefix("main-")}-{suffix}.png'
-            figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
-            print(f'Wrote {output}', flush=True)
+        output = out_dir / f'summary-{suffix}.png'
+        save_figure(figure, output)
 
 
 def quality_values(data: dict[str, Any], image: str, metric: str) \
@@ -784,7 +887,7 @@ def plot_quality_panel(ax: Any, data: dict[str, Any], image: str,
     ax.set_axisbelow(True)
     ax.grid(axis='y', alpha=0.25)
     ax.spines[['top', 'right']].set_visible(False)
-    add_comparison_legend(ax, *SETS[0], is_change=True)
+    add_comparison_legend(ax, data, SETS[0], is_change=True)
 
     if missing:
         ax.text(0.5, 0.5, 'Unavailable: ' + ', '.join(sorted(missing)),
@@ -793,7 +896,7 @@ def plot_quality_panel(ax: Any, data: dict[str, Any], image: str,
 
 def plot_quality_changes(out_dir: Path, data: dict[str, Any]) -> None:
     '''
-    Plot signed quality changes for baseline versus new AVX2.
+    Plot signed quality changes for the before and first after binaries.
 
     Args:
         out_dir: The directory containing the report artifacts.
@@ -838,8 +941,7 @@ def plot_quality_changes(out_dir: Path, data: dict[str, Any]) -> None:
             plot_quality_panel(ax, data, image, info)
 
         output = out_dir / f'{tag}-qual.png'
-        figure.savefig(output, dpi=PLOT_WIDTH / figure.get_figwidth())
-        print(f'Wrote {output}', flush=True)
+        save_figure(figure, output)
 
 
 def describe_images(args: argparse.Namespace) -> dict[str, Any]:
@@ -913,15 +1015,23 @@ def parse_command_line() -> argparse.Namespace:
 
     parser.add_argument(
         'release_avx2',
-        help='5.7.1 AVX2 binary')
+        metavar='BEFORE', help='before binary (version and ISA detected automatically)')
 
     parser.add_argument(
         'main_avx2',
-        help='main AVX2 binary')
+        metavar='AFTER1', help='first after binary (version and ISA detected automatically)')
 
     parser.add_argument(
         'main_avx512',
-        help='main AVX512 binary')
+        metavar='AFTER2', help='second after binary (version and ISA detected automatically)')
+
+    parser.add_argument(
+        '--before-postfix',
+        help='postfix for the before binary name (prompted when detected names match)')
+
+    parser.add_argument(
+        '--after-postfix',
+        help='postfix for both after binary names (prompted when detected names match)')
 
     images = Path(__file__).resolve().parent / 'Images'
     kodak = images / 'KodakMnt'
@@ -1003,10 +1113,7 @@ def main() -> int:
 
     try:
         # Identify inputs before collecting samples, then verify them before saving
-        data['binaries'] = {
-            name: binary_metadata(getattr(args, name.replace('-', '_')))
-            for name in BINARY_NAMES
-        }
+        data['binaries'] = describe_binaries(args)
 
         data['images'] = describe_images(args)
         out_dir = args.output.expanduser().resolve()
