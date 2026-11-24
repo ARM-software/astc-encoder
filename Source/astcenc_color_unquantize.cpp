@@ -845,14 +845,14 @@ bool unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
 	const uint8_t* input,
-	bool& rgb_hdr,
-	bool& alpha_hdr,
+	bool* rgb_hdr,
+	bool* alpha_hdr,
 	vint4& output0,
 	vint4& output1
 ) {
 	// Assume no NaNs and LDR endpoints unless set later
-	rgb_hdr = false;
-	alpha_hdr = false;
+	bool is_rgb_hdr = false;
+	bool is_alpha_hdr = false;
 
 	bool alpha_hdr_default = false;
 	bool is_valid = true;
@@ -868,13 +868,13 @@ bool unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_LUMINANCE_SMALL_RANGE:
-		rgb_hdr = true;
+		is_rgb_hdr = true;
 		alpha_hdr_default = true;
 		hdr_luminance_small_range_unpack(input, output0, output1);
 		break;
 
 	case FMT_HDR_LUMINANCE_LARGE_RANGE:
-		rgb_hdr = true;
+		is_rgb_hdr = true;
 		alpha_hdr_default = true;
 		hdr_luminance_large_range_unpack(input, output0, output1);
 		break;
@@ -905,7 +905,7 @@ bool unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB_SCALE:
-		rgb_hdr = true;
+		is_rgb_hdr = true;
 		alpha_hdr_default = true;
 		hdr_rgbo_unpack(input, output0, output1);
 		break;
@@ -927,7 +927,7 @@ bool unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB:
-		rgb_hdr = true;
+		is_rgb_hdr = true;
 		alpha_hdr_default = true;
 		hdr_rgb_unpack(input, output0, output1);
 		break;
@@ -949,13 +949,13 @@ bool unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB_LDR_ALPHA:
-		rgb_hdr = true;
+		is_rgb_hdr = true;
 		hdr_rgb_ldr_alpha_unpack(input, output0, output1);
 		break;
 
 	case FMT_HDR_RGBA:
-		rgb_hdr = true;
-		alpha_hdr = true;
+		is_rgb_hdr = true;
+		is_alpha_hdr = true;
 		hdr_rgb_hdr_alpha_unpack(input, output0, output1);
 		break;
 	}
@@ -967,13 +967,13 @@ bool unpack_color_endpoints(
 		{
 			output0.set_lane<3>(0x7800);
 			output1.set_lane<3>(0x7800);
-			alpha_hdr = true;
+			is_alpha_hdr = true;
 		}
 		else
 		{
 			output0.set_lane<3>(0x00FF);
 			output1.set_lane<3>(0x00FF);
-			alpha_hdr = false;
+			is_alpha_hdr = false;
 		}
 	}
 
@@ -983,13 +983,13 @@ bool unpack_color_endpoints(
 	if (decode_mode == ASTCENC_PRF_LDR)
 	{
 		// Error color - HDR endpoint in an LDR encoding
-		if (rgb_hdr || alpha_hdr)
+		if (is_rgb_hdr || is_alpha_hdr)
 		{
 			is_valid = false;
 			output0 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			output1 = vint4(0xFF, 0x00, 0xFF, 0xFF);
-			rgb_hdr = false;
-			alpha_hdr = false;
+			is_rgb_hdr = false;
+			is_alpha_hdr = false;
 		}
 
 		output0 = output0 * 257;
@@ -1001,13 +1001,13 @@ bool unpack_color_endpoints(
 	else if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
 		// Error color - HDR endpoint in an LDR encoding
-		if (rgb_hdr || alpha_hdr)
+		if (is_rgb_hdr || is_alpha_hdr)
 		{
 			is_valid = false;
 			output0 = vint4(0xFF, 0x00, 0xFF, 0xFF);
 			output1 = vint4(0xFF, 0x00, 0xFF, 0xFF);
-			rgb_hdr = false;
-			alpha_hdr = false;
+			is_rgb_hdr = false;
+			is_alpha_hdr = false;
 		}
 
 		output0 = lsl<8>(output0) | vint4(0x80);
@@ -1017,10 +1017,20 @@ bool unpack_color_endpoints(
 	// expanded to 16-bit by replication, HDR endpoints are already 16-bit.
 	else
 	{
-		vmask4 hdr_lanes(rgb_hdr, rgb_hdr, rgb_hdr, alpha_hdr);
+		vmask4 hdr_lanes(is_rgb_hdr, is_rgb_hdr, is_rgb_hdr, is_alpha_hdr);
 		vint4 output_scale = select(vint4(257), vint4(1), hdr_lanes);
 		output0 = output0 * output_scale;
 		output1 = output1 * output_scale;
+	}
+
+	if (rgb_hdr)
+	{
+		*rgb_hdr = is_rgb_hdr;
+	}
+
+	if (alpha_hdr)
+	{
+		*alpha_hdr = is_alpha_hdr;
 	}
 
 	return is_valid;

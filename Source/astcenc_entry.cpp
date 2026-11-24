@@ -1552,7 +1552,7 @@ astcenc_error astcenc_get_block_info(
 		unpack_color_endpoints(ctx->config.profile,
 		                       scb.color_formats[i],
 		                       scb.color_values[i],
-		                       rgb_hdr, a_hdr,
+		                       &rgb_hdr, &a_hdr,
 		                       endpnt[0], endpnt[1]);
 
 		// Store the color endpoint mode info
