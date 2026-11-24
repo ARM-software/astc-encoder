@@ -1062,12 +1062,12 @@ void compute_quantized_weights_for_decimation(
 			vint ixli = vtable_lookup_32bit(table, weightl);
 			vint ixhi = vtable_lookup_32bit(table, weighth);
 
-			vfloat ixl = int_to_float(ixli);
-			vfloat ixh = int_to_float(ixhi);
-
-			vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
+			// Weights in [0, 64] and their sum in [0, 128] are exact in FP32, so summing and
+			// selecting before conversion preserve the comparison and converted result
+			vfloat midpoint = int_to_float(ixli + ixhi);
+			vmask mask = midpoint < (vfloat(128.0f) * ix);
 			vint weight = select(ixli, ixhi, mask);
-			ixl = select(ixl, ixh, mask);
+			vfloat ixl = int_to_float(weight);
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
@@ -1093,12 +1093,12 @@ void compute_quantized_weights_for_decimation(
 			vint ixli = vtable_lookup_32bit(table, weightl);
 			vint ixhi = vtable_lookup_32bit(table, weighth);
 
-			vfloat ixl = int_to_float(ixli);
-			vfloat ixh = int_to_float(ixhi);
-
-			vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
+			// Weights in [0, 64] and their sum in [0, 128] are exact in FP32, so summing and
+			// selecting before conversion preserve the comparison and converted result
+			vfloat midpoint = int_to_float(ixli + ixhi);
+			vmask mask = midpoint < (vfloat(128.0f) * ix);
 			vint weight = select(ixli, ixhi, mask);
-			ixl = select(ixl, ixh, mask);
+			vfloat ixl = int_to_float(weight);
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
