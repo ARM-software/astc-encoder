@@ -86,6 +86,7 @@ struct endpoint_format_choice
  * assumes storing RGB + lumashift (HDR only). Luminance error assumes storing RGB channels as a
  * single value.
  *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
  *
  * @param      pi                The partition info data.
  * @param      partition_index   The partition index to compute the error for.
@@ -100,6 +101,7 @@ struct endpoint_format_choice
  * @param[out] l_err             The computed error for the luminance endpoint line.
  * @param[out] a_drop_err        The computed error for dropping the alpha component.
  */
+template<bool is_weighted>
 static void compute_error_squared_rgb_single_partition(
 	const partition_info& pi,
 	int partition_index,
@@ -185,9 +187,19 @@ static void compute_error_squared_rgb_single_partition(
 		vfloat dist1 = (uncor_amod1 + param * uncor_bs1) - data_g;
 		vfloat dist2 = (uncor_amod2 + param * uncor_bs2) - data_b;
 
-		vfloat error = dist0 * dist0 * ews.lane<0>()
-		             + dist1 * dist1 * ews.lane<1>()
-		             + dist2 * dist2 * ews.lane<2>();
+		vfloat error;
+		if constexpr (is_weighted)
+		{
+			error = dist0 * dist0 * ews.lane<0>()
+			      + dist1 * dist1 * ews.lane<1>()
+			      + dist2 * dist2 * ews.lane<2>();
+		}
+		else
+		{
+			error = dist0 * dist0
+			      + dist1 * dist1
+			      + dist2 * dist2;
+		}
 
 		haccumulate(uncor_errv, error, mask);
 
@@ -200,9 +212,18 @@ static void compute_error_squared_rgb_single_partition(
 		dist1 = (param * samec_bs1) - data_g;
 		dist2 = (param * samec_bs2) - data_b;
 
-		error = dist0 * dist0 * ews.lane<0>()
-		      + dist1 * dist1 * ews.lane<1>()
-		      + dist2 * dist2 * ews.lane<2>();
+		if constexpr (is_weighted)
+		{
+			error = dist0 * dist0 * ews.lane<0>()
+			      + dist1 * dist1 * ews.lane<1>()
+			      + dist2 * dist2 * ews.lane<2>();
+		}
+		else
+		{
+			error = dist0 * dist0
+			      + dist1 * dist1
+			      + dist2 * dist2;
+		}
 
 		haccumulate(samec_errv, error, mask);
 
@@ -217,9 +238,18 @@ static void compute_error_squared_rgb_single_partition(
 			dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
 			dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
 
-			error = dist0 * dist0 * ews.lane<0>()
-			      + dist1 * dist1 * ews.lane<1>()
-			      + dist2 * dist2 * ews.lane<2>();
+			if constexpr (is_weighted)
+			{
+				error = dist0 * dist0 * ews.lane<0>()
+				      + dist1 * dist1 * ews.lane<1>()
+				      + dist2 * dist2 * ews.lane<2>();
+			}
+			else
+			{
+				error = dist0 * dist0
+				      + dist1 * dist1
+				      + dist2 * dist2;
+			}
 
 			haccumulate(rgbl_errv, error, mask);
 		}
@@ -233,14 +263,28 @@ static void compute_error_squared_rgb_single_partition(
 		dist1 = (param * l_bs1) - data_g;
 		dist2 = (param * l_bs2) - data_b;
 
-		error = dist0 * dist0 * ews.lane<0>()
-		      + dist1 * dist1 * ews.lane<1>()
-		      + dist2 * dist2 * ews.lane<2>();
+		if constexpr (is_weighted)
+		{
+			error = dist0 * dist0 * ews.lane<0>()
+			      + dist1 * dist1 * ews.lane<1>()
+			      + dist2 * dist2 * ews.lane<2>();
+		}
+		else
+		{
+			error = dist0 * dist0
+			      + dist1 * dist1
+			      + dist2 * dist2;
+		}
 
 		haccumulate(l_errv, error, mask);
 	}
 
-	a_drop_err = hadd_s(a_drop_errv) * ews.lane<3>();
+	a_drop_err = hadd_s(a_drop_errv);
+	if constexpr (is_weighted)
+	{
+		a_drop_err *= ews.lane<3>();
+	}
+
 	uncor_err = hadd_s(uncor_errv);
 	samec_err = hadd_s(samec_errv);
 	rgbl_err = hadd_s(rgbl_errv);
@@ -275,6 +319,14 @@ static void compute_encoding_choice_errors(
 	{
 		compute_avgs_and_dirs_3_comp_rgb(pi, blk, local_metrics);
 		rgb_metrics = local_metrics;
+	}
+
+	// Select channel weighting once for all partitions
+	auto compute_errors = compute_error_squared_rgb_single_partition<true>;
+	bool is_unweighted = all(blk.channel_weight == vfloat4(1.0f));
+	if (is_unweighted)
+	{
+		compute_errors = compute_error_squared_rgb_single_partition<false>;
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -319,7 +371,7 @@ static void compute_encoding_choice_errors(
 		luminance_plines.amod = vfloat4::zero();
 		luminance_plines.bs   = unit3();
 
-		compute_error_squared_rgb_single_partition(
+		compute_errors(
 		    pi, i, blk,
 		    uncor_rgb_plines, uncorr_rgb_error,
 		    samec_rgb_plines, samechroma_rgb_error,
