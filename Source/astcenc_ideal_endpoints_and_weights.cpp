@@ -892,7 +892,7 @@ void compute_ideal_weights_for_decimation(
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
-		vfloat weight_weight(1e-10f);
+		vfloat weight_weight = vfloat::zero();
 		vfloat initial_weight = vfloat::zero();
 
 		// Accumulate error weighting of all the texels using this weight
@@ -905,18 +905,24 @@ void compute_ideal_weights_for_decimation(
 			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
 
+			vfloat contrib_weight = weight;
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf(etab, texel);
+				contrib_weight = contrib_weight * gatherf(etab, texel);
 			}
-
-			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight += contrib_weight;
 			initial_weight += gatherf(wtab, texel) * contrib_weight;
 		}
 
-		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
+		// Apply a uniform error scale once, retaining the denominator regularizer
+		if (constant_wes)
+		{
+			initial_weight = initial_weight * weight_error_scale;
+			weight_weight = weight_weight * weight_error_scale;
+		}
+
+		storea(initial_weight / (weight_weight + vfloat(1e-10f)), dec_weight_ideal_value + i);
 	}
 
 	// Populate the interpolated weight grid based on the initial average
@@ -952,8 +958,8 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		// Start with a small value to avoid div-by-zero later
-		vfloat error_change0(1e-10f);
-		vfloat error_change1(0.0f);
+		vfloat error_change0 = vfloat::zero();
+		vfloat error_change1 = vfloat::zero();
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
@@ -965,19 +971,25 @@ void compute_ideal_weights_for_decimation(
 			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
 
+			vfloat scale = contrib_weight;
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf(etab, texel);
+				scale = scale * gatherf(etab, texel);
 			}
 
-			vfloat scale = weight_error_scale * contrib_weight;
 			vfloat weight_diff = gatherf(dtab, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += weight_diff * scale;
 		}
 
-		vfloat step = (error_change1 * chd_scale) / error_change0;
+		if (constant_wes)
+		{
+			error_change1 = error_change1 * weight_error_scale;
+			error_change0 = error_change0 * weight_error_scale;
+		}
+
+		vfloat step = (error_change1 * chd_scale) / (error_change0 + vfloat(1e-10f));
 		step = clamp(-stepsize, stepsize, step);
 
 		// Update the weight, allowing negative values
