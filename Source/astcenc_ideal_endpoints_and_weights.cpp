@@ -1619,9 +1619,10 @@ void recompute_ideal_colors_2planes(
 	rgbo_vector = vfloat4::zero();
 
 	unsigned int weight_count = di.weight_count;
-	unsigned int total_texel_count = blk.texel_count;
+	unsigned int texel_count = blk.texel_count;
+	float texel_countf = static_cast<float>(texel_count);
 
-	promise(total_texel_count > 0);
+	promise(texel_count > 0);
 	promise(weight_count > 0);
 
 	ASTCENC_ALIGNAS float dec_weight_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
@@ -1653,7 +1654,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else if (di.max_texel_weight_count <= 2)
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla_2(di, dec_weight_plane1, i);
 			storea(weight, undec_weight_plane1 + i);
@@ -1667,7 +1668,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla(di, dec_weight_plane1, i);
 			storea(weight, undec_weight_plane1 + i);
@@ -1680,8 +1681,8 @@ void recompute_ideal_colors_2planes(
 		undec_weight_plane2_ref = undec_weight_plane2;
 	}
 
-	unsigned int texel_count = bsd.texel_count;
-	vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
+	// Compute channel weight sums and the mean RGB direction for RGB-scale fitting
+	vfloat4 rgba_weight_sum = max(blk.channel_weight * texel_countf, 1e-17f);
 	vfloat4 scale_dir = vfloat4::zero();
 	if (is_rgbs)
 	{
@@ -1697,18 +1698,13 @@ void recompute_ideal_colors_2planes(
 	float wmin2 = 1.0f;
 	float wmax2 = 0.0f;
 
-	float left1_sum_s = 0.0f;
-	float middle1_sum_s = 0.0f;
+	float weight1_sum_s = 0.0f;
 	float right1_sum_s = 0.0f;
 
-	float left2_sum_s = 0.0f;
-	float middle2_sum_s = 0.0f;
+	float weight2_sum_s = 0.0f;
 	float right2_sum_s = 0.0f;
 
-	vfloat4 color_vec_x = vfloat4::zero();
 	vfloat4 color_vec_y = vfloat4::zero();
-
-	vfloat4 weight_weight_sum = vfloat4(1e-17f);
 
 	vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 	vfloat4 color_weight = blk.channel_weight;
@@ -1719,42 +1715,47 @@ void recompute_ideal_colors_2planes(
 
 		float idx0 = undec_weight_plane1_ref[j];
 
-		float om_idx0 = 1.0f - idx0;
 		wmin1 = astc::min(idx0, wmin1);
 		wmax1 = astc::max(idx0, wmax1);
 
 		if (is_rgbs)
 		{
+			// Record the observed range only for RGB-scale encoding
 			float scale = dot3_s(scale_dir, rgba);
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 		}
 
-		left1_sum_s   += om_idx0 * om_idx0;
-		middle1_sum_s += om_idx0 * idx0;
-		right1_sum_s  += idx0 * idx0;
+		// Accumulate sum(w), sum(w*w), and sum(w*c) for the endpoint solve
+		weight1_sum_s += idx0;
+		right1_sum_s += idx0 * idx0;
 
 		float idx1 = undec_weight_plane2_ref[j];
 
-		float om_idx1 = 1.0f - idx1;
 		wmin2 = astc::min(idx1, wmin2);
 		wmax2 = astc::max(idx1, wmax2);
 
-		left2_sum_s   += om_idx1 * om_idx1;
-		middle2_sum_s += om_idx1 * idx1;
-		right2_sum_s  += idx1 * idx1;
+		weight2_sum_s += idx1;
+		right2_sum_s += idx1 * idx1;
 
 		vfloat4 color_idx = select(vfloat4(idx0), vfloat4(idx1), p2_mask);
-
 		vfloat4 cwprod = rgba;
 		vfloat4 cwiprod = cwprod * color_idx;
 
 		color_vec_y += cwiprod;
-		color_vec_x += cwprod - cwiprod;
-
-		weight_weight_sum += color_idx;
 	}
 
+	// For c = (1-w)*ep0 + w*ep1, form the normal-equation matrix terms
+	float left1_sum_s = texel_countf - 2.0f * weight1_sum_s + right1_sum_s;
+	float middle1_sum_s = weight1_sum_s - right1_sum_s;
+
+	float left2_sum_s = texel_countf - 2.0f * weight2_sum_s + right2_sum_s;
+	float middle2_sum_s = weight2_sum_s - right2_sum_s;
+
+	vfloat4 weight_weight_sum = select(vfloat4(weight1_sum_s), vfloat4(weight2_sum_s), p2_mask)
+	                          + 1e-17f;
+
+	// Apply channel error weights to the color normal equations
 	vfloat4 left1_sum   = vfloat4(left1_sum_s) * color_weight;
 	vfloat4 middle1_sum = vfloat4(middle1_sum_s) * color_weight;
 	vfloat4 right1_sum  = vfloat4(right1_sum_s) * color_weight;
@@ -1763,12 +1764,14 @@ void recompute_ideal_colors_2planes(
 	vfloat4 middle2_sum = vfloat4(middle2_sum_s) * color_weight;
 	vfloat4 right2_sum  = vfloat4(right2_sum_s) * color_weight;
 
+	// The color right-hand sides are sum(w*c) and sum((1-w)*c)
+	vfloat4 color_vec_x = blk.data_mean * texel_countf - color_vec_y;
 	color_vec_x = color_vec_x * color_weight;
 	color_vec_y = color_vec_y * color_weight;
 
 	if (wmin1 >= wmax1 * 0.999f)
 	{
-		// Use the partition's average color for both endpoints when all weights are equal
+		// Equal weights cannot determine endpoint separation; use the mean for both colors
 		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
@@ -1780,29 +1783,33 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		// Solve for ideal endpoints using the texel weights and colors
+		// Compute the determinant and reciprocal for the color system
 		vfloat4 color_det1 = (left1_sum * right1_sum) - (middle1_sum * middle1_sum);
 		vfloat4 color_rdet1 = 1.0f / color_det1;
 
+		// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
 		vfloat4 color_mss1 = (left1_sum * left1_sum)
 		                   + (2.0f * middle1_sum * middle1_sum)
 		                   + (right1_sum * right1_sum);
 
+		// Solve the 2x2 system for both endpoints
 		vfloat4 ep0 = (right1_sum * color_vec_x - middle1_sum * color_vec_y) * color_rdet1;
 		vfloat4 ep1 = (left1_sum * color_vec_y - middle1_sum * color_vec_x) * color_rdet1;
 
+		// Reject ill-conditioned or NaN fits using the relative determinant test
 		vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 		vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
 		vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 		vmask4 full_mask = p1_mask & det_mask & notnan_mask;
 
+		// Keep the incoming endpoints when the analytic fit is invalid
 		ep.endpt0[0] = select(ep.endpt0[0], ep0, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
 	}
 
 	if (wmin2 >= wmax2 * 0.999f)
 	{
-		// Use the partition's average color for both endpoints when all weights are equal
+		// Equal weights cannot determine endpoint separation; use the mean for both colors
 		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 notnan_mask = avg == avg;
@@ -1813,21 +1820,25 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		// Solve for ideal endpoints using the texel weights and colors
+		// Compute the determinant and reciprocal for the color system
 		vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
 		vfloat4 color_rdet2 = 1.0f / color_det2;
 
+		// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
 		vfloat4 color_mss2 = (left2_sum * left2_sum)
 		                   + (2.0f * middle2_sum * middle2_sum)
 		                   + (right2_sum * right2_sum);
 
+		// Solve the 2x2 system for both endpoints
 		vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 		vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
+		// Reject ill-conditioned or NaN fits using the relative determinant test
 		vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
 		vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 		vmask4 full_mask = p2_mask & det_mask & notnan_mask;
 
+		// Keep the incoming endpoints when the analytic fit is invalid
 		ep.endpt0[0] = select(ep.endpt0[0], ep0, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
 	}
@@ -1842,9 +1853,11 @@ void recompute_ideal_colors_2planes(
 		vfloat4 lmrs_sum = vfloat3(dot3_s(dir_squared, left_sum),
 		                           dot3_s(dir_squared, middle_sum),
 		                           dot3_s(dir_squared, right_sum));
+
+		// Fit shared RGB magnitudes using the channel-weighted color sums
 		vfloat4 scale_vec = vfloat2(dot3_s(scale_dir, color_vec_x), dot3_s(scale_dir, color_vec_y));
 
-		// Initialize the luminance and scale vectors with a reasonable default
+		// Initialize RGB-scale endpoints from the observed projected RGB range
 		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
 		scalediv = astc::clamp1f(scalediv);
 
@@ -1864,15 +1877,18 @@ void recompute_ideal_colors_2planes(
 			float ls_det = lmrs_sum.lane<0>() * lmrs_sum.lane<2>()
 			             - lmrs_sum.lane<1>() * lmrs_sum.lane<1>();
 			float ls_rdet = 1.0f / ls_det;
+
 			float ls_mss = lmrs_sum.lane<0>() * lmrs_sum.lane<0>()
 			             + 2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>()
 			             + lmrs_sum.lane<2>() * lmrs_sum.lane<2>();
 
+			// Solve the same system for endpoint magnitudes along the RGB-scale direction
 			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
 			                  - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet;
 			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>()
 			                  - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet;
 
+			// Keep the default scale endpoints unless the analytic fit is valid and increasing
 			if ((fabsf(ls_det) > ls_mss * 1e-4f) && (scale_ep0 == scale_ep0) &&
 			    (scale_ep1 == scale_ep1) && (scale_ep0 < scale_ep1))
 			{
