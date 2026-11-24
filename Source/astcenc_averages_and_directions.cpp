@@ -1127,9 +1127,7 @@ void compute_error_squared_rgba_grayscale(
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
 
-		vfloat ew_r(blk.channel_weight.lane<0>());
-		vfloat ew_g(blk.channel_weight.lane<1>());
-		vfloat ew_b(blk.channel_weight.lane<2>());
+		vfloat ew_rgb(hadd_rgb_s(blk.channel_weight));
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
 		// Padded texel indexes repeat the last value, preserving min/max. Mask these lanes when
@@ -1154,10 +1152,8 @@ void compute_error_squared_rgba_grayscale(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			// Channel weights may differ, even though the RGB residuals match
-			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
-			                 + ((uncor_dist0 * uncor_dist0) * ew_g)
-			                 + ((uncor_dist0 * uncor_dist0) * ew_b)
+			// Identical RGB residuals use the sum of their channel weights
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_rgb)
 			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
 			haccumulate(uncor_errorsumv, uncor_err, mask);
@@ -1167,9 +1163,7 @@ void compute_error_squared_rgba_grayscale(
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
-			                 + ((samec_dist0 * samec_dist0) * ew_g)
-			                 + ((samec_dist0 * samec_dist0) * ew_b)
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_rgb)
 			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
@@ -1375,9 +1369,8 @@ void compute_partition_errors_luminance_alpha_batch(
 	// Apply the RGB batch strategy to luminance with alpha. Direction finding uses
 	// RRRA lanes per candidate, while error scoring uses four texels per candidate quad.
 	//
-	// Identical RGB components share direction and distance calculations, but retain separate
-	// channel weights. Keep four running error sums and partition order for quantization
-	// errors independent of SIMD width
+	// Identical RGB residuals use the sum of their channel weights. Keep the four running
+	// error sums and partition order for quantization errors independent of SIMD width
 
 	assert(blk.grayscale);
 
@@ -1402,9 +1395,7 @@ void compute_partition_errors_luminance_alpha_batch(
 	vfloat uncor_quant[BLOCK_MAX_PARTITIONS];
 	vfloat samec_quant[BLOCK_MAX_PARTITIONS];
 
-	vfloat ew_r(blk.channel_weight.lane<0>());
-	vfloat ew_g(blk.channel_weight.lane<1>());
-	vfloat ew_b(blk.channel_weight.lane<2>());
+	vfloat ew_rgb(hadd_rgb_s(blk.channel_weight));
 	vfloat ew_a(blk.channel_weight.lane<3>());
 
 	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
@@ -1504,9 +1495,7 @@ void compute_partition_errors_luminance_alpha_batch(
 			                   + (uncor_param * l_uncor_bs0);
 			vfloat uncor_dist3 = (l_uncor_amod3 - a)
 			                   + (uncor_param * l_uncor_bs3);
-			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_r)
-			                 + ((uncor_dist0 * uncor_dist0) * ew_g)
-			                 + ((uncor_dist0 * uncor_dist0) * ew_b)
+			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_rgb)
 			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
 
 			uncor_errorsumv += select(zero, uncor_err, active);
@@ -1515,9 +1504,7 @@ void compute_partition_errors_luminance_alpha_batch(
 
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - r;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - a;
-			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_r)
-			                 + ((samec_dist0 * samec_dist0) * ew_g)
-			                 + ((samec_dist0 * samec_dist0) * ew_b)
+			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_rgb)
 			                 + ((samec_dist3 * samec_dist3) * ew_a);
 
 			samec_errorsumv += select(zero, samec_err, active);
