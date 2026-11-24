@@ -112,10 +112,13 @@ static bool realign_weights_undecimated_1partition(
 		vfloat offset_b(color_offset.lane<2>());
 		vfloat offset_a(color_offset.lane<3>());
 
-		vfloat weight_r(error_weight.lane<0>());
-		vfloat weight_g(error_weight.lane<1>());
-		vfloat weight_b(error_weight.lane<2>());
-		vfloat weight_a(error_weight.lane<3>());
+		// Channel error weights are shared by every texel in this plane
+		vfloat4 weighted_offset = color_offset * error_weight;
+
+		vfloat weighted_offset_r(weighted_offset.lane<0>());
+		vfloat weighted_offset_g(weighted_offset.lane<1>());
+		vfloat weighted_offset_b(weighted_offset.lane<2>());
+		vfloat weighted_offset_a(weighted_offset.lane<3>());
 
 		vfloat error_quadratic(dot_s(color_offset * color_offset, error_weight));
 		vmask is_adjusted_batch(false);
@@ -128,14 +131,14 @@ static bool realign_weights_undecimated_1partition(
 
 			// Accumulate channel pairs to limit live vectors and preserve the dot product order
 			vfloat residual_r = (base_r + offset_r * uqw_base) - loada(blk.data_r + texel);
-			vfloat linear_rb = (residual_r * offset_r) * weight_r;
+			vfloat linear_rb = residual_r * weighted_offset_r;
 			vfloat residual_b = (base_b + offset_b * uqw_base) - loada(blk.data_b + texel);
-			linear_rb = linear_rb + (residual_b * offset_b) * weight_b;
+			linear_rb = linear_rb + residual_b * weighted_offset_b;
 
 			vfloat residual_g = (base_g + offset_g * uqw_base) - loada(blk.data_g + texel);
-			vfloat linear_ga = (residual_g * offset_g) * weight_g;
+			vfloat linear_ga = residual_g * weighted_offset_g;
 			vfloat residual_a = (base_a + offset_a * uqw_base) - loada(blk.data_a + texel);
-			linear_ga = linear_ga + (residual_a * offset_a) * weight_a;
+			linear_ga = linear_ga + residual_a * weighted_offset_a;
 			vfloat error_linear = linear_rb + linear_ga;
 
 			vint prev_and_next = gatheri(qat.prev_next_values, uqw);
