@@ -1418,100 +1418,53 @@ static float prepare_block_statistics(
 	const image_block& blk,
 	vfloat4 covariance[3]
 ) {
-	// Accumulate the 10 upper-triangle entries of the symmetric covariance matrix
-	float rs = 0.0f;
-	float gs = 0.0f;
-	float bs = 0.0f;
-	float as = 0.0f;
-	float rr_var = 0.0f;
-	float gg_var = 0.0f;
-	float bb_var = 0.0f;
-	float aa_var = 0.0f;
-	float rg_cov = 0.0f;
-	float rb_cov = 0.0f;
-	float ra_cov = 0.0f;
-	float gb_cov = 0.0f;
-	float ga_cov = 0.0f;
-	float ba_cov = 0.0f;
+	// Each lane retains texel order, keeping the moments independent of SIMD width
+	vfloat4 color_sum = vfloat4::zero();
+	vfloat4 diagonal_sum = vfloat4::zero();
+	vfloat4 cross_sum0 = vfloat4::zero();
+	vfloat4 cross_sum1 = vfloat4::zero();
 
+	float weight = hadd_s(blk.channel_weight) / 4.0f;
+	assert(weight >= 0.0f);
 	float weight_sum = 0.0f;
 
 	promise(texels_per_block > 0);
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		float weight = hadd_s(blk.channel_weight) / 4.0f;
-		assert(weight >= 0.0f);
 		weight_sum += weight;
 
-		float r = blk.data_r[i];
-		float g = blk.data_g[i];
-		float b = blk.data_b[i];
-		float a = blk.data_a[i];
+		vfloat4 color = blk.texel(i);
+		vfloat4 color_weighted = color * weight;
+		color_sum += color_weighted;
+		diagonal_sum += color * color_weighted;
 
-		float rw = r * weight;
-		rs += rw;
-		rr_var += r * rw;
-		rg_cov += g * rw;
-		rb_cov += b * rw;
-		ra_cov += a * rw;
-
-		float gw = g * weight;
-		gs += gw;
-		gg_var += g * gw;
-		gb_cov += b * gw;
-		ga_cov += a * gw;
-
-		float bw = b * weight;
-		bs += bw;
-		bb_var += b * bw;
-		ba_cov += a * bw;
-
-		float aw = a * weight;
-		as += aw;
-		aa_var += a * aw;
+		// Cross-moment layouts are (rg, rb, ra, gb) and (ga, ba, ga, ba)
+		cross_sum0 += color.swz<1, 2, 3, 2>() * color_weighted.swz<0, 0, 0, 1>();
+		cross_sum1 += color.swz<3, 3, 3, 3>() * color_weighted.swz<1, 2, 1, 2>();
 	}
 
+	// Center each moment using the original multiplication order
 	float rpt = 1.0f / astc::max(weight_sum, 1e-7f);
-
-	rr_var -= rs * (rs * rpt);
-	rg_cov -= gs * (rs * rpt);
-	rb_cov -= bs * (rs * rpt);
-	ra_cov -= as * (rs * rpt);
-
-	gg_var -= gs * (gs * rpt);
-	gb_cov -= bs * (gs * rpt);
-	ga_cov -= as * (gs * rpt);
-
-	bb_var -= bs * (bs * rpt);
-	ba_cov -= as * (bs * rpt);
-
-	aa_var -= as * (as * rpt);
+	vfloat4 mean = color_sum * rpt;
+	vfloat4 diagonal = diagonal_sum - color_sum * mean;
+	vfloat4 cross0 = cross_sum0 - color_sum.swz<1, 2, 3, 2>() * mean.swz<0, 0, 0, 1>();
+	vfloat4 cross1 = cross_sum1 - color_sum.swz<3, 3, 3, 3>() * mean.swz<1, 2, 1, 2>();
 
 	// Retain the covariance magnitudes before converting to correlation coefficients
-	covariance[0] = max(vfloat4(rr_var, gg_var, bb_var, aa_var), vfloat4::zero());
-	covariance[1] = vfloat4(rg_cov, rb_cov, ra_cov, gb_cov);
-	covariance[2] = vfloat4(ga_cov, ba_cov, 0.0f, 0.0f);
+	covariance[0] = max(diagonal, vfloat4::zero());
+	covariance[1] = cross0;
+	covariance[2] = vfloat4(cross1.lane<0>(), cross1.lane<1>(), 0.0f, 0.0f);
 
-	// These will give a NaN if a channel is constant - these are fixed up in the next step
-	rg_cov /= astc::sqrt(rr_var * gg_var);
-	rb_cov /= astc::sqrt(rr_var * bb_var);
-	ra_cov /= astc::sqrt(rr_var * aa_var);
-	gb_cov /= astc::sqrt(gg_var * bb_var);
-	ga_cov /= astc::sqrt(gg_var * aa_var);
-	ba_cov /= astc::sqrt(bb_var * aa_var);
+	// Preserve raw pairwise variance products; cancellation can make variances negative
+	vfloat4 variance0 = diagonal.swz<0, 0, 0, 1>() * diagonal.swz<1, 2, 3, 2>();
+	vfloat4 variance1 = diagonal.swz<1, 2, 1, 2>() * diagonal.swz<3, 3, 3, 3>();
+	vfloat4 correlation0 = abs(cross0 / sqrt(variance0));
+	vfloat4 correlation1 = abs(cross1 / sqrt(variance1));
 
-	if (astc::isnan(rg_cov)) rg_cov = 1.0f;
-	if (astc::isnan(rb_cov)) rb_cov = 1.0f;
-	if (astc::isnan(ra_cov)) ra_cov = 1.0f;
-	if (astc::isnan(gb_cov)) gb_cov = 1.0f;
-	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
-	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
-
-	float lowest_correlation = astc::min(fabsf(rg_cov),      fabsf(rb_cov));
-	lowest_correlation       = astc::min(lowest_correlation, fabsf(ra_cov));
-	lowest_correlation       = astc::min(lowest_correlation, fabsf(gb_cov));
-	lowest_correlation       = astc::min(lowest_correlation, fabsf(ga_cov));
-	lowest_correlation       = astc::min(lowest_correlation, fabsf(ba_cov));
+	// Fix constant-channel NaNs before reducing; spare lanes duplicate real correlations
+	correlation0 = select(vfloat4(1.0f), correlation0, correlation0 == correlation0);
+	correlation1 = select(vfloat4(1.0f), correlation1, correlation1 == correlation1);
+	float lowest_correlation = astc::min(hmin_s(correlation0), hmin_s(correlation1));
 
 	// Diagnostic trace points
 	trace_add_data("min_r", blk.data_min.lane<0>());
@@ -1522,12 +1475,12 @@ static float prepare_block_statistics(
 	trace_add_data("max_b", blk.data_max.lane<2>());
 	trace_add_data("min_a", blk.data_min.lane<3>());
 	trace_add_data("max_a", blk.data_max.lane<3>());
-	trace_add_data("cov_rg", fabsf(rg_cov));
-	trace_add_data("cov_rb", fabsf(rb_cov));
-	trace_add_data("cov_ra", fabsf(ra_cov));
-	trace_add_data("cov_gb", fabsf(gb_cov));
-	trace_add_data("cov_ga", fabsf(ga_cov));
-	trace_add_data("cov_ba", fabsf(ba_cov));
+	trace_add_data("cov_rg", correlation0.lane<0>());
+	trace_add_data("cov_rb", correlation0.lane<1>());
+	trace_add_data("cov_ra", correlation0.lane<2>());
+	trace_add_data("cov_gb", correlation0.lane<3>());
+	trace_add_data("cov_ga", correlation1.lane<0>());
+	trace_add_data("cov_ba", correlation1.lane<1>());
 
 	return lowest_correlation;
 }
