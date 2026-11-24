@@ -2342,6 +2342,24 @@ float compute_symbolic_block_difference_2plane(
 	const image_block& blk);
 
 /**
+ * @brief Compute unweighted error for a two-plane, single-partition symbolic block.
+ *
+ * All four channel weights must be one. RGBM encodings with a zero M value are rejected.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or a negative value for a rejected RGBM encoding.
+ */
+float compute_symbolic_block_difference_2plane_unweighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk);
+
+/**
  * @brief Compute the error between a symbolic block and the original input data.
  *
  * This function is specialized for 1 plane and N partition search.
@@ -2363,6 +2381,24 @@ float compute_symbolic_block_difference_1plane(
 	const image_block& blk);
 
 /**
+ * @brief Compute unweighted error for a single-plane symbolic block.
+ *
+ * All four channel weights must be one. RGBM encodings with a zero M value are rejected.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or a negative value for a rejected RGBM encoding.
+ */
+float compute_symbolic_block_difference_1plane_unweighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk);
+
+/**
  * @brief Compute the error between a symbolic block and the original input data.
  *
  * This function is specialized for 1 plane and 1 partition search.
@@ -2375,6 +2411,24 @@ float compute_symbolic_block_difference_1plane(
  * @return The computed error, or ERROR_CALC_DEFAULT for an error block.
  */
 float compute_symbolic_block_difference_1plane_1partition(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk);
+
+/**
+ * @brief Compute unweighted error for a single-plane, single-partition symbolic block.
+ *
+ * All four channel weights must be one.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or ERROR_CALC_DEFAULT for an error block.
+ */
+float compute_symbolic_block_difference_1plane_1partition_unweighted(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,

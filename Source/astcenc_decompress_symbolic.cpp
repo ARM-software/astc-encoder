@@ -330,8 +330,20 @@ bool decompress_symbolic_block(
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 
-/* See header for documentation. */
-float compute_symbolic_block_difference_2plane(
+/**
+ * @brief Compute two-plane block error with optional channel weighting.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or a negative value for a rejected RGBM encoding.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_2plane_impl(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
@@ -420,14 +432,58 @@ float compute_symbolic_block_difference_2plane(
 
 		error = error * error;
 
-		summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
+		vfloat4 metric;
+		if constexpr (is_weighted)
+		{
+			metric = dot(error, blk.channel_weight);
+		}
+		else
+		{
+			metric = vfloat4(hadd_s(error));
+		}
+
+		summa += min(metric, ERROR_CALC_DEFAULT);
 	}
 
 	return summa.lane<0>();
 }
 
 /* See header for documentation. */
-float compute_symbolic_block_difference_1plane(
+float compute_symbolic_block_difference_2plane(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	return compute_symbolic_block_difference_2plane_impl<true>(config, bsd, scb, blk);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_2plane_unweighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	return compute_symbolic_block_difference_2plane_impl<false>(config, bsd, scb, blk);
+}
+
+/**
+ * @brief Compute single-plane block error with optional channel weighting.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or a negative value for a rejected RGBM encoding.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_impl(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
@@ -518,17 +574,50 @@ float compute_symbolic_block_difference_1plane(
 
 			error = error * error;
 
-			summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
+			vfloat4 metric;
+			if constexpr (is_weighted)
+			{
+				metric = dot(error, blk.channel_weight);
+			}
+			else
+			{
+				metric = vfloat4(hadd_s(error));
+			}
+
+			summa += min(metric, ERROR_CALC_DEFAULT);
 		}
 	}
 
 	return summa.lane<0>();
 }
 
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	return compute_symbolic_block_difference_1plane_impl<true>(config, bsd, scb, blk);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_unweighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	return compute_symbolic_block_difference_1plane_impl<false>(config, bsd, scb, blk);
+}
+
 /**
  * @brief Compute single-plane, single-partition error using known endpoints and weights.
  *
- * @tparam is_rgb   True if the source and both decoded endpoints have opaque alpha.
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ * @tparam is_rgb        True if the source and both decoded endpoints have opaque alpha.
  *
  * @param bsd              The block size information.
  * @param blk              The original image block color data.
@@ -539,7 +628,7 @@ float compute_symbolic_block_difference_1plane(
  *
  * @return The computed error.
  */
-template<bool is_rgb>
+template<bool is_weighted, bool is_rgb>
 static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1partition_impl(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
@@ -586,9 +675,17 @@ static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1parti
 		error_g = error_g * error_g;
 		error_b = error_b * error_b;
 
-		vfloat metric = error_r * blk.channel_weight.lane<0>()
-		              + error_g * blk.channel_weight.lane<1>()
-		              + error_b * blk.channel_weight.lane<2>();
+		vfloat metric;
+		if constexpr (is_weighted)
+		{
+			metric = error_r * blk.channel_weight.lane<0>()
+			       + error_g * blk.channel_weight.lane<1>()
+			       + error_b * blk.channel_weight.lane<2>();
+		}
+		else
+		{
+			metric = error_r + error_g + error_b;
+		}
 
 		// Opaque source and endpoint alpha values contribute exactly zero error
 		if constexpr (!is_rgb)
@@ -598,7 +695,14 @@ static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1parti
 
 			vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
 			error_a = error_a * error_a;
-			metric = metric + error_a * blk.channel_weight.lane<3>();
+			if constexpr (is_weighted)
+			{
+				metric = metric + error_a * blk.channel_weight.lane<3>();
+			}
+			else
+			{
+				metric = metric + error_a;
+			}
 		}
 
 		// Mask off bad lanes
@@ -610,8 +714,20 @@ static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1parti
 	return hadd_s(error_sum);
 }
 
-/* See header for documentation. */
-float compute_symbolic_block_difference_1plane_1partition(
+/**
+ * @brief Compute single-plane, single-partition block error with optional channel weighting.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param config   The compressor configuration.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ *
+ * @return The computed error, or ERROR_CALC_DEFAULT for an error block.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1partition_impl(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
@@ -649,12 +765,34 @@ float compute_symbolic_block_difference_1plane_1partition(
 	              (ep0.lane<3>() == 65535) && (ep1.lane<3>() == 65535);
 	if (is_rgb)
 	{
-		return compute_symbolic_block_difference_1plane_1partition_impl<true>(
+		return compute_symbolic_block_difference_1plane_1partition_impl<is_weighted, true>(
 			bsd, blk, ep0, ep1, plane1_weights, u8_control);
 	}
 
-	return compute_symbolic_block_difference_1plane_1partition_impl<false>(
+	return compute_symbolic_block_difference_1plane_1partition_impl<is_weighted, false>(
 		bsd, blk, ep0, ep1, plane1_weights, u8_control);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_1partition(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	return compute_symbolic_block_difference_1plane_1partition_impl<true>(config, bsd, scb, blk);
+}
+
+/* See header for documentation. */
+float compute_symbolic_block_difference_1plane_1partition_unweighted(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const image_block& blk
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	return compute_symbolic_block_difference_1plane_1partition_impl<false>(config, bsd, scb, blk);
 }
 
 /**
