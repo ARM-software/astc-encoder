@@ -529,6 +529,91 @@ float compute_symbolic_block_difference_1plane(
 	return summa.lane<0>();
 }
 
+/**
+ * @brief Compute single-plane, single-partition error using known endpoints and weights.
+ *
+ * @tparam is_rgb   True if the source and both decoded endpoints have opaque alpha.
+ *
+ * @param bsd              The block size information.
+ * @param blk              The original image block color data.
+ * @param ep0              The decoded first endpoint.
+ * @param ep1              The decoded second endpoint.
+ * @param plane1_weights   The undecimated interpolation weights.
+ * @param u8_control       The replicated control from prepare_unorm8_rounding().
+ *
+ * @return The computed error.
+ */
+template<bool is_rgb>
+static ASTCENC_SIMD_INLINE float compute_symbolic_block_difference_1plane_1partition_impl(
+	const block_size_descriptor& bsd,
+	const image_block& blk,
+	vint4 ep0,
+	vint4 ep1,
+	const int* plane1_weights,
+	vint u8_control
+) {
+	// Unpack and compute error for each texel in the partition
+	vint4 ep_delta = ep1 - ep0;
+	vint ep0_r(ep0.lane<0>());
+	vint ep0_g(ep0.lane<1>());
+	vint ep0_b(ep0.lane<2>());
+	vint ep0_a(ep0.lane<3>());
+
+	vint ep_delta_r(ep_delta.lane<0>());
+	vint ep_delta_g(ep_delta.lane<1>());
+	vint ep_delta_b(ep_delta.lane<2>());
+	vint ep_delta_a(ep_delta.lane<3>());
+
+	vfloatacc error_sum = vfloatacc::zero();
+	vint lane_id = vint::lane_id();
+	unsigned int texel_count = bsd.texel_count;
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vint weight = vint::loada(plane1_weights + i);
+
+		vint colori_r = ep0_r + asr<6>(ep_delta_r * weight + vint(32));
+		vint colori_g = ep0_g + asr<6>(ep_delta_g * weight + vint(32));
+		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
+
+		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
+		colori_r = apply_unorm8_rounding(colori_r, u8_control);
+		colori_g = apply_unorm8_rounding(colori_g, u8_control);
+		colori_b = apply_unorm8_rounding(colori_b, u8_control);
+
+		// Compute color diff
+		vfloat error_r = loada(blk.data_r + i) - int_to_float(colori_r);
+		vfloat error_g = loada(blk.data_g + i) - int_to_float(colori_g);
+		vfloat error_b = loada(blk.data_b + i) - int_to_float(colori_b);
+
+		// Compute squared error metric
+		error_r = error_r * error_r;
+		error_g = error_g * error_g;
+		error_b = error_b * error_b;
+
+		vfloat metric = error_r * blk.channel_weight.lane<0>()
+		              + error_g * blk.channel_weight.lane<1>()
+		              + error_b * blk.channel_weight.lane<2>();
+
+		// Opaque source and endpoint alpha values contribute exactly zero error
+		if constexpr (!is_rgb)
+		{
+			vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
+			colori_a = apply_unorm8_rounding(colori_a, u8_control);
+
+			vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
+			error_a = error_a * error_a;
+			metric = metric + error_a * blk.channel_weight.lane<3>();
+		}
+
+		// Mask off bad lanes
+		vmask mask = lane_id < vint(texel_count);
+		lane_id += vint(ASTCENC_SIMD_WIDTH);
+		haccumulate(error_sum, metric, mask);
+	}
+
+	return hadd_s(error_sum);
+}
+
 /* See header for documentation. */
 float compute_symbolic_block_difference_1plane_1partition(
 	const astcenc_config& config,
@@ -565,60 +650,17 @@ float compute_symbolic_block_difference_1plane_1partition(
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 	vint u8_control = broadcast_quad(prepare_unorm8_rounding(all(u8_mask)));
 
-	// Unpack and compute error for each texel in the partition
-	vint4 ep_delta = ep1 - ep0;
-	vint ep0_r(ep0.lane<0>());
-	vint ep0_g(ep0.lane<1>());
-	vint ep0_b(ep0.lane<2>());
-	vint ep0_a(ep0.lane<3>());
-
-	vint ep_delta_r(ep_delta.lane<0>());
-	vint ep_delta_g(ep_delta.lane<1>());
-	vint ep_delta_b(ep_delta.lane<2>());
-	vint ep_delta_a(ep_delta.lane<3>());
-
-	vfloatacc error_sum = vfloatacc::zero();
-	vint lane_id = vint::lane_id();
-	unsigned int texel_count = bsd.texel_count;
-	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	// Source opacity alone does not guarantee that candidate endpoints are opaque
+	bool is_rgb = (blk.data_min.lane<3>() == 65535.0f) && (blk.data_max.lane<3>() == 65535.0f) &&
+	              (ep0.lane<3>() == 65535) && (ep1.lane<3>() == 65535);
+	if (is_rgb)
 	{
-		vint weight = vint::loada(plane1_weights + i);
-
-		vint colori_r = ep0_r + asr<6>(ep_delta_r * weight + vint(32));
-		vint colori_g = ep0_g + asr<6>(ep_delta_g * weight + vint(32));
-		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
-		vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
-
-		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
-		colori_r = apply_unorm8_rounding(colori_r, u8_control);
-		colori_g = apply_unorm8_rounding(colori_g, u8_control);
-		colori_b = apply_unorm8_rounding(colori_b, u8_control);
-		colori_a = apply_unorm8_rounding(colori_a, u8_control);
-
-		// Compute color diff
-		vfloat error_r = loada(blk.data_r + i) - int_to_float(colori_r);
-		vfloat error_g = loada(blk.data_g + i) - int_to_float(colori_g);
-		vfloat error_b = loada(blk.data_b + i) - int_to_float(colori_b);
-		vfloat error_a = loada(blk.data_a + i) - int_to_float(colori_a);
-
-		// Compute squared error metric
-		error_r = error_r * error_r;
-		error_g = error_g * error_g;
-		error_b = error_b * error_b;
-		error_a = error_a * error_a;
-
-		vfloat metric = error_r * blk.channel_weight.lane<0>()
-		              + error_g * blk.channel_weight.lane<1>()
-		              + error_b * blk.channel_weight.lane<2>()
-		              + error_a * blk.channel_weight.lane<3>();
-
-		// Mask off bad lanes
-		vmask mask = lane_id < vint(texel_count);
-		lane_id += vint(ASTCENC_SIMD_WIDTH);
-		haccumulate(error_sum, metric, mask);
+		return compute_symbolic_block_difference_1plane_1partition_impl<true>(
+			bsd, blk, ep0, ep1, plane1_weights, u8_control);
 	}
 
-	return hadd_s(error_sum);
+	return compute_symbolic_block_difference_1plane_1partition_impl<false>(
+		bsd, blk, ep0, ep1, plane1_weights, u8_control);
 }
 
 /**
