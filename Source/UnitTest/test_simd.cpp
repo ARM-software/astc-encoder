@@ -1493,6 +1493,36 @@ TEST(SuiteVfloat4, float_to_int)
 	EXPECT_EQ(r.lane<3>(), 4);
 }
 
+/** @brief Optional UNORM8 rounding matches scalar decoding for every value and channel mask. */
+TEST(SuiteVint, apply_unorm8_rounding)
+{
+	for (unsigned int mask_bits = 0; mask_bits < 16; mask_bits++)
+	{
+		vmask4 is_unorm8((mask_bits & 1) != 0, (mask_bits & 2) != 0,
+		                (mask_bits & 4) != 0, (mask_bits & 8) != 0);
+		vint control = broadcast_quad(prepare_unorm8_rounding(is_unorm8));
+		for (unsigned int first = 0; first < 65536; first += ASTCENC_SIMD_WIDTH)
+		{
+			vint colors = vint(static_cast<int>(first)) + vint::lane_id();
+			vint rounded = apply_unorm8_rounding(colors, control);
+			int results[ASTCENC_SIMD_WIDTH];
+			store(rounded, results);
+			for (unsigned int lane = 0; lane < ASTCENC_SIMD_WIDTH; lane++)
+			{
+				int expected = static_cast<int>(first + lane);
+				bool is_lane_unorm8 = (mask_bits & (1u << (lane & 3))) != 0;
+				if (is_lane_unorm8)
+				{
+					expected = (expected >> 8) * 257;
+				}
+
+				int result = results[lane];
+				EXPECT_EQ(result, expected);
+			}
+		}
+	}
+}
+
 /** @brief Test vfloat4 round. */
 TEST(SuiteVfloat4, float_to_int_rtn)
 {

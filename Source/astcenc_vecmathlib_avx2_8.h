@@ -779,6 +779,19 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 	return vint8(_mm256_blendv_epi8(a.m, b.m, condi));
 }
 
+/**
+ * @brief Apply optional UNORM8 rounding to UNORM16 color lanes.
+ *
+ * @param a         The color values, in [0, 65535].
+ * @param control   The replicated control from prepare_unorm8_rounding().
+ *
+ * @return The colors rounded to UNORM8 and rescaled to UNORM16, or unchanged.
+ */
+ASTCENC_SIMD_INLINE vint8 apply_unorm8_rounding(vint8 a, vint8 control)
+{
+	return vint8(_mm256_shuffle_epi8(a.m, control.m));
+}
+
 // ============================================================================
 // vfloat8 operators and functions
 // ============================================================================
