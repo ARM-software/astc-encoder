@@ -1261,7 +1261,8 @@ static void recompute_ideal_colors_ra(
 
 		// Reject ill-conditioned systems using the same relative determinant test
 		vfloat4 color_det1 = left_sum * right_sum - middle_sum * middle_sum;
-		vfloat4 color_mss1 = left_sum * left_sum + 2.0f * middle_sum * middle_sum + right_sum * right_sum;
+		vfloat4 color_trace1 = left_sum + right_sum;
+		vfloat4 color_mss1 = color_trace1 * color_trace1 - 2.0f * color_det1;
 		vmask4 det_mask = abs(color_det1) > color_mss1 * 1e-4f;
 
 		// Avoid division by zero in rejected systems and unused SIMD lanes
@@ -1474,9 +1475,8 @@ void recompute_ideal_colors_1plane(
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
 			// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
-			vfloat4 color_mss1 = (left_sum * left_sum)
-			                   + (2.0f * middle_sum * middle_sum)
-			                   + (right_sum * right_sum);
+			vfloat4 color_trace1 = left_sum + right_sum;
+			vfloat4 color_mss1 = color_trace1 * color_trace1 - 2.0f * color_det1;
 
 			// Solve the 2x2 system for both endpoints
 			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
@@ -1518,9 +1518,8 @@ void recompute_ideal_colors_1plane(
 				              - (lmrs_sum.lane<1>() * lmrs_sum.lane<1>());
 				float ls_rdet1 = 1.0f / ls_det1;
 
-				float ls_mss1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<0>())
-				              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
-				              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
+				float ls_trace1 = lmrs_sum.lane<0>() + lmrs_sum.lane<2>();
+				float ls_mss1 = ls_trace1 * ls_trace1 - 2.0f * ls_det1;
 
 				// Solve the same system for endpoint magnitudes along the RGB-scale direction
 				float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()
@@ -1788,9 +1787,8 @@ void recompute_ideal_colors_2planes(
 		vfloat4 color_rdet1 = 1.0f / color_det1;
 
 		// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
-		vfloat4 color_mss1 = (left1_sum * left1_sum)
-		                   + (2.0f * middle1_sum * middle1_sum)
-		                   + (right1_sum * right1_sum);
+		vfloat4 color_trace1 = left1_sum + right1_sum;
+		vfloat4 color_mss1 = color_trace1 * color_trace1 - 2.0f * color_det1;
 
 		// Solve the 2x2 system for both endpoints
 		vfloat4 ep0 = (right1_sum * color_vec_x - middle1_sum * color_vec_y) * color_rdet1;
@@ -1825,9 +1823,8 @@ void recompute_ideal_colors_2planes(
 		vfloat4 color_rdet2 = 1.0f / color_det2;
 
 		// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
-		vfloat4 color_mss2 = (left2_sum * left2_sum)
-		                   + (2.0f * middle2_sum * middle2_sum)
-		                   + (right2_sum * right2_sum);
+		vfloat4 color_trace2 = left2_sum + right2_sum;
+		vfloat4 color_mss2 = color_trace2 * color_trace2 - 2.0f * color_det2;
 
 		// Solve the 2x2 system for both endpoints
 		vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
@@ -1878,9 +1875,8 @@ void recompute_ideal_colors_2planes(
 			             - lmrs_sum.lane<1>() * lmrs_sum.lane<1>();
 			float ls_rdet = 1.0f / ls_det;
 
-			float ls_mss = lmrs_sum.lane<0>() * lmrs_sum.lane<0>()
-			             + 2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>()
-			             + lmrs_sum.lane<2>() * lmrs_sum.lane<2>();
+			float ls_trace = lmrs_sum.lane<0>() + lmrs_sum.lane<2>();
+			float ls_mss = ls_trace * ls_trace - 2.0f * ls_det;
 
 			// Solve the same system for endpoint magnitudes along the RGB-scale direction
 			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>()

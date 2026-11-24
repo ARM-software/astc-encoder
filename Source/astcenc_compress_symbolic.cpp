@@ -144,10 +144,9 @@ static bool realign_weights_undecimated_1partition(
 			vfloat diff_down = int_to_float(uqw_down) - uqw_base;
 			vfloat diff_up = int_to_float(uqw_up) - uqw_base;
 
-			vfloat error_down = vfloat(2.0f) * diff_down * error_linear
-			                  + diff_down * diff_down * error_quadratic;
-			vfloat error_up = vfloat(2.0f) * diff_up * error_linear
-			                + diff_up * diff_up * error_quadratic;
+			vfloat error_linear2 = error_linear + error_linear;
+			vfloat error_down = diff_down * (error_linear2 + diff_down * error_quadratic);
+			vfloat error_up = diff_up * (error_linear2 + diff_up * error_quadratic);
 
 			// Compare float weights to avoid byte-mask conversions
 			// Preserve the scalar branch precedence when the selection masks overlap
@@ -207,8 +206,10 @@ static bool realign_weights_undecimated_multipartition(
 	// Multipartition blocks use every endpoint component in a single plane
 	bool is_rgb_hdr;
 	bool is_alpha_hdr;
+	vfloat4 error_weight = blk.channel_weight;
 	vfloat4 endpnt0f[BLOCK_MAX_PARTITIONS];
 	vfloat4 offset[BLOCK_MAX_PARTITIONS];
+	float error_quadratics[BLOCK_MAX_PARTITIONS];
 	for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 	{
 		vint4 endpnt0;
@@ -221,11 +222,11 @@ static bool realign_weights_undecimated_multipartition(
 
 		endpnt0f[pa_idx] = int_to_float(endpnt0);
 		offset[pa_idx] = int_to_float(endpnt1 - endpnt0) * (1.0f / 64.0f);
+		error_quadratics[pa_idx] = dot_s(offset[pa_idx] * offset[pa_idx], error_weight);
 	}
 
 	uint8_t* dec_weights_uquant = scb.weights;
 	bool is_adjusted = false;
-	vfloat4 error_weight = blk.channel_weight;
 
 	promise(bsd.texel_count > 0);
 
@@ -260,14 +261,13 @@ static bool realign_weights_undecimated_multipartition(
 
 		// Compute coefficients and apply the channel weights
 		float error_linear = dot_s(color_diff * color_delta, error_weight);
-		float error_quadratic = dot_s(color_delta * color_delta, error_weight);
+		float error_quadratic = error_quadratics[partition];
 
 		// Evaluate the polynomial for each candidate
 		// Current weight has d = 0 and therefore an error delta of zero
-		float error_down = 2.0f * uqw_diff_down * error_linear
-		                 + uqw_diff_down * uqw_diff_down * error_quadratic;
-		float error_up = 2.0f * uqw_diff_up * error_linear
-		               + uqw_diff_up * uqw_diff_up * error_quadratic;
+		float error_linear2 = error_linear + error_linear;
+		float error_down = uqw_diff_down * (error_linear2 + uqw_diff_down * error_quadratic);
+		float error_up = uqw_diff_up * (error_linear2 + uqw_diff_up * error_quadratic);
 
 		// Check if the prev or next error is better, and if so use it
 		if ((error_up < 0.0f) && (error_up < error_down) && (uqw < 64))
@@ -448,10 +448,9 @@ static bool realign_weights_decimated(
 
 			// Evaluate the polynomial for each candidate
 			// Current weight has d = 0 and therefore an error delta of zero
-			float error_down = 2.0f * uqw_diff_down * error_linear
-			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
-			float error_up = 2.0f * uqw_diff_up * error_linear
-			               + uqw_diff_up * uqw_diff_up * error_quadratic;
+			float error_linear2 = error_linear + error_linear;
+			float error_down = uqw_diff_down * (error_linear2 + uqw_diff_down * error_quadratic);
+			float error_up = uqw_diff_up * (error_linear2 + uqw_diff_up * error_quadratic);
 
 			// Check if the prev or next error is better, and if so use it
 			bool weight_adjusted = false;
@@ -571,8 +570,8 @@ static float compress_symbolic_block_for_partition_1plane(
 	{
 		vfloat4 ep = (vfloat4(65535.0f) - ei.ep.endpt0[i]) / (ei.ep.endpt1[i] - ei.ep.endpt0[i]);
 
-		vmask4 use_ep = (ep > vfloat4(0.5f)) & (ep < min_ep);
-		min_ep = select(min_ep, ep, use_ep);
+		vmask4 use_ep = ep > vfloat4(0.5f);
+		min_ep = min(select(vfloat4(10.0f), ep, use_ep), min_ep);
 	}
 
 	float min_wt_cutoff = hmin_s(min_ep);
