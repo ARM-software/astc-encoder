@@ -2759,7 +2759,7 @@ def main() -> int:
         # General purpose
         'none',
         # Arm aarch64
-        'neon', 'sve_128', 'sve_256',
+        'neon', 'sve_128', 'sve_256', 'sve2_128', 'sve2_256',
         # x86-64
         'sse2', 'sse4.1', 'avx2', 'avx512'
     ]

@@ -217,6 +217,8 @@ ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
 
 #endif
 
+#if !defined(ASTCENC_USE_NATIVE_INTERLEAVE_RGBA8_8)
+
 /**
  * @brief Return a vector of interleaved RGBA data.
  *
@@ -234,6 +236,8 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 {
 	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
 }
+
+#endif
 
 /**
  * @brief Debug function to print a vector of ints.

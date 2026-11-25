@@ -33,7 +33,7 @@ jobs:
           export CXX=clang++
           mkdir build_rel
           cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON -DASTCENC_PACKAGE=arm64 ..
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON  -DASTCENC_ISA_SVE2_128=ON -DASTCENC_ISA_SVE2_256=ON  -DASTCENC_PACKAGE=arm64 ..
           make install package -j4
 
       - name: Upload binaries
@@ -58,11 +58,13 @@ jobs:
         run: |
           python ./Test/astc_test_functional.py --encoder neon
           python ./Test/astc_test_functional.py --encoder sve_128
+          python ./Test/astc_test_functional.py --encoder sve2_128
 
       - name: Run image tests
         run: |
           python ./Test/astc_test_image.py --encoder neon --test-set Small
           python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
+          python ./Test/astc_test_image.py --encoder sve2_128 --test-set Small
 
   build-ubuntu-x64:
     name: Ubuntu x64

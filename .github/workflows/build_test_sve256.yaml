@@ -1,9 +1,8 @@
-name: Build and test SVE-256
-run-name: Build and test SVE-256 PR${{ github.event.number }}
+name: Build and test SVE
+run-name: Build and test SVE PR${{ github.event.number }}
 
-# Separate GitHub Actions workflow to run the SVE-256 tests only when the vector
-# library changes, because tests rely on QEMU which is much slower than the
-# other ISAs where we can test natively.
+# Run GCC SVE tests and emulated 256-bit Clang tests only when the vector
+# library changes, because QEMU is much slower than native execution.
 
 # Smoke test every Small set image with pairwise format/block/quality coverage
 # to reduce test runtime.
@@ -14,19 +13,20 @@ on:
     branches:
       - main
     paths:
-      - 'Source/astcenc_vecmathlib*.h'
+      - 'Source/astcenc_vecmathlib.h'
+      - 'Source/astcenc_vecmathlib_common_4.h'
+      - 'Source/astcenc_vecmathlib_common_8.h'
+      - 'Source/astcenc_vecmathlib_sve_*.h'
       - 'Source/UnitTest/test_simd.cpp'
       - '.github/workflows/build_test_sve256.yaml'
 
 jobs:
   build-ubuntu-sve256-clang:
-    name: Ubuntu sve256 Clang
-    runs-on: ubuntu-24.04
+    name: Ubuntu SVE 256-bit Clang
+    runs-on: ubuntu-24.04-arm
     env:
       CC: clang-18
-      CFLAGS: --target=aarch64-linux-gnu
       CXX: clang++-18
-      CXXFLAGS: --target=aarch64-linux-gnu
       QEMU_CPU: max,sve128=on,sve256=on,sve-default-vector-length=32
     steps:
       - name: Git checkout
@@ -40,10 +40,95 @@ jobs:
       - name: Install ImageMagick
         run: sudo apt-get install -y imagemagick
 
-      - name: Install Clang and AArch64 runtime libraries
-        run: sudo apt-get install -y clang-18 lld-18 g++-aarch64-linux-gnu
+      - name: Install Clang
+        run: sudo apt-get install -y clang-18 lld-18
 
       - name: Install AArch64 qemu
+        run: sudo apt-get install -y qemu-user-static
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Get Python modules
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Build release
+        run: |
+          # Set the target explicitly so CTest uses QEMU on the Arm host
+          cmake -S . -B build_rel -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD" \
+            -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_EXE_LINKER_FLAGS="-static -fuse-ld=lld-18" \
+            -DCMAKE_CROSSCOMPILING_EMULATOR=qemu-aarch64-static \
+            -DASTCENC_UNITTEST=ON -DASTCENC_ISA_SVE_256=ON
+          cmake --build build_rel --target install -j4
+
+      - name: Run unit tests
+        run: ctest -R '^test-unit-sve_256$' --output-on-failure --no-tests=error
+        working-directory: build_rel
+
+      - name: Set up QEMU for CLI tests
+        run: |
+          mv bin/astcenc-sve_256 bin/astcenc-sve_256.bin
+          printf '#!/bin/sh\nexec qemu-aarch64-static "$0.bin" "$@"\n' > bin/astcenc-sve_256
+          chmod +x bin/astcenc-sve_256
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py CLIPTest --encoder sve_256
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder sve_256 --test-set Small --pairwise
+
+  build-ubuntu-sve-gcc:
+    name: Ubuntu SVE ${{ matrix.width }}-bit GCC
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - width: 128
+            emulator: ''
+            functional_args: ''
+            image_args: ''
+          - width: 256
+            emulator: qemu-aarch64-static
+            functional_args: CLIPTest
+            image_args: --pairwise
+    env:
+      CC: aarch64-none-linux-gnu-gcc
+      CXX: aarch64-none-linux-gnu-g++
+      QEMU_CPU: max,sve128=on,sve256=on,sve-default-vector-length=32
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install -y imagemagick
+
+      - name: Set up Arm GNU Toolchain 15.2.Rel1
+        run: |
+          toolchain_archive=arm-gnu-toolchain-15.2.rel1-aarch64-aarch64-none-linux-gnu.tar.xz
+          toolchain_sha256=97e3f600c00413088bb21109475443f9a1c57b4f75336a6e820acd43b065f875
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/$toolchain_archive" \
+            "https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/$toolchain_archive"
+          echo "$toolchain_sha256  $RUNNER_TEMP/$toolchain_archive" | sha256sum --check --strict
+          tar -xf "$RUNNER_TEMP/$toolchain_archive" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/${toolchain_archive%.tar.xz}/bin" >> "$GITHUB_PATH"
+
+      - name: Install AArch64 qemu
+        if: matrix.width == 256
         run: sudo apt-get install -y qemu-user-static
 
       - name: Setup Python
@@ -61,19 +146,26 @@ jobs:
           cmake -S . -B build_rel -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD" \
             -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
-            -DCMAKE_EXE_LINKER_FLAGS="-static -fuse-ld=lld-18" \
-            -DCMAKE_CROSSCOMPILING_EMULATOR=qemu-aarch64-static \
-            -DASTCENC_UNITTEST=ON -DASTCENC_ISA_SVE_256=ON
+            -DCMAKE_EXE_LINKER_FLAGS="-static" \
+            -DCMAKE_CROSSCOMPILING_EMULATOR="${{ matrix.emulator }}" \
+            -DASTCENC_UNITTEST=ON -DASTCENC_ISA_SVE_${{ matrix.width }}=ON
           cmake --build build_rel --target install -j4
 
       - name: Run unit tests
-        run: ctest -R '^test-unit-sve_256$' --output-on-failure --no-tests=error
+        run: ctest -R '^test-unit-sve_${{ matrix.width }}$' --output-on-failure --no-tests=error
         working-directory: build_rel
+
+      - name: Set up QEMU for CLI tests
+        if: matrix.width == 256
+        run: |
+          mv bin/astcenc-sve_256 bin/astcenc-sve_256.bin
+          printf '#!/bin/sh\nexec qemu-aarch64-static "$0.bin" "$@"\n' > bin/astcenc-sve_256
+          chmod +x bin/astcenc-sve_256
 
       - name: Run functional tests
         run: |
-          python ./Test/astc_test_functional.py CLIPTest --encoder sve_256
+          python ./Test/astc_test_functional.py ${{ matrix.functional_args }} --encoder sve_${{ matrix.width }}
 
       - name: Run image tests
         run: |
-          python ./Test/astc_test_image.py --encoder sve_256 --test-set Small --pairwise
+          python ./Test/astc_test_image.py --encoder sve_${{ matrix.width }} --test-set Small ${{ matrix.image_args }}

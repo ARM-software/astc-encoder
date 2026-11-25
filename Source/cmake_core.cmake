@@ -302,6 +302,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -318,6 +319,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=1
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -331,11 +333,63 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     $<${is_msvccl}:/d2ssa-cfg-sink->)
         endif()
 
-    elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_256")
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve2_256$")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=1
-                ASTCENC_SVE=8
+                ASTCENC_SVE=2
+                ASTCENC_SVE_WIDTH=8
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0
+                ASTCENC_F16C=0)
+
+        # Enable SVE2 and BitPerm in the core library
+        if (NOT ${ASTCENC_VENEER_TYPE})
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve2+sve2-bitperm -msve-vector-bits=256)
+
+        # Enable SVE2 and BitPerm without fixed vector length in the veneer
+        elseif (${ASTCENC_VENEER_TYPE} EQUAL 2)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve2+sve2-bitperm)
+        endif()
+
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve2_128$")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                ASTCENC_NEON=1
+                ASTCENC_SVE=2
+                ASTCENC_SVE_WIDTH=4
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0
+                ASTCENC_F16C=0)
+
+        # Enable SVE2 and BitPerm in the core library
+        # Note that for 128-bit SVE the generated code is actually
+        # vector-length agnostic, but any manual intrinsics used in the
+        # four-wide SVE library use 128-bit data width predicates
+        if (NOT ${ASTCENC_VENEER_TYPE})
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve2+sve2-bitperm)
+
+        # Enable SVE2 and BitPerm without fixed vector length in the veneer
+        elseif (${ASTCENC_VENEER_TYPE} EQUAL 2)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve2+sve2-bitperm)
+        endif()
+
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve_256$")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                ASTCENC_NEON=1
+                ASTCENC_SVE=1
+                ASTCENC_SVE_WIDTH=8
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -354,11 +408,12 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     -march=armv8-a+sve)
         endif()
 
-    elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_128")
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve_128$")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=1
-                ASTCENC_SVE=4
+                ASTCENC_SVE=1
+                ASTCENC_SVE_WIDTH=4
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -367,7 +422,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         # Enable SVE in the core library
         # Note that for 128-bit SVE the generated code is actually
         # vector-length agnostic, but any manual intrinsics used in the
-        # enhanced-NEON library use 128-bit data width predicates
+        # four-wide SVE library use 128-bit data width predicates
         if (NOT ${ASTCENC_VENEER_TYPE})
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -385,6 +440,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=20
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -404,6 +460,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=1
@@ -430,6 +487,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=3
                 ASTCENC_X86_GATHERS=$<BOOL:${ASTCENC_X86_GATHERS}>
@@ -466,6 +524,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
+                ASTCENC_SVE_WIDTH=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=2
                 ASTCENC_X86_GATHERS=$<BOOL:${ASTCENC_X86_GATHERS}>

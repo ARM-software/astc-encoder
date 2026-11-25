@@ -475,11 +475,33 @@ static bool validate_cpu_isa()
 #elif ASTCENC_SVE != 0
 
 #include <sys/auxv.h>
+
+/**
+ * @brief Query whether the host supports SVE.
+ *
+ * @return @c true if SVE is available.
+ */
 static bool cpu_supports_sve()
 {
 	long hwcaps = getauxval(AT_HWCAP);
 	return (hwcaps & HWCAP_SVE) != 0;
 }
+
+#if (ASTCENC_SVE >= 2)
+
+/**
+ * @brief Query whether the host supports SVE2 and BitPerm.
+ *
+ * @return @c true if both SVE2 and BitPerm are available.
+ */
+static bool cpu_supports_sve2()
+{
+	unsigned long hwcaps = getauxval(AT_HWCAP2);
+	unsigned long required = HWCAP2_SVE2 | HWCAP2_SVEBITPERM;
+	return (hwcaps & required) == required;
+}
+
+#endif
 
 /**
  * @brief Print a string to stderr.
@@ -508,6 +530,15 @@ static bool validate_cpu_isa()
 		print_error("ERROR: Host does not support SVE ISA extension\n");
 		return true;
 	}
+
+#if (ASTCENC_SVE >= 2)
+	if (!cpu_supports_sve2())
+	{
+		print_error("ERROR: Host does not support SVE2 and BitPerm ISA extensions\n");
+		return true;
+	}
+
+#endif
 
 	return false;
 }

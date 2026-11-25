@@ -206,6 +206,27 @@ To enable this binary variant add `-DASTCENC_ISA_NONE=ON` to the CMake command
 line when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
 
+### Arm SVE and SVE2 builds
+
+> [!CAUTION]
+> GCC builds of the SVE and SVE2 variants require GCC 15 or newer. Older GCC
+> versions can fail with internal compiler errors in Release builds with
+> link-time optimization (LTO) enabled.
+
+Enable `-DASTCENC_ISA_SVE_128=ON` or `-DASTCENC_ISA_SVE_256=ON` to build
+`astcenc-sve_128` or `astcenc-sve_256`. Enable `-DASTCENC_ISA_SVE2_128=ON`
+or `-DASTCENC_ISA_SVE2_256=ON` to build the corresponding SVE2 variants.
+The SVE2 variants require both SVE2 and the optional BitPerm extension.
+
+For native builds, `ASTCENC_SVE` selects the detected ISA level: 0 disables
+SVE, 1 enables SVE, and 2 enables SVE2 with BitPerm. `ASTCENC_SVE_WIDTH`
+selects the number of 32-bit lanes, either 4 or 8 when SVE is enabled.
+
+The 128-bit backends use only the low four lanes and support any hardware SVE
+vector length. The 256-bit backends require a host vector length of exactly
+256 bits. The command line tools check ISA support and vector length
+compatibility before entering the codec.
+
 ### AVX-512 builds
 
 Enable `-DASTCENC_ISA_AVX512=ON` to build `astcenc-avx512`. This variant uses

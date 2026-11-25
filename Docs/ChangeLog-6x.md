@@ -45,6 +45,8 @@ header from the same release to avoid compatibility issues.
   * **Feature:** Add an AVX-512 SIMD backend to the library, with a
     corresponding command line tool variant operating on 512-bit vectors.
   * **Build Change:** AVX2 builds now also require BMI and BMI2.
+  * **Feature:** Add 128-bit and 256-bit SVE2 backends requiring BitPerm,
+    with corresponding command line tool variants.
   * **Build Change:** Require C++20 to build the codec, replacing local library
     functions with new standard library operations where possible.
   * **Build Change:** Require Clang 18 or newer, GCC 13 or newer, or Visual
@@ -102,6 +104,8 @@ header from the same release to avoid compatibility issues.
     `interleave_rgba8()`.
   * **Optimization:** Use SVE narrowing stores in the 4-wide implementation of
     `pack_and_store_low_bytes()`.
+  * **Optimization:** Separate the 4-wide SVE implementation from NEON, using
+    predicate masks and SVE2 BitPerm for bit compression and deposition.
 * **Command line tool updates:**
   * **CLI Change:** Writing to an LDR output file format, such as PNG, when
     compressing an HDR image in test mode is now supported. The tool will output

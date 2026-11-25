@@ -665,9 +665,13 @@ void astcenc_print_header()
 	const char* simdtype = "sse4.1";
 #elif (ASTCENC_SSE == 20)
 	const char* simdtype = "sse2";
-#elif (ASTCENC_SVE == 8)
+#elif (ASTCENC_SVE_WIDTH == 8) && (ASTCENC_SVE >= 2)
+	const char* simdtype = "sve2.256b+bitperm";
+#elif (ASTCENC_SVE_WIDTH == 4) && (ASTCENC_SVE >= 2)
+	const char* simdtype = "sve2.128b+bitperm";
+#elif (ASTCENC_SVE_WIDTH == 8)
 	const char* simdtype = "sve.256b";
-#elif (ASTCENC_SVE == 4)
+#elif (ASTCENC_SVE_WIDTH == 4)
 	const char* simdtype = "sve.128b";
 #elif (ASTCENC_NEON == 1)
 	const char* simdtype = "neon";
@@ -692,7 +696,7 @@ void astcenc_print_header()
 	       VERSION_STRING, bits, simdtype, pcnttype, f16ctype, YEAR_STRING);
 
     // If possible, print hint that 8-wide SVE could be used
-#if ASTCENC_SVE == 4
+#if ASTCENC_SVE_WIDTH == 4
     if (svcntw() == 8)
     {
         printf("Note: This CPU can support 256-bit SVE builds.\n");

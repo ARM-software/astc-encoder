@@ -16,10 +16,10 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief 8x32-bit vectors, implemented using SVE.
+ * @brief 8x32-bit vectors, implemented using SVE or SVE2.
  *
  * This module implements 8-wide 32-bit float, int, and mask vectors for Arm
- * SVE.
+ * SVE, with optional SVE2 enhancements.
  *
  * There is a baseline level of functionality provided by all vector widths and
  * implementations. This is implemented using identical function signatures,
@@ -1287,10 +1287,10 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 /**
  * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
  *
- * Future: SVE2 can directly do svtbl2_u8() for a two register table.
- *
  * @param tbl   The prepared lookup table.
  * @param idx   The table index for each lane.
+ *
+ * @return The zero-extended table byte for each lane.
  */
 ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_64x8& tbl,
@@ -1300,14 +1300,41 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	svint32_8_t idxm = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
 	svuint8_8_t idxm8 = svreinterpret_u8_s32(idxm);
+#if (ASTCENC_SVE >= 2)
+	svuint8_t result = svtbl2_u8(svcreate2_u8(tbl.t0, tbl.t1), idxm8);
+#else
 	svuint8_8_t t0_lookup = svtbl_u8(tbl.t0, idxm8);
 
 	idxm8 = svsub_u8_x(svptrue_b8(), idxm8, svdup_u8(32));
 	svuint8_8_t t1_lookup = svtbl_u8(tbl.t1, idxm8);
 
 	svuint8_8_t result = svorr_u8_x(svptrue_b32(), t0_lookup, t1_lookup);
+#endif
 	return vint8(svreinterpret_s32_u8(result));
 }
+
+#if (ASTCENC_SVE >= 2)
+
+#define ASTCENC_USE_NATIVE_INTERLEAVE_RGBA8_8 1
+
+/**
+ * @brief Pack four low-byte channels into RGBA texels using SVE2 shift inserts.
+ *
+ * @param r   The red channel values.
+ * @param g   The green channel values.
+ * @param b   The blue channel values.
+ * @param a   The alpha channel values.
+ *
+ * @return One packed RGBA texel per lane.
+ */
+ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
+{
+	svint32_t rg = svsli_n_s32(r.m, g.m, 8);
+	svint32_t rgb = svsli_n_s32(rg, b.m, 16);
+	return vint8(svsli_n_s32(rgb, a.m, 24));
+}
+
+#endif
 
 /**
  * @brief Store a vector, skipping masked lanes.

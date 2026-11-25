@@ -63,11 +63,11 @@ int astcenc_main_veneer(
 	char **argv
 ) {
 	// Only check for > 128-bit SVE, the 128-bit version uses predicates to run on wider hardware
-#if ASTCENC_SVE > 4
+#if ASTCENC_SVE_WIDTH > 4
 	// svcntw() returns compile-time length if used with -msve-vector-bits
-	if (svcntw() != ASTCENC_SVE)
+	if (svcntw() != ASTCENC_SVE_WIDTH)
 	{
-		int bits = ASTCENC_SVE * 32;
+		int bits = ASTCENC_SVE_WIDTH * 32;
 		print_error("ERROR: Host SVE support is not a %u-bit implementation\n", bits);
 		return 1;
 	}
