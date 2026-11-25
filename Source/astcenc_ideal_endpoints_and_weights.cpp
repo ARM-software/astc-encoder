@@ -880,7 +880,6 @@ void compute_ideal_weights_for_decimation(
 
 	// Compute an initial average for each decimated weight
 	bool constant_wes = ei.is_constant_weight_error_scale;
-	vfloat weight_error_scale(ei.weight_error_scale[0]);
 	vgatherf_table wtab = vgatherf_load(ei.weights, texel_count);
 	vgatherf_table etab = wtab;
 	if (!constant_wes)
@@ -891,7 +890,6 @@ void compute_ideal_weights_for_decimation(
 	// Full SIMD loads are safe because decimation table tails are initialized
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		// Start with a small value to avoid div-by-zero later
 		vfloat weight_weight = vfloat::zero();
 		vfloat initial_weight = vfloat::zero();
 
@@ -913,13 +911,6 @@ void compute_ideal_weights_for_decimation(
 
 			weight_weight += contrib_weight;
 			initial_weight += gatherf(wtab, texel) * contrib_weight;
-		}
-
-		// Apply a uniform error scale once, retaining the denominator regularizer
-		if (constant_wes)
-		{
-			initial_weight = initial_weight * weight_error_scale;
-			weight_weight = weight_weight * weight_error_scale;
 		}
 
 		storea(initial_weight / (weight_weight + vfloat(1e-10f)), dec_weight_ideal_value + i);
@@ -957,7 +948,6 @@ void compute_ideal_weights_for_decimation(
 		vfloat weight_val = loada(dec_weight_ideal_value + i);
 
 		// Accumulate error weighting of all the texels using this weight
-		// Start with a small value to avoid div-by-zero later
 		vfloat error_change0 = vfloat::zero();
 		vfloat error_change1 = vfloat::zero();
 
@@ -981,12 +971,6 @@ void compute_ideal_weights_for_decimation(
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += weight_diff * scale;
-		}
-
-		if (constant_wes)
-		{
-			error_change1 = error_change1 * weight_error_scale;
-			error_change0 = error_change0 * weight_error_scale;
 		}
 
 		vfloat step = (error_change1 * chd_scale) / (error_change0 + vfloat(1e-10f));
