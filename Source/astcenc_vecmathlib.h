@@ -45,10 +45,10 @@
  *
  *     * 1-wide for scalar reference
  *     * 4-wide for Armv8-A NEON
- *     * 4-wide for Armv8-A NEON augented with 128-bit SVE
+ *     * 4-wide for Armv8-A SVE or SVE2, using NEON data and SVE masks
  *     * 4-wide for x86-64 SSE2
  *     * 4-wide for x86-64 SSE4.1
- *     * 8-wide for Armv8-A 256-bit SVE
+ *     * 8-wide for Armv8-A 256-bit SVE or SVE2
  *     * 8-wide for x86-64 AVX2
  *     * 16-wide for x86-64 AVX-512
  */
@@ -63,6 +63,10 @@
 #if ASTCENC_SVE != 0
 	#include <arm_sve.h>
 	#include <arm_neon_sve_bridge.h>
+#endif
+
+#if (ASTCENC_SVE >= 2) && (!defined(__ARM_FEATURE_SVE2) || !defined(__ARM_FEATURE_SVE2_BITPERM))
+	#error "SVE2 backends require SVE2 and BitPerm"
 #endif
 
 #if ASTCENC_NEON != 0
@@ -165,14 +169,14 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto load1 = vfloat4::load1;
 	constexpr auto vint_from_size = vint4_from_size;
 
-#elif ASTCENC_SVE == 8
+#elif ASTCENC_SVE_WIDTH == 8
 	// Check the compiler is configured with fixed-length 256-bit SVE
 	#if !defined(__ARM_FEATURE_SVE_BITS) || (__ARM_FEATURE_SVE_BITS != 256)
 		#error "__ARM_FEATURE_SVE_BITS is not set to 256 bits"
 	#endif
 
 	// If we have 256-bit SVE, expose 8-wide VLA and 4-wide fixed width
-	#include "astcenc_vecmathlib_neon_4.h"
+	#include "astcenc_vecmathlib_sve_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_sve_8.h"
 	#include "astcenc_vecmathlib_common_8.h"
@@ -199,8 +203,12 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint8_from_size;
 
 #elif ASTCENC_NEON > 0
-	// If we have NEON, expose 4-wide VLA and 4-wide fixed width
-	#include "astcenc_vecmathlib_neon_4.h"
+	// Expose 4-wide VLA and 4-wide fixed width, using SVE enhancements when available
+	#if ASTCENC_SVE_WIDTH == 4
+		#include "astcenc_vecmathlib_sve_4.h"
+	#else
+		#include "astcenc_vecmathlib_neon_4.h"
+	#endif
 	#include "astcenc_vecmathlib_common_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 4u

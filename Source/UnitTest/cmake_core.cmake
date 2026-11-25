@@ -142,6 +142,7 @@ if(${ASTCENC_ISA_SIMD} MATCHES "none")
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -158,16 +159,50 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
         PRIVATE
             ASTCENC_NEON=1
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
             ASTCENC_F16C=0)
 
-elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_256")
+elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve2_256$")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=1
-            ASTCENC_SVE=8
+            ASTCENC_SVE=2
+            ASTCENC_SVE_WIDTH=8
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
+
+    # Enable SVE2 and BitPerm
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            -march=armv8-a+sve2+sve2-bitperm -msve-vector-bits=256)
+
+elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve2_128$")
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=1
+            ASTCENC_SVE=2
+            ASTCENC_SVE_WIDTH=4
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
+
+    # Enable SVE2 and BitPerm
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            -march=armv8-a+sve2+sve2-bitperm)
+
+elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve_256$")
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=1
+            ASTCENC_SVE=1
+            ASTCENC_SVE_WIDTH=8
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -178,11 +213,12 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_256")
         PRIVATE
             -march=armv8-a+sve -msve-vector-bits=256)
 
-elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_128")
+elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve_128$")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=1
-            ASTCENC_SVE=4
+            ASTCENC_SVE=1
+            ASTCENC_SVE_WIDTH=4
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -198,6 +234,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=20
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -212,6 +249,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=41
             ASTCENC_AVX=0
             ASTCENC_POPCNT=1
@@ -226,6 +264,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512")
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=41
             ASTCENC_AVX=3
             ASTCENC_POPCNT=1
@@ -240,6 +279,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
+            ASTCENC_SVE_WIDTH=0
             ASTCENC_SSE=41
             ASTCENC_AVX=2
             ASTCENC_POPCNT=1

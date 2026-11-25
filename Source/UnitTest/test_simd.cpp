@@ -2286,6 +2286,31 @@ TEST(SuiteVint4, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
+/** @brief Test every masked-store tail length without writing outside the destination. */
+TEST(SuiteVint4, store_lanes_masked_bounds)
+{
+	int values[4] { 0x04030201, 0x08070605, 0x0C0B0A09, 0x100F0E0D };
+	vint4 data(values);
+
+	for (int count = 0; count <= 4; count++)
+	{
+		// Include guard bytes for a full 2048-bit store
+		uint8_t output[258];
+		uint8_t expected[258];
+		std::memset(output, 0xA5, sizeof(output));
+		std::memset(expected, 0xA5, sizeof(expected));
+		std::memcpy(expected + 1, values, static_cast<size_t>(count) * sizeof(int));
+		vmask4 active = vint4::lane_id() < vint4(count);
+		store_lanes_masked(output + 1, data, active);
+
+		for (size_t byte = 0; byte < sizeof(output); byte++)
+		{
+			int actual = output[byte];
+			EXPECT_EQ(actual, expected[byte]);
+		}
+	}
+}
+
 /** @brief Test vint4 pack_and_store_low_bytes. */
 TEST(SuiteVint4, pack_and_store_low_bytes)
 {
@@ -2323,6 +2348,57 @@ TEST(SuiteVint4, select)
 }
 
 // VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#if ASTCENC_SVE != 0
+/**
+ * @brief Copy masks through memory to exercise scalable predicate storage.
+ *
+ * @param[out] output   The destination masks.
+ * @param      input    The source mask.
+ */
+static ASTCENC_NO_INLINE void copy_predicate_masks(vmask4* output, const vmask4& input)
+{
+	output[0] = input;
+	output[1] = ~input;
+}
+
+/** @brief Test predicate copies and four-lane masking at every hardware vector length. */
+TEST(SuiteVmask4, predicate_storage)
+{
+	vmask4 source(svptrue_b32());
+	vmask4 copy(source);
+	vmask4 output[2] { vmask4(false), vmask4(false) };
+	copy_predicate_masks(output, copy);
+
+	uint64_t active_lanes = svcntp_b32(svptrue_pat_b32(SV_VL4), output[0].predicate());
+	uint64_t inactive_lanes = svcntp_b32(svptrue_b32(), output[1].predicate());
+	unsigned int active_mask = mask(output[0]);
+	unsigned int inactive_mask = mask(output[1]);
+	bool is_all = all(output[0]);
+	bool is_any = any(output[1]);
+
+	EXPECT_EQ(active_lanes, 4u);
+	EXPECT_EQ(inactive_lanes, 0u);
+	EXPECT_EQ(active_mask, 0xFu);
+	EXPECT_EQ(inactive_mask, 0u);
+	EXPECT_TRUE(is_all);
+	EXPECT_FALSE(is_any);
+
+	uint32_t stored[66] { 0 };
+	store_lanes_masked(reinterpret_cast<uint8_t*>(stored + 1), vint4(7), output[0]);
+	for (size_t lane = 0; lane < 66; lane++)
+	{
+		uint32_t expected = 0;
+		if ((lane >= 1) && (lane <= 4))
+		{
+			expected = 7;
+		}
+
+		uint32_t actual = stored[lane];
+		EXPECT_EQ(actual, expected);
+	}
+}
+#endif
+
 /** @brief Test vmask4 scalar literal constructor. */
 TEST(SuiteVmask4, scalar_literal_construct)
 {

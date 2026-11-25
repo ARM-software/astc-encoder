@@ -231,7 +231,6 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
-#if ASTCENC_SVE == 0
 		// Copy through a uint32_t to avoid load through a reinterpreted pointer, which is both
 		// unaligned and an aliasing violation
 		uint32_t tmp;
@@ -240,10 +239,6 @@ struct vint4
 		uint32x2_t t8 = vdup_n_u32(tmp);
 		uint16x4_t t16 = vget_low_u16(vmovl_u8(vreinterpret_u8_u32(t8)));
 		m = vreinterpretq_s32_u32(vmovl_u16(t16));
-#else
-		svint32_t data = svld1ub_s32(svptrue_pat_b32(SV_VL4), p);
-		m = svget_neonq(data);
-#endif
 	}
 
 	/**
@@ -791,26 +786,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 	vst1q_lane_s32(reinterpret_cast<int32_t*>(p), a.m, 0);
 }
 
-#if ASTCENC_SVE != 0
-#define ASTCENC_HAS_NATIVE_STORE_NBYTES_COUNT
-
-/**
- * @brief Store the lowest packed bytes to an unaligned address.
- *
- * @param[in]  a       The vector to store.
- * @param[out] p       The destination address.
- * @param[in]  count   The number of bytes to store, in [0, 16].
- */
-ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p, unsigned int count)
-{
-	// Predicate only the defined NEON bytes, even when SVE vectors are wider than 128 bits
-	uint8x16_t bytes = vreinterpretq_u8_s32(a.m);
-	svuint8_t data = svset_neonq_u8(svundef_u8(), bytes);
-	svbool_t mask = svwhilelt_b8_u32(0, count);
-	svst1_u8(mask, p, data);
-}
-#endif
-
 /**
  * @brief Pack the low 8 bits of each lane and store to an unaligned address.
  *
@@ -819,7 +794,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p, unsigned int count)
  */
 ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 v, uint8_t* p)
 {
-#if ASTCENC_SVE == 0
 	alignas(16) uint8_t shuf[16] {
 		0, 4, 8, 12,   0, 0, 0, 0,   0, 0, 0, 0,   0, 0, 0, 0
 	};
@@ -827,11 +801,6 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 v, uint8_t* p)
 	int8x16_t av = vreinterpretq_s8_s32(v.m);
 	v = vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
 	store_nbytes(v, p);
-#else
-	// Limit the store to the four NEON lanes, even on wider SVE targets
-	svuint32_t av = svset_neonq_u32(svundef_u32(), vreinterpretq_u32_s32(v.m));
-	svst1b_u32(svptrue_pat_b32(SV_VL4), p, av);
-#endif
 }
 
 /**
@@ -1093,15 +1062,9 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
  */
 ASTCENC_SIMD_INLINE vint4 gatheri(const int32_t* base, vint4 indices)
 {
-#if ASTCENC_SVE == 0
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	return vint4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
-#else
-	svint32_t offsets = svset_neonq_s32(svundef_s32(), indices.m);
-	svint32_t data = svld1_gather_s32index_s32(svptrue_pat_b32(SV_VL4), base, offsets);
-	return vint4(svget_neonq_s32(data));
-#endif
 }
 
 /**
@@ -1112,7 +1075,6 @@ ASTCENC_SIMD_INLINE vint4 gatheri(const int32_t* base, vint4 indices)
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
-#if ASTCENC_SVE == 0
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	alignas(16) float vals[4];
@@ -1121,32 +1083,7 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 	vals[2] = base[idx[2]];
 	vals[3] = base[idx[3]];
 	return vfloat4(vals);
-#else
-	svint32_t offsets = svset_neonq_s32(svundef_s32(), indices.m);
-	svfloat32_t data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
-	return vfloat4(svget_neonq_f32(data));
-#endif
 }
-
-#if ASTCENC_SVE != 0
-
-#define ASTCENC_USE_NATIVE_GATHERF_BYTE_INDS 1
-
-/**
- * @brief Load a vector of gathered results from an array using byte indices from memory.
- *
- * @param base      The source float table.
- * @param indices   The byte-sized table indices, one per lane.
- */
-template<>
-ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
-{
-	svint32_t offsets = svld1ub_s32(svptrue_pat_b32(SV_VL4), indices);
-	svfloat32_t data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
-	return vfloat4(svget_neonq_f32(data));
-}
-
-#endif
 
 /**
  * @brief Store a vector to an unaligned memory address.

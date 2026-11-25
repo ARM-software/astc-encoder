@@ -15,8 +15,11 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-set(ASTCENC_ARTIFACTS native none sve_256 sve_128 neon avx512 avx2 sse4.1 sse2)
-set(ASTCENC_CONFIGS ${ASTCENC_ISA_NATIVE} ${ASTCENC_ISA_NONE} ${ASTCENC_ISA_SVE_256} ${ASTCENC_ISA_SVE_128} ${ASTCENC_ISA_NEON} ${ASTCENC_ISA_AVX512} ${ASTCENC_ISA_AVX2} ${ASTCENC_ISA_SSE41} ${ASTCENC_ISA_SSE2})
+set(ASTCENC_ARTIFACTS native none sve2_256 sve2_128 sve_256 sve_128 neon avx512 avx2 sse4.1 sse2)
+set(ASTCENC_CONFIGS ${ASTCENC_ISA_NATIVE} ${ASTCENC_ISA_NONE}
+                    ${ASTCENC_ISA_SVE2_256} ${ASTCENC_ISA_SVE2_128}
+                    ${ASTCENC_ISA_SVE_256} ${ASTCENC_ISA_SVE_128} ${ASTCENC_ISA_NEON}
+                    ${ASTCENC_ISA_AVX512} ${ASTCENC_ISA_AVX2} ${ASTCENC_ISA_SSE41} ${ASTCENC_ISA_SSE2})
 list(LENGTH ASTCENC_ARTIFACTS ASTCENC_ARTIFACTS_LEN)
 math(EXPR ASTCENC_ARTIFACTS_LEN "${ASTCENC_ARTIFACTS_LEN} - 1")
 
@@ -28,7 +31,7 @@ foreach(INDEX RANGE ${ASTCENC_ARTIFACTS_LEN})
 
         if(${ASTCENC_ISA_SIMD} MATCHES "neon")
            set(CMAKE_OSX_ARCHITECTURES arm64)
-        elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_128|sve_256")
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "^sve2?_(128|256)$")
            # Not supported on macOS
         elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2|sse4.1")
            set(CMAKE_OSX_ARCHITECTURES x86_64)

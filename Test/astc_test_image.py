@@ -38,10 +38,10 @@ from testlib.testset import TestSet
 
 
 TEST_ENCODERS = ('none', 'native', 'universal', 'neon', 'sve_256', 'sve_128',
-                 'sse2', 'sse4.1', 'avx2', 'avx512')
+                 'sve2_256', 'sve2_128', 'sse2', 'sse4.1', 'avx2', 'avx512')
 # AVX-512 stays opt-in so CI can probe host support before running it
 ENCODER_GROUPS = {
-    'all-aarch64': ('neon', 'sve_256', 'sve_128'),
+    'all-aarch64': ('neon', 'sve_256', 'sve_128', 'sve2_256', 'sve2_128'),
     'all-x86': ('sse2', 'sse4.1', 'avx2'),
 }
 PROFILES = ('ldr', 'ldrs', 'hdr')

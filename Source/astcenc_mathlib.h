@@ -81,27 +81,37 @@
   #endif
 #endif
 
+// SVE levels: 1 = SVE, 2 = SVE2 with BitPerm
 #if !defined(ASTCENC_SVE)
-  #if defined(__ARM_FEATURE_SVE)
-    #if defined(__ARM_FEATURE_SVE_BITS) && __ARM_FEATURE_SVE_BITS == 256
-      #define ASTCENC_SVE 8
-    // Auto-detected SVE can only assume vector width of 4 is available, but must also allow for
-    // hardware being longer and so all use of intrinsics must explicitly use predicate masks to
-    // limit to 4-wide
-    #else
-      #define ASTCENC_SVE 4
-    #endif
-    #else
+  #if defined(__ARM_FEATURE_SVE2) && defined(__ARM_FEATURE_SVE2_BITPERM)
+    #define ASTCENC_SVE 2
+  #elif defined(__ARM_FEATURE_SVE)
+    #define ASTCENC_SVE 1
+  #else
     #define ASTCENC_SVE 0
+  #endif
+#endif
+
+// SVE width is the number of 32-bit lanes used by the backend
+#if !defined(ASTCENC_SVE_WIDTH)
+  #if ASTCENC_SVE != 0
+    #if defined(__ARM_FEATURE_SVE_BITS) && (__ARM_FEATURE_SVE_BITS == 256)
+      #define ASTCENC_SVE_WIDTH 8
+    #else
+      // Limit explicit intrinsics to four lanes when the hardware vector length is unknown
+      #define ASTCENC_SVE_WIDTH 4
+    #endif
+  #else
+    #define ASTCENC_SVE_WIDTH 0
   #endif
 #endif
 
 // Force vector-sized SIMD alignment
 #if ASTCENC_AVX >= 3
   #define ASTCENC_VECALIGN 64
-#elif ASTCENC_AVX || ASTCENC_SVE == 8
+#elif ASTCENC_AVX || (ASTCENC_SVE_WIDTH == 8)
   #define ASTCENC_VECALIGN 32
-#elif ASTCENC_SSE || ASTCENC_NEON || ASTCENC_SVE == 4
+#elif ASTCENC_SSE || ASTCENC_NEON || (ASTCENC_SVE_WIDTH == 4)
   #define ASTCENC_VECALIGN 16
 // Use default alignment for non-SIMD builds
 #else

@@ -89,10 +89,13 @@ ISA, we ship:
 * `astcenc-neon` - uses NEON
 * `astcenc-sve_128` - uses 128-bit SVE
 * `astcenc-sve_256` - uses 256-bit SVE
+* `astcenc-sve2_128` - uses 128-bit SVE2 and BitPerm
+* `astcenc-sve2_256` - uses 256-bit SVE2 and BitPerm
 
 Note: The Arm Scalable Vector Extensions (SVE) allow CPUs to have a variable
-vector length. The astcenc implementation is not written in a length-agnostic
-style and requires the binary to match the vector length on the host CPU.
+vector length. The 128-bit SVE and SVE2 builds use the low 128 bits and can run
+on wider hardware. The 256-bit builds require a host vector length of exactly
+256 bits.
 
 ## macOS
 
