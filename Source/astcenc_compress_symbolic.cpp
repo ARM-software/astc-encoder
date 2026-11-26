@@ -519,10 +519,20 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	int max_weight_quant = astc::min(static_cast<int>(QUANT_32), quant_limit);
 
+	// Select channel weighting once for all candidate scores
+	bool is_unweighted = all(blk.channel_weight == vfloat4(1.0f));
 	auto compute_difference = &compute_symbolic_block_difference_1plane;
 	if ((partition_count == 1) && !(config.flags & ASTCENC_FLG_MAP_RGBM))
 	{
 		compute_difference = &compute_symbolic_block_difference_1plane_1partition;
+		if (is_unweighted)
+		{
+			compute_difference = &compute_symbolic_block_difference_1plane_1partition_unweighted;
+		}
+	}
+	else if (is_unweighted)
+	{
+		compute_difference = &compute_symbolic_block_difference_1plane_unweighted;
 	}
 
 	const auto& pi = bsd.get_partition_info(partition_count, partition_index);
@@ -897,6 +907,14 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	int max_weight_quant = astc::min(static_cast<int>(QUANT_32), quant_limit);
 
+	// Select channel weighting once for all candidate scores
+	auto compute_difference = &compute_symbolic_block_difference_2plane;
+	bool is_unweighted = all(blk.channel_weight == vfloat4(1.0f));
+	if (is_unweighted)
+	{
+		compute_difference = &compute_symbolic_block_difference_2plane_unweighted;
+	}
+
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei1 = tmpbuf.ei1;
 	endpoints_and_weights& ei2 = tmpbuf.ei2;
@@ -1113,7 +1131,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			// Pre-realign test
 			if (l == 0)
 			{
-				float errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
+				float errorval = compute_difference(config, bsd, workscb, blk);
 				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
@@ -1167,7 +1185,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			}
 
 			// Post-realign test
-			float errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
+			float errorval = compute_difference(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;

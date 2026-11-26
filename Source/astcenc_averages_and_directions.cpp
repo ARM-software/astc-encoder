@@ -1360,8 +1360,21 @@ void compute_partition_errors_luminance_batch(
 
 #if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
 
-/* See header for documentation. */
-void compute_partition_errors_luminance_alpha_batch(
+/**
+ * @brief Estimate partition errors for luminance and alpha with optional channel weighting.
+ *
+ * Instantiated for weighted and unweighted entry points to resolve channel-weight branches.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
+ * @param      blk                  The source image block.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE void compute_partition_errors_luminance_alpha_batch_impl(
 	const partition_info* const* candidates,
 	const image_block& blk,
 	float weight_imprecision,
@@ -1498,8 +1511,17 @@ void compute_partition_errors_luminance_alpha_batch(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat uncor_err = ((uncor_dist0 * uncor_dist0) * ew_rgb)
-			                 + ((uncor_dist3 * uncor_dist3) * ew_a);
+			vfloat uncor_err;
+			if constexpr (is_weighted)
+			{
+				uncor_err = ((uncor_dist0 * uncor_dist0) * ew_rgb)
+				          + ((uncor_dist3 * uncor_dist3) * ew_a);
+			}
+			else
+			{
+				uncor_err = ((uncor_dist0 * uncor_dist0) * 3.0f)
+				          + (uncor_dist3 * uncor_dist3);
+			}
 
 			uncor_errorsumv += select(zero, uncor_err, active);
 
@@ -1508,15 +1530,28 @@ void compute_partition_errors_luminance_alpha_batch(
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = ((samec_dist0 * samec_dist0) * ew_rgb)
-			                 + ((samec_dist3 * samec_dist3) * ew_a);
+			vfloat samec_err;
+			if constexpr (is_weighted)
+			{
+				samec_err = ((samec_dist0 * samec_dist0) * ew_rgb)
+				          + ((samec_dist3 * samec_dist3) * ew_a);
+			}
+			else
+			{
+				samec_err = ((samec_dist0 * samec_dist0) * 3.0f)
+				          + (samec_dist3 * samec_dist3);
+			}
 
 			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
 		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
-		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
+		vfloat error_weights = countv * vfloat(weight_imprecision);
+		if constexpr (is_weighted)
+		{
+			error_weights = channel_weight * error_weights;
+		}
 
 		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		vfloat samec_vector = l_samec_bs * uncor_linelen;
@@ -1540,7 +1575,46 @@ void compute_partition_errors_luminance_alpha_batch(
 }
 
 /* See header for documentation. */
-void compute_partition_errors_rgb_batch(
+void compute_partition_errors_luminance_alpha_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	compute_partition_errors_luminance_alpha_batch_impl<true>(candidates, blk, weight_imprecision,
+	                                                          uncor_errors, samec_errors);
+}
+
+/* See header for documentation. */
+void compute_partition_errors_luminance_alpha_batch_unweighted(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	compute_partition_errors_luminance_alpha_batch_impl<false>(candidates, blk, weight_imprecision,
+	                                                           uncor_errors, samec_errors);
+}
+
+/**
+ * @brief Estimate partition errors for RGB data with optional channel weighting.
+ *
+ * Instantiated for weighted and unweighted entry points to resolve channel-weight branches.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
+ * @param      blk                  The source image block.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE void compute_partition_errors_rgb_batch_impl(
 	const partition_info* const* candidates,
 	const image_block& blk,
 	float weight_imprecision,
@@ -1717,9 +1791,19 @@ void compute_partition_errors_rgb_batch(
 			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
 			                   + (uncor_param * l_uncor_bs2);
 
-			vfloat uncor_err = (uncor_dist0 * uncor_dist0 * ew_r)
-			                 + (uncor_dist1 * uncor_dist1 * ew_g)
-			                 + (uncor_dist2 * uncor_dist2 * ew_b);
+			vfloat uncor_err;
+			if constexpr (is_weighted)
+			{
+				uncor_err = (uncor_dist0 * uncor_dist0 * ew_r)
+				          + (uncor_dist1 * uncor_dist1 * ew_g)
+				          + (uncor_dist2 * uncor_dist2 * ew_b);
+			}
+			else
+			{
+				uncor_err = (uncor_dist0 * uncor_dist0)
+				          + (uncor_dist1 * uncor_dist1)
+				          + (uncor_dist2 * uncor_dist2);
+			}
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
 			uncor_errorsumv += select(zero, uncor_err, active);
@@ -1732,16 +1816,30 @@ void compute_partition_errors_rgb_batch(
 			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 
-			vfloat samec_err = (samec_dist0 * samec_dist0 * ew_r)
-			                 + (samec_dist1 * samec_dist1 * ew_g)
-			                 + (samec_dist2 * samec_dist2 * ew_b);
+			vfloat samec_err;
+			if constexpr (is_weighted)
+			{
+				samec_err = (samec_dist0 * samec_dist0 * ew_r)
+				          + (samec_dist1 * samec_dist1 * ew_g)
+				          + (samec_dist2 * samec_dist2 * ew_b);
+			}
+			else
+			{
+				samec_err = (samec_dist0 * samec_dist0)
+				          + (samec_dist1 * samec_dist1)
+				          + (samec_dist2 * samec_dist2);
+			}
 
 			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
 		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
-		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
+		vfloat error_weights = countv * vfloat(weight_imprecision);
+		if constexpr (is_weighted)
+		{
+			error_weights = channel_weight * error_weights;
+		}
 
 		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		uncor_quant[p] = sum_rgb_quads((uncor_vector * uncor_vector) * error_weights);
@@ -1765,7 +1863,46 @@ void compute_partition_errors_rgb_batch(
 }
 
 /* See header for documentation. */
-void compute_partition_errors_rgba_batch(
+void compute_partition_errors_rgb_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	compute_partition_errors_rgb_batch_impl<true>(candidates, blk, weight_imprecision,
+	                                              uncor_errors, samec_errors);
+}
+
+/* See header for documentation. */
+void compute_partition_errors_rgb_batch_unweighted(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	compute_partition_errors_rgb_batch_impl<false>(candidates, blk, weight_imprecision,
+	                                               uncor_errors, samec_errors);
+}
+
+/**
+ * @brief Estimate partition errors for RGBA data with optional channel weighting.
+ *
+ * Instantiated for weighted and unweighted entry points to resolve channel-weight branches.
+ *
+ * @tparam is_weighted   True to apply channel weights; false requires unit weights.
+ *
+ * @param      candidates           The ASTCENC_SIMD_BATCH_WIDTH partition candidates.
+ * @param      blk                  The source image block.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+template<bool is_weighted>
+static ASTCENC_SIMD_INLINE void compute_partition_errors_rgba_batch_impl(
 	const partition_info* const* candidates,
 	const image_block& blk,
 	float weight_imprecision,
@@ -1934,10 +2071,21 @@ void compute_partition_errors_rgba_batch(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			vfloat uncor_err = ((uncor_dist0 * uncor_dist0 * ew_r)
-			                 +  (uncor_dist1 * uncor_dist1 * ew_g))
-			                 + ((uncor_dist2 * uncor_dist2 * ew_b)
-			                 +  (uncor_dist3 * uncor_dist3 * ew_a));
+			vfloat uncor_err;
+			if constexpr (is_weighted)
+			{
+				uncor_err = ((uncor_dist0 * uncor_dist0 * ew_r)
+				          +  (uncor_dist1 * uncor_dist1 * ew_g))
+				          + ((uncor_dist2 * uncor_dist2 * ew_b)
+				          +  (uncor_dist3 * uncor_dist3 * ew_a));
+			}
+			else
+			{
+				uncor_err = ((uncor_dist0 * uncor_dist0)
+				          +  (uncor_dist1 * uncor_dist1))
+				          + ((uncor_dist2 * uncor_dist2)
+				          +  (uncor_dist3 * uncor_dist3));
+			}
 
 			// Match haccumulate() by adding successive texel quads lane-wise, without reduction
 			uncor_errorsumv += select(zero, uncor_err, active);
@@ -1952,17 +2100,32 @@ void compute_partition_errors_rgba_batch(
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
-			vfloat samec_err = ((samec_dist0 * samec_dist0 * ew_r)
-			                 +  (samec_dist1 * samec_dist1 * ew_g))
-			                 + ((samec_dist2 * samec_dist2 * ew_b)
-			                 +  (samec_dist3 * samec_dist3 * ew_a));
+			vfloat samec_err;
+			if constexpr (is_weighted)
+			{
+				samec_err = ((samec_dist0 * samec_dist0 * ew_r)
+				          +  (samec_dist1 * samec_dist1 * ew_g))
+				          + ((samec_dist2 * samec_dist2 * ew_b)
+				          +  (samec_dist3 * samec_dist3 * ew_a));
+			}
+			else
+			{
+				samec_err = ((samec_dist0 * samec_dist0)
+				          +  (samec_dist1 * samec_dist1))
+				          + ((samec_dist2 * samec_dist2)
+				          +  (samec_dist3 * samec_dist3));
+			}
 
 			samec_errorsumv += select(zero, samec_err, active);
 		}
 
 		// Defer adding quantization errors until after the texel sums are reduced
 		vfloat uncor_linelen = max(max_quads(uncor_hiparamv) - min_quads(uncor_loparamv), 1e-7f);
-		vfloat error_weights = channel_weight * (countv * vfloat(weight_imprecision));
+		vfloat error_weights = countv * vfloat(weight_imprecision);
+		if constexpr (is_weighted)
+		{
+			error_weights = channel_weight * error_weights;
+		}
 
 		vfloat uncor_vector = l_uncor_bs * uncor_linelen;
 		uncor_quant[p] = sum_quads((uncor_vector * uncor_vector) * error_weights);
@@ -1983,6 +2146,32 @@ void compute_partition_errors_rgba_batch(
 
 	store_lane0_quads(uncor_errorsumv, uncor_errors);
 	store_lane0_quads(samec_errorsumv, samec_errors);
+}
+
+/* See header for documentation. */
+void compute_partition_errors_rgba_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	compute_partition_errors_rgba_batch_impl<true>(candidates, blk, weight_imprecision,
+	                                               uncor_errors, samec_errors);
+}
+
+/* See header for documentation. */
+void compute_partition_errors_rgba_batch_unweighted(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors
+) {
+	assert(all(blk.channel_weight == vfloat4(1.0f)));
+
+	compute_partition_errors_rgba_batch_impl<false>(candidates, blk, weight_imprecision,
+	                                                uncor_errors, samec_errors);
 }
 
 #endif
